@@ -27,7 +27,7 @@ class BoardWidget extends ConsumerWidget {
 
         // Calculate tile size to fit the grid
         final tileW = (availableWidth / cols).clamp(36.0, 80.0);
-        final tileH = tileW * (72 / 56); // maintain aspect ratio
+        final tileH = tileW * (85 / 64); // maintain aspect ratio
         const gapH = 4.0;
         const gapV = 4.0;
 
