@@ -1,0 +1,54 @@
+name: sankofa_tiles
+description: A Ghanaian Adinkra Mahjong solitaire tile-matching game.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # SVG rendering (tile artwork)
+  flutter_svg: ^2.0.10+1
+
+  # Local persistence (progress, settings, unlocks)
+  shared_preferences: ^2.2.3
+
+  # Fonts
+  google_fonts: ^6.2.1
+
+  # Audio (tile sounds, background music)
+  audioplayers: ^6.0.0
+
+  # Animations
+  lottie: ^3.1.0
+
+  # Utils
+  uuid: ^4.4.0
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.3
+  custom_lint: ^0.7.6
+  riverpod_lint: ^2.3.10
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/tiles/
+    - assets/audio/
+    - assets/lottie/
+    - assets/images/
