@@ -7,6 +7,7 @@ import '../../screens/level_select/level_select_screen.dart';
 import '../../screens/game/game_screen.dart';
 import '../../screens/result/result_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/preview/tile_preview_screen.dart';
 import '../utils/storage_service.dart';
 
 GoRouter createAppRouter(StorageService storage) {
@@ -52,6 +53,10 @@ GoRouter createAppRouter(StorageService storage) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/tile-preview',
+        builder: (context, state) => const TilePreviewScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

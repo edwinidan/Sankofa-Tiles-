@@ -49,6 +49,13 @@ class HomeScreen extends StatelessWidget {
                     width: double.infinity,
                     onTap: () => context.go('/onboarding'),
                   ),
+                  const SizedBox(height: 16),
+                  KenteButton(
+                    label: 'TILE PREVIEW',
+                    icon: Icons.grid_view_outlined,
+                    width: double.infinity,
+                    onTap: () => context.go('/tile-preview'),
+                  ),
                 ],
               ),
             ),

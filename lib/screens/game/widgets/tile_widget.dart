@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/tile_model.dart';
 import '../../../core/constants/tile_data.dart';
@@ -81,22 +82,33 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     final tileW = _resolvedWidth(context);
     final tileH = _resolvedHeight(context);
 
-    // Matched: fade out and shrink cleanly
+    // Matched: smash animation — impact burst → shake → shatter out
     if (tile.isMatched) {
-      return AnimatedOpacity(
-        opacity: 0.0,
-        duration: const Duration(milliseconds: 400),
-        child: AnimatedScale(
-          scale: 0.0,
-          duration: const Duration(milliseconds: 400),
-          child: _buildPhysicalTile(
-            tile: tile,
-            showNames: showNames,
-            tileW: tileW,
-            tileH: tileH,
-          ),
-        ),
-      );
+      return _buildPhysicalTile(
+        tile: tile,
+        showNames: showNames,
+        tileW: tileW,
+        tileH: tileH,
+      )
+          .animate()
+          // Phase 1: impact burst (0–80ms)
+          .scale(
+            begin: const Offset(1, 1),
+            end: const Offset(1.25, 1.25),
+            duration: 80.ms,
+            curve: Curves.easeOut,
+          )
+          // Phase 2: shake/tremor (80–240ms)
+          .then()
+          .shake(hz: 10, duration: 160.ms)
+          // Phase 3: shatter — scale to zero + fade (240–450ms)
+          .then()
+          .scale(
+            end: Offset.zero,
+            duration: 210.ms,
+            curve: Curves.easeIn,
+          )
+          .fade(end: 0, duration: 210.ms);
     }
 
     // Hinted: green border + pulsing whole-tile opacity
@@ -215,20 +227,31 @@ class _TileWidgetState extends ConsumerState<TileWidget>
             ),
           ),
         ),
-        // Adinkra symbol — centered
-        Center(
-          child: Text(
-            tile.def.symbol,
-            style: const TextStyle(
-              fontFamily: 'Georgia',
-              fontFamilyFallback: ['Times New Roman', 'serif'],
-              fontSize: 28,
-              color: AppColors.tileEdge,
-              height: 1.0,
+        // Adinkra symbol — centered or full-fill for image assets
+        if (tile.def.assetPath != null)
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(_kCornerRadius),
+              child: Image.asset(
+                tile.def.assetPath!,
+                fit: BoxFit.fill,
+              ),
             ),
-            textAlign: TextAlign.center,
+          )
+        else
+          Center(
+            child: Text(
+              tile.def.symbol,
+              style: const TextStyle(
+                fontFamily: 'Georgia',
+                fontFamilyFallback: ['Times New Roman', 'serif'],
+                fontSize: 28,
+                color: AppColors.tileEdge,
+                height: 1.0,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
         // Tile name — bottom-center, only when showTileNames is on
         if (showNames)
           Positioned(

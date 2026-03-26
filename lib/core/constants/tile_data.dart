@@ -7,6 +7,7 @@ class TileDefinition {
   final String symbol;
   final TileSuit suit;
   final int suitNumber;
+  final String? assetPath;
 
   const TileDefinition({
     required this.id,
@@ -15,6 +16,7 @@ class TileDefinition {
     required this.symbol,
     required this.suit,
     required this.suitNumber,
+    this.assetPath,
   });
 }
 
@@ -53,7 +55,7 @@ const List<TileDefinition> kAllTiles = [
   TileDefinition(id:'nyame_nwu',   name:'Nyame Nwu Na Mawu', meaning:'God never dies',      symbol:'⟁', suit:TileSuit.royalty, suitNumber:9),
 
   // HONOR TILES
-  TileDefinition(id:'gye_nyame',   name:'Gye Nyame',     meaning:'Except God',              symbol:'☀', suit:TileSuit.honor,   suitNumber:1),
+  TileDefinition(id:'gye_nyame',   name:'Gye Nyame',     meaning:'Except God',              symbol:'☀', suit:TileSuit.honor,   suitNumber:1, assetPath:'assets/tiles/symbols/gye_nyame.png'),
   TileDefinition(id:'bi_nka_bi',   name:'Bi Nka Bi',     meaning:'Peace and unity',         symbol:'◯', suit:TileSuit.honor,   suitNumber:2),
   TileDefinition(id:'dwennimmen',  name:'Dwennimmen',    meaning:'Strength with humility',  symbol:'⚏', suit:TileSuit.honor,   suitNumber:3),
   TileDefinition(id:'mpatapo',     name:'Mpatapo',       meaning:'Reconciliation',          symbol:'⊗', suit:TileSuit.honor,   suitNumber:4),
