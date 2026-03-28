@@ -54,7 +54,7 @@ class HomeScreen extends StatelessWidget {
                     label: 'TILE PREVIEW',
                     icon: Icons.grid_view_outlined,
                     width: double.infinity,
-                    onTap: () => context.go('/tile-preview'),
+                    onTap: () => context.push('/tile-preview'),
                   ),
                 ],
               ),

@@ -16,12 +16,16 @@ class TileWidget extends ConsumerStatefulWidget {
   final TileModel tile;
   final double width;
   final double height;
+  final bool showSuitCode;
+  final bool forceHideName;
 
   const TileWidget({
     super.key,
     required this.tile,
     this.width = _kDefaultTileW,
     this.height = _kDefaultTileH,
+    this.showSuitCode = true,
+    this.forceHideName = false,
   });
 
   @override
@@ -89,6 +93,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         showNames: showNames,
         tileW: tileW,
         tileH: tileH,
+        showSuitCode: widget.showSuitCode,
+        forceHideName: widget.forceHideName,
       )
           .animate()
           // Phase 1: impact burst (0–80ms)
@@ -122,6 +128,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
             showNames: showNames,
             tileW: tileW,
             tileH: tileH,
+            showSuitCode: widget.showSuitCode,
+            forceHideName: widget.forceHideName,
             borderColor: AppColors.matchGreen,
             borderWidth: 2.5,
           ),
@@ -142,6 +150,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
           showNames: showNames,
           tileW: tileW,
           tileH: tileH,
+          showSuitCode: widget.showSuitCode,
+          forceHideName: widget.forceHideName,
           bgColor: tile.isSelected
               ? AppColors.tileSelected
               : AppColors.tileFace,
@@ -159,6 +169,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     required bool showNames,
     required double tileW,
     required double tileH,
+    bool showSuitCode = true,
+    bool forceHideName = false,
     Color bgColor = AppColors.tileFace,
     Color borderColor = AppColors.tileBorder,
     double borderWidth = 1.5,
@@ -195,6 +207,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
                 tile: tile,
                 showNames: showNames,
                 faceH: tileH - _kEdgeH,
+                showSuitCode: showSuitCode,
+                forceHideName: forceHideName,
               ),
             ),
           ),
@@ -207,12 +221,14 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     required TileModel tile,
     required bool showNames,
     required double faceH,
+    bool showSuitCode = true,
+    bool forceHideName = false,
   }) {
     return Stack(
       clipBehavior: Clip.hardEdge,
       children: [
         // Suit code — top-left
-        Positioned(
+        if (showSuitCode) Positioned(
           top: 4,
           left: 5,
           child: Text(
@@ -253,7 +269,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
             ),
           ),
         // Tile name — bottom-center, only when showTileNames is on
-        if (showNames)
+        if (showNames && !forceHideName)
           Positioned(
             bottom: 4,
             left: 3,

@@ -35,11 +35,20 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
           // Large tile preview
           Expanded(
             child: Center(
-              child: TileWidget(
-                tile: tile,
-                width: 128,
-                height: 170,
-              ),
+              child: def.assetPath != null
+                  ? Image.asset(
+                      def.assetPath!,
+                      width: 180,
+                      height: 180,
+                      fit: BoxFit.contain,
+                    )
+                  : TileWidget(
+                      tile: tile,
+                      width: 128,
+                      height: 170,
+                      showSuitCode: false,
+                      forceHideName: true,
+                    ),
             ),
           ),
           // Tile info
