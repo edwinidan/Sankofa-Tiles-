@@ -49,13 +49,14 @@ class GameNotifier extends StateNotifier<GameState> {
     final count = levelDef.tileCount.clamp(0, allDefs.length);
     final trimmed = allDefs.take(count).toList();
 
-    // Lay out on grid
-    final tiles = <TileModel>[];
-    for (int i = 0; i < trimmed.length; i++) {
-      final row = i ~/ levelDef.boardCols;
-      final col = i % levelDef.boardCols;
-      tiles.add(TileModel(def: trimmed[i], row: row, col: col));
-    }
+    // Assign shuffled defs to layout positions
+    final layout = levelDef.layout;
+    final tiles = List.generate(layout.length, (i) => TileModel(
+      def: trimmed[i % trimmed.length],
+      row: layout[i].row,
+      col: layout[i].col,
+      layer: layout[i].layer,
+    ));
 
     state = GameState(
       tiles: tiles,
@@ -100,6 +101,9 @@ class GameNotifier extends StateNotifier<GameState> {
       orElse: () => throw StateError('Tile not found'),
     );
     if (tile.isMatched) return;
+
+    // Mahjong rule: tile must be free (not covered, one side open)
+    if (!state.availableTileUids.contains(uid)) return;
 
     _audio.playTileTap();
 
@@ -173,8 +177,9 @@ class GameNotifier extends StateNotifier<GameState> {
   void useHint() {
     if (state.status != GameStatus.playing) return;
 
-    // Find first available matching pair
-    final unmatched = state.tiles.where((t) => !t.isMatched).toList();
+    // Find first available matching pair (only free tiles)
+    final avail = state.availableTileUids;
+    final unmatched = state.tiles.where((t) => !t.isMatched && avail.contains(t.uid)).toList();
     final counts = <String, List<TileModel>>{};
     for (final t in unmatched) {
       counts.putIfAbsent(t.def.id, () => []).add(t);
@@ -218,17 +223,18 @@ class GameNotifier extends StateNotifier<GameState> {
     final unmatched = state.tiles.where((t) => !t.isMatched).toList();
     final matched = state.tiles.where((t) => t.isMatched).toList();
 
-    // Get positions of unmatched tiles
-    final positions = unmatched.map((t) => (t.row, t.col)).toList();
+    // Shuffle (row, col, layer) triples to preserve pyramid structure
+    final positions = unmatched.map((t) => (t.row, t.col, t.layer)).toList();
     positions.shuffle();
 
     final reshuffled = List.generate(unmatched.length, (i) {
-      final (row, col) = positions[i];
+      final (row, col, layer) = positions[i];
       return TileModel(
         uid: unmatched[i].uid,
         def: unmatched[i].def,
         row: row,
         col: col,
+        layer: layer,
         isSelected: false,
         isHinted: false,
       );

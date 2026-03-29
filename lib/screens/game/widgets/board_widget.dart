@@ -20,31 +20,46 @@ class BoardWidget extends ConsumerWidget {
     final cols = levelDef.boardCols;
     final rows = levelDef.boardRows;
 
+    const gapH = 4.0;
+    const gapV = 4.0;
+    const layerOffsetX = 4.0; // higher layers shift right
+    const layerOffsetY = 4.0; // higher layers shift up
+
+    final maxLayer = gameState.tiles.isEmpty
+        ? 0
+        : gameState.tiles.map((t) => t.layer).reduce((a, b) => a > b ? a : b);
+
+    // Headroom at top so y values for high-layer row-0 tiles stay >= 0
+    final yOffset = maxLayer * layerOffsetY;
+
+    // Compute available uids once for the whole build pass
+    final availableUids = gameState.availableTileUids;
+
+    // Sort tiles: lower layers first so higher layers paint on top
+    final sortedTiles = [...gameState.tiles]
+      ..sort((a, b) => a.layer.compareTo(b.layer));
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth - 16;
+        final availableWidth  = constraints.maxWidth  - 16;
         final availableHeight = constraints.maxHeight - 16;
 
-        // Calculate tile size to fit the grid
         final tileW = (availableWidth / cols).clamp(36.0, 80.0);
-        final tileH = tileW * (85 / 64); // maintain aspect ratio
-        const gapH = 4.0;
-        const gapV = 4.0;
+        final tileH = tileW * (85 / 64);
 
-        final gridWidth = cols * tileW + (cols - 1) * gapH;
-        final gridHeight = rows * tileH + (rows - 1) * gapV;
+        final boardW = cols * (tileW + gapH) - gapH + maxLayer * layerOffsetX;
+        final boardH = rows * (tileH + gapV) - gapV + yOffset;
 
-        // If doesn't fit vertically, shrink
-        final scaleFactor = gridHeight > availableHeight
-            ? availableHeight / gridHeight
+        final scaleFactor = boardH > availableHeight
+            ? availableHeight / boardH
             : 1.0;
 
         return Center(
           child: Transform.scale(
             scale: scaleFactor,
             child: Container(
-              width: gridWidth,
-              height: gridHeight,
+              width: boardW,
+              height: boardH,
               decoration: BoxDecoration(
                 color: AppColors.boardGreen.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(12),
@@ -54,41 +69,39 @@ class BoardWidget extends ConsumerWidget {
                 ),
               ),
               padding: const EdgeInsets.all(4),
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: cols,
-                  childAspectRatio: tileW / tileH,
-                  crossAxisSpacing: gapH,
-                  mainAxisSpacing: gapV,
-                ),
-                itemCount: cols * rows,
-                itemBuilder: (context, index) {
-                  final row = index ~/ cols;
-                  final col = index % cols;
-                  final tile = gameState.tiles.firstWhere(
-                    (t) => t.row == row && t.col == col,
-                    orElse: () => throw StateError('No tile at $row,$col'),
-                  );
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: sortedTiles.map((tile) {
+                  final x = tile.col * (tileW + gapH)
+                             + tile.layer * layerOffsetX;
+                  final y = tile.row * (tileH + gapV)
+                             - tile.layer * layerOffsetY
+                             + yOffset;
 
-                  if (tile.isMatched) {
-                    // Empty slot after match
-                    return TileWidget(
-                      key: ValueKey(tile.uid),
-                      tile: tile,
-                      width: tileW,
-                      height: tileH,
-                    );
-                  }
+                  final isAvail = availableUids.contains(tile.uid);
 
-                  return TileWidget(
+                  Widget child = TileWidget(
                     key: ValueKey(tile.uid),
                     tile: tile,
                     width: tileW,
                     height: tileH,
                   );
-                },
+
+                  if (!tile.isMatched && !isAvail) {
+                    child = Opacity(
+                      opacity: 0.5,
+                      child: IgnorePointer(child: child),
+                    );
+                  }
+
+                  return Positioned(
+                    left: x,
+                    top: y,
+                    width: tileW,
+                    height: tileH,
+                    child: child,
+                  );
+                }).toList(),
               ),
             ),
           ),

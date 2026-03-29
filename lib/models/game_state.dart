@@ -32,10 +32,31 @@ class GameState {
   bool get hasWon =>
       tiles.isNotEmpty && tiles.every((t) => t.isMatched);
 
+  Set<String> get availableTileUids {
+    final occupied = <(int, int, int)>{};
+    for (final t in tiles) {
+      if (!t.isMatched) occupied.add((t.row, t.col, t.layer));
+    }
+    final result = <String>{};
+    for (final t in tiles) {
+      if (t.isMatched) continue;
+      // Rule 1: not covered from above
+      if (occupied.contains((t.row, t.col, t.layer + 1))) continue;
+      // Rule 2: at least one lateral side is open
+      final leftBlocked  = occupied.contains((t.row, t.col - 1, t.layer));
+      final rightBlocked = occupied.contains((t.row, t.col + 1, t.layer));
+      if (!leftBlocked || !rightBlocked) result.add(t.uid);
+    }
+    return result;
+  }
+
   bool get isStuck {
-    final avail = tiles.where((t) => !t.isMatched).map((t) => t.def.id);
+    final avail = availableTileUids;
+    if (avail.isEmpty) return false;
     final counts = <String, int>{};
-    for (final id in avail) { counts[id] = (counts[id] ?? 0) + 1; }
+    for (final t in tiles) {
+      if (avail.contains(t.uid)) counts[t.def.id] = (counts[t.def.id] ?? 0) + 1;
+    }
     return counts.values.every((c) => c < 2);
   }
 
