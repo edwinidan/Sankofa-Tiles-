@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 const _kDefaultTileW = 64.0;
 const _kDefaultTileH = 85.0;
 const _kEdgeH = 5.0;
+const _kEdgeW = 14.0;
 const _kCornerRadius = 9.0;
 
 class TileWidget extends ConsumerStatefulWidget {
@@ -175,6 +176,21 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     Color borderColor = AppColors.tileBorder,
     double borderWidth = 1.5,
   }) {
+    // Tiles with an image asset: show only the image, no frame
+    if (tile.def.assetPath != null) {
+      return SizedBox(
+        width: tileW,
+        height: tileH,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(_kCornerRadius),
+          child: Image.asset(
+            tile.def.assetPath!,
+            fit: BoxFit.fill,
+          ),
+        ),
+      );
+    }
+
     // The allocated height includes the 3D bottom edge.
     // The face occupies (tileH - _kEdgeH); the dark-gold slab shows at the bottom.
     return SizedBox(
@@ -191,11 +207,11 @@ class _TileWidgetState extends ConsumerState<TileWidget>
               ),
             ),
           ),
-          // Tile face — sits on top, leaving _kEdgeH of the slab visible below
+          // Tile face — sits on top, leaving _kEdgeH visible below and _kEdgeW visible on right
           Positioned(
             top: 0,
             left: 0,
-            right: 0,
+            right: _kEdgeW,
             height: tileH - _kEdgeH,
             child: Container(
               decoration: BoxDecoration(

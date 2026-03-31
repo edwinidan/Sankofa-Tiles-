@@ -43,6 +43,8 @@ const _royaltyIds = [
 const _honorIds = [
   'gye_nyame', 'bi_nka_bi', 'dwennimmen', 'mpatapo',
   'hye_wo_nhye', 'tabono', 'akoma',
+  'akoben', 'nsoromma', 'adwo', 'abusua_pa',
+  'agyindawuru', 'abode_santann', 'odo_nnyew_fie_kwan',
 ];
 
 const List<LevelDefinition> kLevels = [

@@ -22,7 +22,7 @@ class BoardWidget extends ConsumerWidget {
 
     const gapH = 4.0;
     const gapV = 4.0;
-    const layerOffsetX = 4.0; // higher layers shift right
+    const layerOffsetX = 18.0; // higher layers shift left
     const layerOffsetY = 4.0; // higher layers shift up
 
     final maxLayer = gameState.tiles.isEmpty
@@ -31,6 +31,8 @@ class BoardWidget extends ConsumerWidget {
 
     // Headroom at top so y values for high-layer row-0 tiles stay >= 0
     final yOffset = maxLayer * layerOffsetY;
+    // Padding on left so high-layer tiles don't get negative x values
+    final xOffset = maxLayer * layerOffsetX;
 
     // Compute available uids once for the whole build pass
     final availableUids = gameState.availableTileUids;
@@ -73,7 +75,7 @@ class BoardWidget extends ConsumerWidget {
                 clipBehavior: Clip.none,
                 children: sortedTiles.map((tile) {
                   final x = tile.col * (tileW + gapH)
-                             + tile.layer * layerOffsetX;
+                             + xOffset - tile.layer * layerOffsetX;
                   final y = tile.row * (tileH + gapV)
                              - tile.layer * layerOffsetY
                              + yOffset;
