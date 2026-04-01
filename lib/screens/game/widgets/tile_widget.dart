@@ -11,7 +11,7 @@ const _kDefaultTileW = 64.0;
 const _kDefaultTileH = 85.0;
 const _kEdgeH = 5.0;
 const _kEdgeW = 14.0;
-const _kCornerRadius = 9.0;
+const _kCornerRadius = 4.0;
 
 class TileWidget extends ConsumerStatefulWidget {
   final TileModel tile;

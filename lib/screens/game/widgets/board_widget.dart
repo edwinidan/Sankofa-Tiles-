@@ -22,8 +22,8 @@ class BoardWidget extends ConsumerWidget {
 
     const gapH = 0.0;
     const gapV = 0.0;
-    const layerOffsetX = 18.0; // higher layers shift left
-    const layerOffsetY = 4.0; // higher layers shift up
+    const layerOffsetX = 5.0; // higher layers shift left
+    const layerOffsetY = 3.0; // higher layers shift up
 
     final maxLayer = gameState.tiles.isEmpty
         ? 0
@@ -48,7 +48,7 @@ class BoardWidget extends ConsumerWidget {
 
         // Size tiles to fill the board width exactly (no max cap).
         // xOffset is headroom reserved for stacked-layer shift, so subtract it.
-        double tileW = (availableWidth - xOffset) / cols;
+        double tileW = ((availableWidth - xOffset) / cols).clamp(30.0, 65.0);
         double tileH = tileW * (85 / 64);
 
         // Scale down uniformly if the board is too tall.
@@ -77,7 +77,7 @@ class BoardWidget extends ConsumerWidget {
                   width: 1,
                 ),
               ),
-              padding: const EdgeInsets.all(4),
+              padding: EdgeInsets.zero,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: sortedTiles.map((tile) {
