@@ -51,6 +51,7 @@ flutter:
   assets:
     - assets/tiles/
     - assets/tiles/symbols/
+    - assets/tiles/symbols/asset v2/
     - assets/audio/
     - assets/lottie/
     - assets/images/

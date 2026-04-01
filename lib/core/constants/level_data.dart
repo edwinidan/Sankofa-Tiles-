@@ -47,6 +47,11 @@ const _honorIds = [
   'agyindawuru', 'abode_santann', 'odo_nnyew_fie_kwan',
 ];
 
+const _newIds = [
+  'nsaa', 'nyame_nti', 'nyame_biribi_wo_soro', 'nkyemu', 'nkotimsefo_mpua',
+  'nkrabea', 'mmeranmubere', 'nea_ope_se_obedi_hene', 'mmere_dane', 'mako',
+];
+
 const List<LevelDefinition> kLevels = [
   // Level 1 — 16 tiles, 2 layers (4×3 base + 2×2 cap)
   LevelDefinition(
@@ -163,7 +168,7 @@ const List<LevelDefinition> kLevels = [
     boardRows: 5,
     boardCols: 7,
     tileCount: 52,
-    tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds, ..._honorIds,
+    tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds, ..._honorIds, ..._newIds,
                'nyansapo', 'aya', 'gye_nyame', 'adinkrahene'],
     unlockRequirement: 8,
     starThresholds: [1300, 2100, 2600],
@@ -177,7 +182,7 @@ const List<LevelDefinition> kLevels = [
     boardRows: 5,
     boardCols: 7,
     tileCount: 56,
-    tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds, ..._honorIds,
+    tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds, ..._honorIds, ..._newIds,
                'nyansapo', 'sankofa', 'gye_nyame', 'akoma',
                'adinkrahene', 'aya', 'fawohodie', 'bi_nka_bi',
                'nteasee', 'nyame_dua'],

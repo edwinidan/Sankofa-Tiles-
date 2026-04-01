@@ -100,10 +100,20 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                 final isSelected = index == _selectedIndex;
                 return GestureDetector(
                   onTap: () => setState(() => _selectedIndex = index),
-                  child: TileWidget(
-                    tile: TileModel(def: t, row: 0, col: 0),
-                    width: isSelected ? 52 : 44,
-                    height: isSelected ? 69 : 58,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: isSelected
+                          ? Border.all(color: AppColors.kenteGold, width: 2.5)
+                          : Border.all(color: Colors.transparent, width: 2.5),
+                    ),
+                    child: TileWidget(
+                      tile: TileModel(def: t, row: 0, col: 0),
+                      width: isSelected ? 50 : 44,
+                      height: isSelected ? 66 : 58,
+                    ),
                   ),
                 );
               },
