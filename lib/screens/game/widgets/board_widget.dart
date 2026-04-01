@@ -20,8 +20,8 @@ class BoardWidget extends ConsumerWidget {
     final cols = levelDef.boardCols;
     final rows = levelDef.boardRows;
 
-    const gapH = 4.0;
-    const gapV = 4.0;
+    const gapH = 0.0;
+    const gapV = 0.0;
     const layerOffsetX = 18.0; // higher layers shift left
     const layerOffsetY = 4.0; // higher layers shift up
 
@@ -46,15 +46,22 @@ class BoardWidget extends ConsumerWidget {
         final availableWidth  = constraints.maxWidth  - 16;
         final availableHeight = constraints.maxHeight - 16;
 
-        final tileW = (availableWidth / cols).clamp(36.0, 80.0);
-        final tileH = tileW * (85 / 64);
+        // Size tiles to fill the board width exactly (no max cap).
+        // xOffset is headroom reserved for stacked-layer shift, so subtract it.
+        double tileW = (availableWidth - xOffset) / cols;
+        double tileH = tileW * (85 / 64);
 
-        final boardW = cols * (tileW + gapH) - gapH + maxLayer * layerOffsetX;
-        final boardH = rows * (tileH + gapV) - gapV + yOffset;
+        // Scale down uniformly if the board is too tall.
+        final boardH0 = rows * tileH + yOffset;
+        if (boardH0 > availableHeight) {
+          final s = availableHeight / boardH0;
+          tileW *= s;
+          tileH *= s;
+        }
 
-        final scaleFactor = boardH > availableHeight
-            ? availableHeight / boardH
-            : 1.0;
+        final boardW = cols * tileW + xOffset;
+        final boardH = rows * tileH + yOffset;
+        const scaleFactor = 1.0;
 
         return Center(
           child: Transform.scale(
