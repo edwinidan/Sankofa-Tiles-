@@ -22,8 +22,8 @@ class BoardWidget extends ConsumerWidget {
 
     const gapH = 0.0;
     const gapV = 0.0;
-    const layerOffsetX = 12.0; // higher layers shift left
-    const layerOffsetY = 8.0;  // higher layers shift up
+    const layerOffsetX = 11.0; // higher layers shift left
+    const layerOffsetY = 11.0; // higher layers shift up
 
     final maxLayer = gameState.tiles.isEmpty
         ? 0

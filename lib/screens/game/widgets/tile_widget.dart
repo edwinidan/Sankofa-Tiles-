@@ -58,10 +58,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
   String get _suitCode {
     final letter = switch (widget.tile.def.suit) {
-      TileSuit.wisdom  => 'W',
-      TileSuit.earth   => 'E',
+      TileSuit.wisdom => 'W',
+      TileSuit.earth => 'E',
       TileSuit.royalty => 'R',
-      TileSuit.honor   => 'H',
+      TileSuit.honor => 'H',
     };
     return '$letter${widget.tile.def.suitNumber}';
   }
@@ -153,12 +153,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
           tileH: tileH,
           showSuitCode: widget.showSuitCode,
           forceHideName: widget.forceHideName,
-          bgColor: tile.isSelected
-              ? AppColors.tileSelected
-              : AppColors.tileFace,
-          borderColor: tile.isSelected
-              ? AppColors.kenteGold
-              : AppColors.tileBorder,
+          bgColor:
+              tile.isSelected ? AppColors.tileSelected : AppColors.tileFace,
+          borderColor:
+              tile.isSelected ? AppColors.kenteGold : AppColors.tileBorder,
           borderWidth: tile.isSelected ? 2.5 : 1.5,
         ),
       ),
@@ -184,7 +182,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         height: tileH,
         child: ClipRect(
           child: Transform.scale(
-            scale: 1.35,
+            scale: 1.634,
             child: Image.asset(
               tile.def.assetPath!,
               fit: BoxFit.fill,
@@ -247,21 +245,22 @@ class _TileWidgetState extends ConsumerState<TileWidget>
       clipBehavior: Clip.hardEdge,
       children: [
         // Suit code — top-left
-        if (showSuitCode) Positioned(
-          top: 4,
-          left: 5,
-          child: Text(
-            _suitCode,
-            style: const TextStyle(
-              fontFamily: 'Georgia',
-              fontFamilyFallback: ['Times New Roman', 'serif'],
-              fontSize: 9,
-              color: AppColors.tileEdge,
-              fontWeight: FontWeight.w700,
-              height: 1.0,
+        if (showSuitCode)
+          Positioned(
+            top: 4,
+            left: 5,
+            child: Text(
+              _suitCode,
+              style: const TextStyle(
+                fontFamily: 'Georgia',
+                fontFamilyFallback: ['Times New Roman', 'serif'],
+                fontSize: 9,
+                color: AppColors.tileEdge,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+              ),
             ),
           ),
-        ),
         // Adinkra symbol — centered or full-fill for image assets
         if (tile.def.assetPath != null)
           Positioned.fill(
