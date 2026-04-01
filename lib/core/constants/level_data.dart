@@ -27,22 +27,20 @@ class LevelDefinition {
 // Helper: wisdom tile ids
 const _wisdomIds = [
   'nyansapo', 'nkyinkyim', 'mate_masie', 'hwehwemudua',
-  'nea_onnim', 'ananse', 'ese_tekrema', 'nteasee', 'sankofa',
+  'nea_onnim', 'ese_tekrema', 'nteasee', 'sankofa',
 ];
 
 const _earthIds = [
-  'aya', 'denkyem', 'asase', 'mframadan',
-  'osram', 'okuafo', 'abe_dua', 'akoko_nan', 'nyame_dua',
+  'denkyem', 'abe_dua', 'nyame_dua',
 ];
 
 const _royaltyIds = [
-  'adinkrahene', 'akofena', 'pempamsie', 'aban',
-  'fawohodie', 'funtumfunefu', 'mpuannum', 'okodee', 'nyame_nwu',
+  'adinkrahene', 'akofena', 'aban',
+  'fawohodie', 'funtumfunefu', 'mpuannum', 'nyame_nwu',
 ];
 
 const _honorIds = [
-  'gye_nyame', 'bi_nka_bi', 'dwennimmen', 'mpatapo',
-  'hye_wo_nhye', 'tabono', 'akoma',
+  'gye_nyame', 'dwennimmen', 'mpatapo', 'hye_wo_nhye',
   'akoben', 'nsoromma', 'adwo', 'abusua_pa',
   'agyindawuru', 'abode_santann', 'odo_nnyew_fie_kwan',
 ];
@@ -61,7 +59,7 @@ const List<LevelDefinition> kLevels = [
     boardCols: 3,
     tileCount: 16,
     tileIds: ['nyansapo', 'nkyinkyim', 'mate_masie', 'hwehwemudua',
-               'nea_onnim', 'ananse', 'ese_tekrema', 'nteasee', 'gye_nyame'],
+               'nea_onnim', 'ese_tekrema', 'nteasee', 'gye_nyame'],
     unlockRequirement: 0,
     starThresholds: [400, 650, 800],
     layout: level1Layout,
@@ -87,7 +85,7 @@ const List<LevelDefinition> kLevels = [
     boardRows: 4,
     boardCols: 5,
     tileCount: 24,
-    tileIds: [..._wisdomIds, 'aya', 'denkyem', 'asase', 'gye_nyame'],
+    tileIds: [..._wisdomIds, 'denkyem', 'gye_nyame'],
     unlockRequirement: 2,
     starThresholds: [600, 950, 1200],
     layout: level3Layout,
@@ -100,7 +98,7 @@ const List<LevelDefinition> kLevels = [
     boardRows: 4,
     boardCols: 6,
     tileCount: 28,
-    tileIds: [..._wisdomIds, 'aya', 'denkyem', 'asase', 'mframadan', 'osram', 'gye_nyame'],
+    tileIds: [..._wisdomIds, ..._earthIds, 'gye_nyame'],
     unlockRequirement: 3,
     starThresholds: [700, 1100, 1400],
     layout: level4Layout,
@@ -140,7 +138,7 @@ const List<LevelDefinition> kLevels = [
     boardCols: 7,
     tileCount: 44,
     tileIds: [..._wisdomIds, ..._earthIds, 'adinkrahene', 'akofena',
-               'pempamsie', 'aban', 'fawohodie', 'funtumfunefu', 'gye_nyame'],
+               'aban', 'fawohodie', 'funtumfunefu', 'gye_nyame'],
     unlockRequirement: 6,
     starThresholds: [1100, 1750, 2200],
     layout: level7Layout,
@@ -154,8 +152,7 @@ const List<LevelDefinition> kLevels = [
     boardCols: 6,
     tileCount: 48,
     tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds,
-               'gye_nyame', 'bi_nka_bi', 'dwennimmen', 'mpatapo',
-               'hye_wo_nhye', 'tabono'],
+               'gye_nyame', 'dwennimmen', 'mpatapo', 'hye_wo_nhye'],
     unlockRequirement: 7,
     starThresholds: [1200, 1900, 2400],
     layout: level8Layout,
@@ -169,7 +166,7 @@ const List<LevelDefinition> kLevels = [
     boardCols: 7,
     tileCount: 52,
     tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds, ..._honorIds, ..._newIds,
-               'nyansapo', 'aya', 'gye_nyame', 'adinkrahene'],
+               'nyansapo', 'gye_nyame', 'adinkrahene'],
     unlockRequirement: 8,
     starThresholds: [1300, 2100, 2600],
     layout: level9Layout,
@@ -183,9 +180,8 @@ const List<LevelDefinition> kLevels = [
     boardCols: 7,
     tileCount: 56,
     tileIds: [..._wisdomIds, ..._earthIds, ..._royaltyIds, ..._honorIds, ..._newIds,
-               'nyansapo', 'sankofa', 'gye_nyame', 'akoma',
-               'adinkrahene', 'aya', 'fawohodie', 'bi_nka_bi',
-               'nteasee', 'nyame_dua'],
+               'nyansapo', 'sankofa', 'gye_nyame', 'adinkrahene',
+               'fawohodie', 'nteasee', 'nyame_dua'],
     unlockRequirement: 9,
     starThresholds: [1400, 2300, 2800],
     layout: level10Layout,
