@@ -176,14 +176,20 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     Color borderColor = AppColors.tileBorder,
     double borderWidth = 1.5,
   }) {
-    // Tiles with an image asset: fill the slot edge-to-edge, no clipping.
+    // Tiles with an image asset: scale up slightly so the PNG's built-in
+    // padding is pushed outside the clip boundary, filling the slot fully.
     if (tile.def.assetPath != null) {
       return SizedBox(
         width: tileW,
         height: tileH,
-        child: Image.asset(
-          tile.def.assetPath!,
-          fit: BoxFit.fill,
+        child: ClipRect(
+          child: Transform.scale(
+            scale: 1.15,
+            child: Image.asset(
+              tile.def.assetPath!,
+              fit: BoxFit.fill,
+            ),
+          ),
         ),
       );
     }
