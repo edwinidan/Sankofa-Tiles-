@@ -176,15 +176,18 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     Color borderColor = AppColors.tileBorder,
     double borderWidth = 1.5,
   }) {
-    // Tiles with an image asset: show only the image, no frame
+    // Tiles with an image asset: solid background + image, no clipping so
+    // every pixel is filled and adjacent tiles have zero visible gap.
     if (tile.def.assetPath != null) {
       return SizedBox(
         width: tileW,
         height: tileH,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_kCornerRadius),
+        child: ColoredBox(
+          color: AppColors.tileFace,
           child: Image.asset(
             tile.def.assetPath!,
+            width: tileW,
+            height: tileH,
             fit: BoxFit.fill,
           ),
         ),
