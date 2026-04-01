@@ -184,7 +184,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         height: tileH,
         child: ClipRect(
           child: Transform.scale(
-            scale: 1.15,
+            scale: 1.25,
             child: Image.asset(
               tile.def.assetPath!,
               fit: BoxFit.fill,
