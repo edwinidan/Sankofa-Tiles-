@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/game_state.dart';
 import '../../../providers/game_provider.dart';
@@ -56,23 +57,24 @@ class BoardWidget extends ConsumerWidget {
         final boardW = cols * tileW + xOffset;
         final boardH = rows * tileH + yOffset;
 
-        return Center(
-          child: Container(
-            width: boardW,
-            height: boardH,
-            decoration: BoxDecoration(
-              color: AppColors.boardGreen.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.kenteGoldDim.withValues(alpha: 0.3),
-                width: 1,
-              ),
+        Widget board = Container(
+          width: boardW,
+          height: boardH,
+          decoration: BoxDecoration(
+            color: AppColors.boardGreen.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.kenteGoldDim.withValues(alpha: 0.3),
+              width: 1,
             ),
-            padding: EdgeInsets.zero,
-            child: Stack(
+          ),
+          padding: EdgeInsets.zero,
+          child: Stack(
               clipBehavior: Clip.none,
               children: [
-                ...sortedTiles.map((tile) {
+                ...sortedTiles.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final tile  = entry.value;
                   final x = tile.col * (tileW + gapH)
                              + xOffset - tile.layer * layerOffsetX;
                   final y = tile.row * (tileH + gapV)
@@ -95,6 +97,16 @@ class BoardWidget extends ConsumerWidget {
                       child: IgnorePointer(child: child),
                     );
                   }
+
+                  // Staggered entry — ripples across the board by sorted index
+                  child = child
+                    .animate(delay: (index * 25).ms)
+                    .fadeIn(duration: 300.ms)
+                    .slideY(
+                      begin: 0.4,
+                      duration: 300.ms,
+                      curve: Curves.easeOut,
+                    );
 
                   return Positioned(
                     left: x,
@@ -134,57 +146,204 @@ class BoardWidget extends ConsumerWidget {
                     tileH: tileH,
                   );
                 }),
+
+                // Win: gold shimmer wash over the board
+                if (gameState.status == GameStatus.won)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.kenteGold.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      )
+                        .animate()
+                        .fadeIn(duration: 500.ms)
+                        .shimmer(
+                          delay: 300.ms,
+                          duration: 1400.ms,
+                          color: AppColors.kenteGold.withValues(alpha: 0.40),
+                        ),
+                    ),
+                  ),
+
+                // Lose: red tint fades in after the shake settles
+                if (gameState.status == GameStatus.lost)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      )
+                        .animate()
+                        .fadeIn(delay: 380.ms, duration: 350.ms),
+                    ),
+                  ),
               ],
             ),
-          ),
-        );
+          );
+
+        // Lose: shake the board, then red tint overlay takes over
+        if (gameState.status == GameStatus.lost) {
+          board = board
+            .animate()
+            .shake(duration: 420.ms, hz: 5, offset: const Offset(6, 0));
+        }
+
+        return Center(child: board);
       },
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Particle burst
+// Particle burst — 3 random variants
 // ---------------------------------------------------------------------------
+
+enum _BurstVariant { inferno, confetti, nova }
 
 class _BurstParticle {
   final double vx;
   final double vy;
   final Color color;
   final double size;
+  final double angle;    // initial rotation (radians) — confetti only
+  final double angularV; // angular velocity (rad/s)   — confetti only
 
   const _BurstParticle({
     required this.vx,
     required this.vy,
     required this.color,
     required this.size,
+    this.angle = 0,
+    this.angularV = 0,
   });
 }
 
 class _BurstPainter extends CustomPainter {
   final double progress; // 0.0 → 1.0
   final List<_BurstParticle> particles;
+  final _BurstVariant variant;
 
-  const _BurstPainter({required this.progress, required this.particles});
-
-  static const _totalSeconds = 0.55;
-  static const _gravity = 180.0; // px/s² downward
+  const _BurstPainter({
+    required this.progress,
+    required this.particles,
+    required this.variant,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final t = progress * _totalSeconds;
+    switch (variant) {
+      case _BurstVariant.inferno:
+        _paintInferno(canvas, size);
+      case _BurstVariant.confetti:
+        _paintConfetti(canvas, size);
+      case _BurstVariant.nova:
+        _paintNova(canvas, size);
+    }
+  }
+
+  // -- Inferno: 22 glowing gold/amber/orange circles + flash ring -----------
+  void _paintInferno(Canvas canvas, Size size) {
+    const totalS = 0.70;
+    const gravity = 130.0;
+    final t = progress * totalS;
     final cx = size.width / 2;
     final cy = size.height / 2;
 
+    if (progress < 0.35) {
+      final rp = progress / 0.35;
+      canvas.drawCircle(
+        Offset(cx, cy),
+        rp * 48.0,
+        Paint()
+          ..color = const Color(0xFFFFE066).withValues(alpha: (1 - rp) * 0.55)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.5,
+      );
+    }
+
+    final alpha = (1.0 - pow(progress, 1.8).toDouble()).clamp(0.0, 1.0);
     for (final p in particles) {
       final px = cx + p.vx * t;
-      final py = cy + p.vy * t + 0.5 * _gravity * t * t;
-      final alpha = (1.0 - progress).clamp(0.0, 1.0);
-      final radius = p.size * (1.0 - progress * 0.35);
+      final py = cy + p.vy * t + 0.5 * gravity * t * t;
+      final r = (p.size * (1.0 - progress * 0.25)).clamp(0.8, 10.0);
 
       canvas.drawCircle(
         Offset(px, py),
-        radius.clamp(0.5, 8.0),
+        r * 2.8,
+        Paint()
+          ..color = p.color.withValues(alpha: alpha * 0.28)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0),
+      );
+      canvas.drawCircle(
+        Offset(px, py),
+        r,
+        Paint()
+          ..color = p.color.withValues(alpha: alpha)
+          ..style = PaintingStyle.fill,
+      );
+    }
+  }
+
+  // -- Confetti: 28 spinning kente-coloured rectangles ----------------------
+  void _paintConfetti(Canvas canvas, Size size) {
+    const totalS = 0.85;
+    const gravity = 90.0;
+    final t = progress * totalS;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final alpha = (1.0 - pow(progress, 1.5).toDouble()).clamp(0.0, 1.0);
+
+    for (final p in particles) {
+      final px = cx + p.vx * t;
+      final py = cy + p.vy * t + 0.5 * gravity * t * t;
+      final currentAngle = p.angle + p.angularV * t;
+      final w = p.size;
+      final h = p.size * 2.4;
+
+      canvas.save();
+      canvas.translate(px, py);
+      canvas.rotate(currentAngle);
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset.zero, width: w, height: h),
+        Paint()
+          ..color = p.color.withValues(alpha: alpha)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.restore();
+    }
+  }
+
+  // -- Nova: 16 white/gold particles in 2 rings + central flash disc --------
+  void _paintNova(Canvas canvas, Size size) {
+    const totalS = 0.60;
+    const gravity = 150.0;
+    final t = progress * totalS;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    if (progress < 0.25) {
+      final fp = progress / 0.25;
+      canvas.drawCircle(
+        Offset(cx, cy),
+        fp * 32.0,
+        Paint()
+          ..color = const Color(0xFFFFFFFF).withValues(alpha: (1 - fp) * 0.85),
+      );
+    }
+
+    final alpha = (1.0 - progress).clamp(0.0, 1.0);
+    for (final p in particles) {
+      final px = cx + p.vx * t;
+      final py = cy + p.vy * t + 0.5 * gravity * t * t;
+      final r = (p.size * (1.0 - progress * 0.6)).clamp(0.5, 12.0);
+
+      canvas.drawCircle(
+        Offset(px, py),
+        r,
         Paint()
           ..color = p.color.withValues(alpha: alpha)
           ..style = PaintingStyle.fill,
@@ -218,35 +377,109 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late List<_BurstParticle> _particles;
-
-  static const _kColors = [
-    AppColors.kenteGold,
-    Color(0xFFEFBF2A), // bright gold
-    Color(0xFFF5D060), // light gold
-    AppColors.kenteGoldDim,
-    Color(0xFFF5E6C8), // tile face cream
-    Color(0xFFCC8B14), // dark amber
-  ];
+  late _BurstVariant _variant;
 
   @override
   void initState() {
     super.initState();
+    final rng = Random();
+    _variant = _BurstVariant.values[rng.nextInt(_BurstVariant.values.length)];
+
+    final ms = switch (_variant) {
+      _BurstVariant.inferno  => 700,
+      _BurstVariant.confetti => 850,
+      _BurstVariant.nova     => 600,
+    };
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 550),
+      duration: Duration(milliseconds: ms),
     )..forward();
 
-    final rng = Random();
-    _particles = List.generate(10, (_) {
+    _particles = switch (_variant) {
+      _BurstVariant.inferno  => _buildInferno(rng),
+      _BurstVariant.confetti => _buildConfetti(rng),
+      _BurstVariant.nova     => _buildNova(rng),
+    };
+  }
+
+  List<_BurstParticle> _buildInferno(Random rng) {
+    const colors = [
+      AppColors.kenteGold,
+      Color(0xFFEFBF2A), // bright gold
+      Color(0xFFF5D060), // light gold
+      AppColors.kenteGoldDim,
+      Color(0xFFF5E6C8), // tile cream
+      Color(0xFFCC8B14), // dark amber
+      Color(0xFFFF9A1A), // vivid orange
+      Color(0xFFFFF5A0), // near-white yellow
+    ];
+    return List.generate(22, (_) {
       final angle = rng.nextDouble() * 2 * pi;
-      final speed = 55.0 + rng.nextDouble() * 85.0;
+      final speed = 90.0 + rng.nextDouble() * 170.0;
       return _BurstParticle(
         vx: cos(angle) * speed,
-        vy: sin(angle) * speed - 25, // slight upward bias
-        color: _kColors[rng.nextInt(_kColors.length)],
-        size: 2.5 + rng.nextDouble() * 2.5,
+        vy: sin(angle) * speed - 55,
+        color: colors[rng.nextInt(colors.length)],
+        size: 3.0 + rng.nextDouble() * 4.5,
       );
     });
+  }
+
+  List<_BurstParticle> _buildConfetti(Random rng) {
+    const colors = [
+      Color(0xFFD32F2F), // kente red
+      Color(0xFF2E7D32), // forest green
+      AppColors.kenteGold,
+      Color(0xFF1A1A1A), // near-black
+      Color(0xFFFF9A1A), // orange
+      Color(0xFF00897B), // teal
+      Color(0xFFFFD600), // bright yellow
+    ];
+    return List.generate(28, (_) {
+      final angle = rng.nextDouble() * 2 * pi;
+      final speed = 70.0 + rng.nextDouble() * 110.0;
+      return _BurstParticle(
+        vx: cos(angle) * speed,
+        vy: sin(angle) * speed - 20,
+        color: colors[rng.nextInt(colors.length)],
+        size: 3.5 + rng.nextDouble() * 3.0,
+        angle: rng.nextDouble() * 2 * pi,
+        angularV: (rng.nextDouble() - 0.5) * 12.0, // ±6 rad/s spin
+      );
+    });
+  }
+
+  List<_BurstParticle> _buildNova(Random rng) {
+    const colors = [
+      Color(0xFFFFFFFF),   // white
+      Color(0xFFFFF5A0),   // near-white yellow
+      Color(0xFFFFE066),   // warm yellow
+      AppColors.kenteGold,
+    ];
+    final particles = <_BurstParticle>[];
+    // Inner ring: 8 fast, large particles — evenly spread
+    for (var i = 0; i < 8; i++) {
+      final angle = (i / 8) * 2 * pi + (rng.nextDouble() - 0.5) * 0.3;
+      final speed = 200.0 + rng.nextDouble() * 70.0;
+      particles.add(_BurstParticle(
+        vx: cos(angle) * speed,
+        vy: sin(angle) * speed - 40,
+        color: colors[rng.nextInt(colors.length)],
+        size: 6.0 + rng.nextDouble() * 4.0,
+      ));
+    }
+    // Outer ring: 8 slower, smaller particles — offset by 22.5°
+    for (var i = 0; i < 8; i++) {
+      final angle = (i / 8) * 2 * pi + pi / 8 + (rng.nextDouble() - 0.5) * 0.2;
+      final speed = 55.0 + rng.nextDouble() * 45.0;
+      particles.add(_BurstParticle(
+        vx: cos(angle) * speed,
+        vy: sin(angle) * speed - 20,
+        color: colors[rng.nextInt(colors.length)],
+        size: 4.0 + rng.nextDouble() * 3.0,
+      ));
+    }
+    return particles;
   }
 
   @override
@@ -257,8 +490,8 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
 
   @override
   Widget build(BuildContext context) {
-    // Paint area: 180×180, centered on the tile center
-    const paintSize = 180.0;
+    // Paint area: 280×280, centered on the tile center
+    const paintSize = 280.0;
     final left = widget.x + widget.tileW / 2 - paintSize / 2;
     final top  = widget.y + widget.tileH / 2 - paintSize / 2;
 
@@ -274,6 +507,7 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
             painter: _BurstPainter(
               progress: _ctrl.value,
               particles: _particles,
+              variant: _variant,
             ),
           ),
         ),
