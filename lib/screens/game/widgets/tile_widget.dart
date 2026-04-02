@@ -19,6 +19,7 @@ class TileWidget extends ConsumerStatefulWidget {
   final double height;
   final bool showSuitCode;
   final bool forceHideName;
+  final bool isAvailable;
 
   const TileWidget({
     super.key,
@@ -27,6 +28,7 @@ class TileWidget extends ConsumerStatefulWidget {
     this.height = _kDefaultTileH,
     this.showSuitCode = true,
     this.forceHideName = false,
+    this.isAvailable = false,
   });
 
   @override
@@ -34,25 +36,56 @@ class TileWidget extends ConsumerStatefulWidget {
 }
 
 class _TileWidgetState extends ConsumerState<TileWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _hintController;
   late Animation<double> _hintOpacity;
+  late Animation<double> _glowOpacity;
+
+  late AnimationController _shakeController;
+  late Animation<double> _shakeX;
+
+  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
+
     _hintController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
     _hintOpacity = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: _hintController, curve: Curves.easeInOut),
     );
+    _glowOpacity = Tween<double>(begin: 0.0, end: 0.55).animate(
+      CurvedAnimation(parent: _hintController, curve: Curves.easeInOut),
+    );
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _shakeX = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -7.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -7.0, end: 7.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 7.0, end: -5.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -5.0, end: 5.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 5.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.linear));
+  }
+
+  @override
+  void didUpdateWidget(TileWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tile.isMismatched && !oldWidget.tile.isMismatched) {
+      _shakeController.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
     _hintController.dispose();
+    _shakeController.dispose();
     super.dispose();
   }
 
@@ -87,9 +120,11 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     final tileW = _resolvedWidth(context);
     final tileH = _resolvedHeight(context);
 
+    Widget body;
+
     // Matched: smash animation — impact burst → shake → shatter out
     if (tile.isMatched) {
-      return _buildPhysicalTile(
+      body = _buildPhysicalTile(
         tile: tile,
         showNames: showNames,
         tileW: tileW,
@@ -98,17 +133,14 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         forceHideName: widget.forceHideName,
       )
           .animate()
-          // Phase 1: impact burst (0–80ms)
           .scale(
             begin: const Offset(1, 1),
             end: const Offset(1.25, 1.25),
             duration: 80.ms,
             curve: Curves.easeOut,
           )
-          // Phase 2: shake/tremor (80–240ms)
           .then()
           .shake(hz: 10, duration: 160.ms)
-          // Phase 3: shatter — scale to zero + fade (240–450ms)
           .then()
           .scale(
             end: Offset.zero,
@@ -119,8 +151,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     }
 
     // Hinted: green border + pulsing whole-tile opacity
-    if (tile.isHinted) {
-      return AnimatedBuilder(
+    else if (tile.isHinted) {
+      body = AnimatedBuilder(
         animation: _hintOpacity,
         builder: (_, __) => Opacity(
           opacity: _hintOpacity.value,
@@ -138,28 +170,72 @@ class _TileWidgetState extends ConsumerState<TileWidget>
       );
     }
 
-    // Normal / selected
-    return GestureDetector(
-      onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: tile.isSelected
-            ? (Matrix4.identity()..translate(0.0, -10.0))
-            : Matrix4.identity(),
-        child: _buildPhysicalTile(
-          tile: tile,
-          showNames: showNames,
-          tileW: tileW,
-          tileH: tileH,
-          showSuitCode: widget.showSuitCode,
-          forceHideName: widget.forceHideName,
-          bgColor:
-              tile.isSelected ? AppColors.tileSelected : AppColors.tileFace,
-          borderColor:
-              tile.isSelected ? AppColors.kenteGold : AppColors.tileBorder,
-          borderWidth: tile.isSelected ? 2.5 : 1.5,
+    // Normal / selected (including mismatched — shake applied via outer AnimatedBuilder)
+    else {
+      Widget physicalTile = _buildPhysicalTile(
+        tile: tile,
+        showNames: showNames,
+        tileW: tileW,
+        tileH: tileH,
+        showSuitCode: widget.showSuitCode,
+        forceHideName: widget.forceHideName,
+        bgColor: tile.isSelected ? AppColors.tileSelected : AppColors.tileFace,
+        borderColor: tile.isSelected ? AppColors.kenteGold : AppColors.tileBorder,
+        borderWidth: tile.isSelected ? 2.5 : 1.5,
+      );
+
+      // Available glow — gold border pulse on unselected, non-mismatched playable tiles
+      if (widget.isAvailable && !tile.isSelected && !tile.isMismatched) {
+        physicalTile = AnimatedBuilder(
+          animation: _glowOpacity,
+          builder: (_, child) => Stack(
+            children: [
+              child!,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(_kCornerRadius),
+                      border: Border.all(
+                        color: AppColors.kenteGold
+                            .withValues(alpha: _glowOpacity.value),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          child: physicalTile,
+        );
+      }
+
+      body = GestureDetector(
+        onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          transform: tile.isSelected
+              ? Matrix4.translationValues(0.0, -10.0, 0.0)
+              : _isPressed
+                  ? Matrix4.diagonal3Values(0.93, 0.93, 1.0)
+                  : Matrix4.identity(),
+          child: physicalTile,
         ),
+      );
+    }
+
+    // Shake transform — no-op (offset 0) unless _shakeController is running
+    return AnimatedBuilder(
+      animation: _shakeController,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(_shakeX.value, 0),
+        child: child,
       ),
+      child: body,
     );
   }
 

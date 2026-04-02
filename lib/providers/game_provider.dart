@@ -146,25 +146,41 @@ class GameNotifier extends StateNotifier<GameState> {
         score: state.score + 100,
         moves: state.moves + 1,
         clearSelectedTile: true,
+        pendingScorePops: [
+          (row: firstTile.row, col: firstTile.col, layer: firstTile.layer),
+          (row: secondTile.row, col: secondTile.col, layer: secondTile.layer),
+        ],
       );
 
       _audio.playMatch();
       _checkWin();
+
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (!mounted) return;
+        state = state.copyWith(pendingScorePops: const []);
+      });
     } else {
-      // No match — show both selected briefly then deselect
+      // No match — shake both tiles then deselect
+      final mismatchedTiles = updatedTiles.map((t) {
+        if (t.uid == firstUid || t.uid == uid) {
+          return t.copyWith(isMismatched: true);
+        }
+        return t;
+      }).toList();
+
       state = state.copyWith(
-        tiles: updatedTiles,
+        tiles: mismatchedTiles,
         moves: state.moves + 1,
         clearSelectedTile: true,
       );
 
       _audio.playNoMatch();
 
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 600), () {
         if (!mounted) return;
         final deselected = state.tiles.map((t) {
           if (t.uid == firstUid || t.uid == uid) {
-            return t.copyWith(isSelected: false);
+            return t.copyWith(isSelected: false, isMismatched: false);
           }
           return t;
         }).toList();

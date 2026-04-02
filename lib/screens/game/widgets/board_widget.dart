@@ -80,42 +80,140 @@ class BoardWidget extends ConsumerWidget {
               padding: EdgeInsets.zero,
               child: Stack(
                 clipBehavior: Clip.none,
-                children: sortedTiles.map((tile) {
-                  final x = tile.col * (tileW + gapH)
-                             + xOffset - tile.layer * layerOffsetX;
-                  final y = tile.row * (tileH + gapV)
-                             - tile.layer * layerOffsetY
-                             + yOffset;
+                children: [
+                  ...sortedTiles.map((tile) {
+                    final x = tile.col * (tileW + gapH)
+                               + xOffset - tile.layer * layerOffsetX;
+                    final y = tile.row * (tileH + gapV)
+                               - tile.layer * layerOffsetY
+                               + yOffset;
 
-                  final isAvail = availableUids.contains(tile.uid);
+                    final isAvail = availableUids.contains(tile.uid);
 
-                  Widget child = TileWidget(
-                    key: ValueKey(tile.uid),
-                    tile: tile,
-                    width: tileW,
-                    height: tileH,
-                  );
-
-                  if (!tile.isMatched && !isAvail) {
-                    child = Opacity(
-                      opacity: 0.5,
-                      child: IgnorePointer(child: child),
+                    Widget child = TileWidget(
+                      key: ValueKey(tile.uid),
+                      tile: tile,
+                      width: tileW,
+                      height: tileH,
+                      isAvailable: isAvail,
                     );
-                  }
 
-                  return Positioned(
-                    left: x,
-                    top: y,
-                    width: tileW,
-                    height: tileH,
-                    child: child,
-                  );
-                }).toList(),
+                    if (!tile.isMatched && !isAvail) {
+                      child = Opacity(
+                        opacity: 0.5,
+                        child: IgnorePointer(child: child),
+                      );
+                    }
+
+                    return Positioned(
+                      left: x,
+                      top: y,
+                      width: tileW,
+                      height: tileH,
+                      child: child,
+                    );
+                  }),
+                  // Score pop overlays — float "+100" at matched tile positions
+                  ...gameState.pendingScorePops.map((pop) {
+                    final x = pop.col * (tileW + gapH)
+                               + xOffset - pop.layer * layerOffsetX;
+                    final y = pop.row * (tileH + gapV)
+                               - pop.layer * layerOffsetY
+                               + yOffset;
+                    return _ScorePopOverlay(
+                      key: ValueKey('pop_${pop.row}_${pop.col}_${pop.layer}'),
+                      x: x,
+                      y: y,
+                      tileW: tileW,
+                      tileH: tileH,
+                    );
+                  }),
+                ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ScorePopOverlay extends StatefulWidget {
+  final double x;
+  final double y;
+  final double tileW;
+  final double tileH;
+
+  const _ScorePopOverlay({
+    super.key,
+    required this.x,
+    required this.y,
+    required this.tileW,
+    required this.tileH,
+  });
+
+  @override
+  State<_ScorePopOverlay> createState() => _ScorePopOverlayState();
+}
+
+class _ScorePopOverlayState extends State<_ScorePopOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _dy;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _dy = Tween<double>(begin: 0, end: -44).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+    _opacity = TweenSequence<double>([
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 55),
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 1.0, end: 0.0), weight: 45),
+    ]).animate(_ctrl);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) => Positioned(
+        left: widget.x + widget.tileW / 2 - 22,
+        top: widget.y + widget.tileH * 0.25 + _dy.value,
+        child: IgnorePointer(
+          child: Opacity(
+            opacity: _opacity.value,
+            child: const Text(
+              '+100',
+              style: TextStyle(
+                color: AppColors.kenteGold,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    color: Color(0xCC000000),
+                    offset: Offset(1, 1),
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

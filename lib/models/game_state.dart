@@ -14,6 +14,8 @@ class GameState {
   final String? selectedTileUid;
   final int levelId;
 
+  final List<({int row, int col, int layer})> pendingScorePops;
+
   const GameState({
     required this.tiles,
     required this.status,
@@ -24,6 +26,7 @@ class GameState {
     required this.secondsElapsed,
     required this.levelId,
     this.selectedTileUid,
+    this.pendingScorePops = const [],
   });
 
   int get remainingPairs =>
@@ -71,6 +74,7 @@ class GameState {
     String? selectedTileUid,
     bool clearSelectedTile = false,
     int? levelId,
+    List<({int row, int col, int layer})>? pendingScorePops,
   }) => GameState(
     tiles: tiles ?? this.tiles,
     status: status ?? this.status,
@@ -81,6 +85,7 @@ class GameState {
     secondsElapsed: secondsElapsed ?? this.secondsElapsed,
     selectedTileUid: clearSelectedTile ? null : (selectedTileUid ?? this.selectedTileUid),
     levelId: levelId ?? this.levelId,
+    pendingScorePops: pendingScorePops ?? this.pendingScorePops,
   );
 
   static GameState initial() => const GameState(

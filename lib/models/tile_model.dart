@@ -7,6 +7,7 @@ class TileModel {
   final bool isMatched;
   final bool isSelected;
   final bool isHinted;
+  final bool isMismatched;
   final int row;
   final int col;
   final int layer;
@@ -19,6 +20,7 @@ class TileModel {
     this.isMatched = false,
     this.isSelected = false,
     this.isHinted = false,
+    this.isMismatched = false,
     String? uid,
   }) : uid = uid ?? const Uuid().v4();
 
@@ -28,6 +30,7 @@ class TileModel {
     bool? isMatched,
     bool? isSelected,
     bool? isHinted,
+    bool? isMismatched,
   }) => TileModel(
     uid: uid,
     def: def,
@@ -37,5 +40,6 @@ class TileModel {
     isMatched: isMatched ?? this.isMatched,
     isSelected: isSelected ?? this.isSelected,
     isHinted: isHinted ?? this.isHinted,
+    isMismatched: isMismatched ?? this.isMismatched,
   );
 }
