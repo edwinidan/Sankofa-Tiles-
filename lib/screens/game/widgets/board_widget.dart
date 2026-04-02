@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/game_state.dart';
@@ -22,22 +23,18 @@ class BoardWidget extends ConsumerWidget {
 
     const gapH = 0.0;
     const gapV = 0.0;
-    const layerOffsetX = 11.0; // higher layers shift left
-    const layerOffsetY = 11.0; // higher layers shift up
+    const layerOffsetX = 11.0;
+    const layerOffsetY = 11.0;
 
     final maxLayer = gameState.tiles.isEmpty
         ? 0
         : gameState.tiles.map((t) => t.layer).reduce((a, b) => a > b ? a : b);
 
-    // Headroom at top so y values for high-layer row-0 tiles stay >= 0
     final yOffset = maxLayer * layerOffsetY;
-    // Padding on left so high-layer tiles don't get negative x values
     final xOffset = maxLayer * layerOffsetX;
 
-    // Compute available uids once for the whole build pass
     final availableUids = gameState.availableTileUids;
 
-    // Sort tiles: lower layers first so higher layers paint on top
     final sortedTiles = [...gameState.tiles]
       ..sort((a, b) => a.layer.compareTo(b.layer));
 
@@ -46,12 +43,9 @@ class BoardWidget extends ConsumerWidget {
         final availableWidth  = constraints.maxWidth  - 16;
         final availableHeight = constraints.maxHeight - 16;
 
-        // Size tiles to fill the board width exactly (no max cap).
-        // xOffset is headroom reserved for stacked-layer shift, so subtract it.
         double tileW = ((availableWidth - xOffset) / cols).clamp(30.0, 65.0);
         double tileH = tileW * (85 / 64);
 
-        // Scale down uniformly if the board is too tall.
         final boardH0 = rows * tileH + yOffset;
         if (boardH0 > availableHeight) {
           final s = availableHeight / boardH0;
@@ -61,75 +55,86 @@ class BoardWidget extends ConsumerWidget {
 
         final boardW = cols * tileW + xOffset;
         final boardH = rows * tileH + yOffset;
-        const scaleFactor = 1.0;
 
         return Center(
-          child: Transform.scale(
-            scale: scaleFactor,
-            child: Container(
-              width: boardW,
-              height: boardH,
-              decoration: BoxDecoration(
-                color: AppColors.boardGreen.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.kenteGoldDim.withValues(alpha: 0.3),
-                  width: 1,
-                ),
+          child: Container(
+            width: boardW,
+            height: boardH,
+            decoration: BoxDecoration(
+              color: AppColors.boardGreen.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.kenteGoldDim.withValues(alpha: 0.3),
+                width: 1,
               ),
-              padding: EdgeInsets.zero,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  ...sortedTiles.map((tile) {
-                    final x = tile.col * (tileW + gapH)
-                               + xOffset - tile.layer * layerOffsetX;
-                    final y = tile.row * (tileH + gapV)
-                               - tile.layer * layerOffsetY
-                               + yOffset;
+            ),
+            padding: EdgeInsets.zero,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ...sortedTiles.map((tile) {
+                  final x = tile.col * (tileW + gapH)
+                             + xOffset - tile.layer * layerOffsetX;
+                  final y = tile.row * (tileH + gapV)
+                             - tile.layer * layerOffsetY
+                             + yOffset;
 
-                    final isAvail = availableUids.contains(tile.uid);
+                  final isAvail = availableUids.contains(tile.uid);
 
-                    Widget child = TileWidget(
-                      key: ValueKey(tile.uid),
-                      tile: tile,
-                      width: tileW,
-                      height: tileH,
-                      isAvailable: isAvail,
+                  Widget child = TileWidget(
+                    key: ValueKey(tile.uid),
+                    tile: tile,
+                    width: tileW,
+                    height: tileH,
+                    isAvailable: isAvail,
+                  );
+
+                  if (!tile.isMatched && !isAvail) {
+                    child = Opacity(
+                      opacity: 0.5,
+                      child: IgnorePointer(child: child),
                     );
+                  }
 
-                    if (!tile.isMatched && !isAvail) {
-                      child = Opacity(
-                        opacity: 0.5,
-                        child: IgnorePointer(child: child),
-                      );
-                    }
+                  return Positioned(
+                    left: x,
+                    top: y,
+                    width: tileW,
+                    height: tileH,
+                    child: child,
+                  );
+                }),
 
-                    return Positioned(
-                      left: x,
-                      top: y,
-                      width: tileW,
-                      height: tileH,
-                      child: child,
-                    );
-                  }),
-                  // Score pop overlays — float "+100" at matched tile positions
-                  ...gameState.pendingScorePops.map((pop) {
-                    final x = pop.col * (tileW + gapH)
-                               + xOffset - pop.layer * layerOffsetX;
-                    final y = pop.row * (tileH + gapV)
-                               - pop.layer * layerOffsetY
-                               + yOffset;
-                    return _ScorePopOverlay(
-                      key: ValueKey('pop_${pop.row}_${pop.col}_${pop.layer}'),
-                      x: x,
-                      y: y,
-                      tileW: tileW,
-                      tileH: tileH,
-                    );
-                  }),
-                ],
-              ),
+                // Particle burst + score pop overlays — one per matched tile pos
+                ...gameState.pendingScorePops.map((pop) {
+                  final x = pop.col * (tileW + gapH)
+                             + xOffset - pop.layer * layerOffsetX;
+                  final y = pop.row * (tileH + gapV)
+                             - pop.layer * layerOffsetY
+                             + yOffset;
+                  return _MatchBurstOverlay(
+                    key: ValueKey('burst_${pop.row}_${pop.col}_${pop.layer}'),
+                    x: x,
+                    y: y,
+                    tileW: tileW,
+                    tileH: tileH,
+                  );
+                }),
+                ...gameState.pendingScorePops.map((pop) {
+                  final x = pop.col * (tileW + gapH)
+                             + xOffset - pop.layer * layerOffsetX;
+                  final y = pop.row * (tileH + gapV)
+                             - pop.layer * layerOffsetY
+                             + yOffset;
+                  return _ScorePopOverlay(
+                    key: ValueKey('pop_${pop.row}_${pop.col}_${pop.layer}'),
+                    x: x,
+                    y: y,
+                    tileW: tileW,
+                    tileH: tileH,
+                  );
+                }),
+              ],
             ),
           ),
         );
@@ -137,6 +142,149 @@ class BoardWidget extends ConsumerWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Particle burst
+// ---------------------------------------------------------------------------
+
+class _BurstParticle {
+  final double vx;
+  final double vy;
+  final Color color;
+  final double size;
+
+  const _BurstParticle({
+    required this.vx,
+    required this.vy,
+    required this.color,
+    required this.size,
+  });
+}
+
+class _BurstPainter extends CustomPainter {
+  final double progress; // 0.0 → 1.0
+  final List<_BurstParticle> particles;
+
+  const _BurstPainter({required this.progress, required this.particles});
+
+  static const _totalSeconds = 0.55;
+  static const _gravity = 180.0; // px/s² downward
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final t = progress * _totalSeconds;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    for (final p in particles) {
+      final px = cx + p.vx * t;
+      final py = cy + p.vy * t + 0.5 * _gravity * t * t;
+      final alpha = (1.0 - progress).clamp(0.0, 1.0);
+      final radius = p.size * (1.0 - progress * 0.35);
+
+      canvas.drawCircle(
+        Offset(px, py),
+        radius.clamp(0.5, 8.0),
+        Paint()
+          ..color = p.color.withValues(alpha: alpha)
+          ..style = PaintingStyle.fill,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BurstPainter old) => old.progress != progress;
+}
+
+class _MatchBurstOverlay extends StatefulWidget {
+  final double x;
+  final double y;
+  final double tileW;
+  final double tileH;
+
+  const _MatchBurstOverlay({
+    super.key,
+    required this.x,
+    required this.y,
+    required this.tileW,
+    required this.tileH,
+  });
+
+  @override
+  State<_MatchBurstOverlay> createState() => _MatchBurstOverlayState();
+}
+
+class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late List<_BurstParticle> _particles;
+
+  static const _kColors = [
+    AppColors.kenteGold,
+    Color(0xFFEFBF2A), // bright gold
+    Color(0xFFF5D060), // light gold
+    AppColors.kenteGoldDim,
+    Color(0xFFF5E6C8), // tile face cream
+    Color(0xFFCC8B14), // dark amber
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    )..forward();
+
+    final rng = Random();
+    _particles = List.generate(10, (_) {
+      final angle = rng.nextDouble() * 2 * pi;
+      final speed = 55.0 + rng.nextDouble() * 85.0;
+      return _BurstParticle(
+        vx: cos(angle) * speed,
+        vy: sin(angle) * speed - 25, // slight upward bias
+        color: _kColors[rng.nextInt(_kColors.length)],
+        size: 2.5 + rng.nextDouble() * 2.5,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Paint area: 180×180, centered on the tile center
+    const paintSize = 180.0;
+    final left = widget.x + widget.tileW / 2 - paintSize / 2;
+    final top  = widget.y + widget.tileH / 2 - paintSize / 2;
+
+    return Positioned(
+      left: left,
+      top: top,
+      width: paintSize,
+      height: paintSize,
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) => CustomPaint(
+            painter: _BurstPainter(
+              progress: _ctrl.value,
+              particles: _particles,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Score pop
+// ---------------------------------------------------------------------------
 
 class _ScorePopOverlay extends StatefulWidget {
   final double x;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/game_state.dart';
@@ -23,10 +24,12 @@ class GameScreen extends ConsumerStatefulWidget {
 }
 
 class _GameScreenState extends ConsumerState<GameScreen> {
+  bool _showCombo = false;
+  int _displayedStreak = 0;
+
   @override
   void initState() {
     super.initState();
-    // Start level after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(gameProvider.notifier).startLevel(
         widget.levelId,
@@ -39,8 +42,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
 
-    // Navigate to result when game ends
     ref.listen<GameState>(gameProvider, (prev, next) {
+      // Navigate to result when game ends
       if (prev?.status != next.status &&
           (next.status == GameStatus.won || next.status == GameStatus.lost)) {
         final capturedNext = next;
@@ -50,6 +53,18 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           context.go('/result', extra: capturedNext);
         });
       }
+
+      // Show combo banner when streak reaches or extends past 3
+      if (next.currentStreak >= 3 &&
+          next.currentStreak != (prev?.currentStreak ?? 0)) {
+        setState(() {
+          _showCombo = true;
+          _displayedStreak = next.currentStreak;
+        });
+        Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) setState(() => _showCombo = false);
+        });
+      }
     });
 
     return Scaffold(
@@ -57,26 +72,49 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar with back + HUD
             _TopBar(levelId: widget.levelId),
 
             const GameHud(),
 
-            // Board
+            // Board + combo overlay
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: gameState.status == GameStatus.paused
-                    ? _PausedOverlay(
-                        onResume: () =>
-                            ref.read(gameProvider.notifier).resumeGame(),
-                        onQuit: () => context.go('/level-select'),
-                      )
-                    : const BoardWidget(),
+                child: Stack(
+                  children: [
+                    gameState.status == GameStatus.paused
+                        ? _PausedOverlay(
+                            onResume: () =>
+                                ref.read(gameProvider.notifier).resumeGame(),
+                            onQuit: () => context.go('/level-select'),
+                          )
+                        : const BoardWidget(),
+                    if (_showCombo)
+                      IgnorePointer(
+                        child: _ComboOverlay(
+                          key: ValueKey(_displayedStreak),
+                          streak: _displayedStreak,
+                        )
+                            .animate()
+                            .scale(
+                              begin: const Offset(0.2, 0.2),
+                              end: const Offset(1.0, 1.0),
+                              duration: 280.ms,
+                              curve: Curves.elasticOut,
+                            )
+                            .shake(hz: 4, duration: 220.ms)
+                            .then(delay: 620.ms)
+                            .fade(
+                              begin: 1.0,
+                              end: 0.0,
+                              duration: 480.ms,
+                            ),
+                      ),
+                  ],
+                ),
               ),
             ),
 
-            // Bottom action bar
             _BottomBar(gameState: gameState),
           ],
         ),
@@ -240,6 +278,50 @@ class _PausedOverlay extends StatelessWidget {
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textMuted,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComboOverlay extends StatelessWidget {
+  final int streak;
+  const _ComboOverlay({super.key, required this.streak});
+
+  String get _label => '${streak}x Combo!';
+
+  int get _bonus => streak >= 5 ? 200 : streak == 4 ? 100 : 50;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.navyMid.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.kenteGold, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.kenteGold.withValues(alpha: 0.35),
+              blurRadius: 24,
+              spreadRadius: 4,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_label, style: AppTextStyles.displayMedium),
+            const SizedBox(height: 4),
+            Text(
+              '+$_bonus bonus',
+              style: AppTextStyles.displaySmall.copyWith(
+                color: AppColors.tileSelected,
+                fontSize: 15,
               ),
             ),
           ],

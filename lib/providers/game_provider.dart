@@ -141,11 +141,15 @@ class GameNotifier extends StateNotifier<GameState> {
         return t;
       }).toList();
 
+      final newStreak = state.currentStreak + 1;
+      final streakBonus = newStreak >= 5 ? 200 : newStreak == 4 ? 100 : newStreak == 3 ? 50 : 0;
+
       state = state.copyWith(
         tiles: matchedTiles,
-        score: state.score + 100,
+        score: state.score + 100 + streakBonus,
         moves: state.moves + 1,
         clearSelectedTile: true,
+        currentStreak: newStreak,
         pendingScorePops: [
           (row: firstTile.row, col: firstTile.col, layer: firstTile.layer),
           (row: secondTile.row, col: secondTile.col, layer: secondTile.layer),
@@ -160,7 +164,7 @@ class GameNotifier extends StateNotifier<GameState> {
         state = state.copyWith(pendingScorePops: const []);
       });
     } else {
-      // No match — shake both tiles then deselect
+      // No match — shake both tiles then deselect; reset streak
       final mismatchedTiles = updatedTiles.map((t) {
         if (t.uid == firstUid || t.uid == uid) {
           return t.copyWith(isMismatched: true);
@@ -172,6 +176,7 @@ class GameNotifier extends StateNotifier<GameState> {
         tiles: mismatchedTiles,
         moves: state.moves + 1,
         clearSelectedTile: true,
+        currentStreak: 0,
       );
 
       _audio.playNoMatch();
