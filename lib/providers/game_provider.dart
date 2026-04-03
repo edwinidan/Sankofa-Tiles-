@@ -62,18 +62,25 @@ class GameNotifier extends StateNotifier<GameState> {
         .whereType<TileDefinition>()
         .toList();
 
-    // Create pairs and shuffle
-    final allDefs = [...tileDefs, ...tileDefs];
-    allDefs.shuffle();
-
-    // Trim to tileCount
-    final count = levelDef.tileCount.clamp(0, allDefs.length);
-    final trimmed = allDefs.take(count).toList();
+    // Ensure we have exactly enough pairs
+    final int numPairs = levelDef.tileCount ~/ 2;
+    final List<TileDefinition> selectedPairs = [];
+    
+    // Cycle through available tile definitions to gather the required number of pairs
+    for (int i = 0; i < numPairs; i++) {
+       selectedPairs.add(tileDefs[i % tileDefs.length]);
+    }
+    
+    // Create the exact paired set and shuffle it
+    final finalDefs = [...selectedPairs, ...selectedPairs];
+    finalDefs.shuffle();
 
     // Assign shuffled defs to layout positions
     final layout = levelDef.layout;
-    final tiles = List.generate(layout.length, (i) => TileModel(
-      def: trimmed[i % trimmed.length],
+    final int safeLength = layout.length.clamp(0, finalDefs.length);
+    
+    final tiles = List.generate(safeLength, (i) => TileModel(
+      def: finalDefs[i],
       row: layout[i].row,
       col: layout[i].col,
       layer: layout[i].layer,
