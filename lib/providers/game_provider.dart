@@ -9,7 +9,22 @@ import '../core/utils/haptic_service.dart';
 import 'settings_provider.dart';
 
 final audioServiceProvider = Provider<AudioService>((ref) {
-  final service = AudioService();
+  final settings = ref.read(settingsProvider);
+  final service = AudioService(
+    sound: settings.soundEnabled,
+    music: settings.musicEnabled,
+  );
+
+  // Keep AudioService in sync whenever the user changes settings.
+  ref.listen<SettingsState>(settingsProvider, (prev, next) {
+    if (prev?.soundEnabled != next.soundEnabled) {
+      service.setSoundEnabled(next.soundEnabled);
+    }
+    if (prev?.musicEnabled != next.musicEnabled) {
+      service.setMusicEnabled(next.musicEnabled);
+    }
+  });
+
   ref.onDispose(service.dispose);
   return service;
 });

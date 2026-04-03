@@ -56,6 +56,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   @override
+  void dispose() {
+    // Stop music whenever we leave the game screen — covers quit dialog,
+    // back navigation, and the post-game result redirect.
+    ref.read(audioServiceProvider).stopBackgroundMusic();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
