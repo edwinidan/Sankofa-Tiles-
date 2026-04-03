@@ -2,8 +2,11 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 class AudioService {
-  final AudioPlayer _sfxPlayer = AudioPlayer();
+  // Only the music player is long-lived. SFX players are spawned per-call
+  // so their native prepare/reset cycle never touches the music player's
+  // audio focus.
   final AudioPlayer _musicPlayer = AudioPlayer();
+  late AudioContext _sfxContext;
 
   bool _soundEnabled = true;
   bool _musicEnabled = true;
@@ -11,7 +14,39 @@ class AudioService {
   Future<void> init({bool sound = true, bool music = true}) async {
     _soundEnabled = sound;
     _musicEnabled = music;
-    _musicPlayer.setReleaseMode(ReleaseMode.loop);
+
+    // Music player holds audio focus so it keeps playing continuously.
+    final musicContext = AudioContext(
+      android: const AudioContextAndroid(
+        isSpeakerphoneOn: false,
+        stayAwake: true,
+        contentType: AndroidContentType.music,
+        usageType: AndroidUsageType.game,
+        audioFocus: AndroidAudioFocus.gain,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.ambient,
+        options: const {AVAudioSessionOptions.mixWithOthers},
+      ),
+    );
+
+    // SFX context: no audio focus — overlays music without interrupting it.
+    _sfxContext = AudioContext(
+      android: const AudioContextAndroid(
+        isSpeakerphoneOn: false,
+        stayAwake: false,
+        contentType: AndroidContentType.sonification,
+        usageType: AndroidUsageType.game,
+        audioFocus: AndroidAudioFocus.none,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.ambient,
+        options: const {AVAudioSessionOptions.mixWithOthers},
+      ),
+    );
+
+    await _musicPlayer.setAudioContext(musicContext);
+    await _musicPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
   void setSoundEnabled(bool val) => _soundEnabled = val;
@@ -23,7 +58,11 @@ class AudioService {
   Future<void> _playSfx(String fileName) async {
     if (!_soundEnabled) return;
     try {
-      await _sfxPlayer.play(AssetSource('audio/$fileName'));
+      final player = AudioPlayer();
+      await player.setAudioContext(_sfxContext);
+      await player.play(AssetSource('audio/$fileName'));
+      // Auto-dispose once the sound finishes — no lingering players.
+      player.onPlayerComplete.listen((_) => player.dispose());
     } catch (e) {
       debugPrint('[AudioService] Missing sound: $fileName ($e)');
     }
@@ -38,6 +77,7 @@ class AudioService {
   Future<void> startBackgroundMusic() async {
     if (!_musicEnabled) return;
     try {
+      await _musicPlayer.setReleaseMode(ReleaseMode.loop);
       await _musicPlayer.play(AssetSource('audio/background_music.mp3'));
     } catch (e) {
       debugPrint('[AudioService] Missing background music ($e)');
@@ -49,7 +89,6 @@ class AudioService {
   }
 
   void dispose() {
-    _sfxPlayer.dispose();
     _musicPlayer.dispose();
   }
 }
