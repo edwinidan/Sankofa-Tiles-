@@ -60,14 +60,6 @@ class BoardWidget extends ConsumerWidget {
         Widget board = Container(
           width: boardW,
           height: boardH,
-          decoration: BoxDecoration(
-            color: AppColors.boardGreen.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.kenteGoldDim.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
           padding: EdgeInsets.zero,
           child: Stack(
               clipBehavior: Clip.none,
