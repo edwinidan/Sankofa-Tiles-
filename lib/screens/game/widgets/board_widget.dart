@@ -24,8 +24,9 @@ class BoardWidget extends ConsumerWidget {
 
     const gapH = 0.0;
     const gapV = 0.0;
-    const layerOffsetX = 11.0;
-    const layerOffsetY = 11.0;
+    // Increased offsets so higher layers shift significantly further left and up
+    const layerOffsetX = 24.0;
+    const layerOffsetY = 24.0;
 
     final maxLayer = gameState.tiles.isEmpty
         ? 0
@@ -83,11 +84,9 @@ class BoardWidget extends ConsumerWidget {
                     isAvailable: isAvail,
                   );
 
+                  // Make unavailable tiles un-clickable, but fully solid (no transparency)
                   if (!tile.isMatched && !isAvail) {
-                    child = Opacity(
-                      opacity: 0.5,
-                      child: IgnorePointer(child: child),
-                    );
+                    child = IgnorePointer(child: child);
                   }
 
                   // Staggered entry — ripples across the board by sorted index
