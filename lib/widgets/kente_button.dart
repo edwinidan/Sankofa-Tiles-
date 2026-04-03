@@ -42,21 +42,24 @@ class KenteButton extends StatelessWidget {
           elevation: 4,
           shadowColor: AppColors.kenteGold.withValues(alpha: 0.3),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: small ? 16 : 20),
-              const SizedBox(width: 8),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: small ? 16 : 20),
+                const SizedBox(width: 8),
+              ],
+              Text(label, style: small ? AppTextStyles.labelSmall.copyWith(
+                fontSize: 13,
+                color: onTap != null ? AppColors.kenteGold : AppColors.textMuted,
+              ) : AppTextStyles.buttonText.copyWith(
+                color: onTap != null ? AppColors.kenteGold : AppColors.textMuted,
+              )),
             ],
-            Text(label, style: small ? AppTextStyles.labelSmall.copyWith(
-              fontSize: 13,
-              color: onTap != null ? AppColors.kenteGold : AppColors.textMuted,
-            ) : AppTextStyles.buttonText.copyWith(
-              color: onTap != null ? AppColors.kenteGold : AppColors.textMuted,
-            )),
-          ],
+          ),
         ),
       ),
     );

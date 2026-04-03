@@ -240,7 +240,7 @@ class _LoseContent extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: KenteButton(
-                label: 'TRY AGAIN',
+                label: 'RETRY',
                 icon: Icons.refresh,
                 onTap: () => context.go(
                   '/game/${gameState.levelId}',
