@@ -32,9 +32,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(gameProvider.notifier).startLevel(
-        widget.levelId,
-        widget.difficulty,
-      );
+            widget.levelId,
+            widget.difficulty,
+          );
     });
   }
 
@@ -293,35 +293,43 @@ class _ComboOverlay extends StatelessWidget {
 
   String get _label => '${streak}x Combo!';
 
-  int get _bonus => streak >= 5 ? 200 : streak == 4 ? 100 : 50;
+  int get _bonus => streak >= 5
+      ? 200
+      : streak == 4
+          ? 100
+          : 50;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
         decoration: BoxDecoration(
           color: AppColors.navyMid.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.kenteGold, width: 2),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: AppColors.kenteGold, width: 1.5),
           boxShadow: [
             BoxShadow(
               color: AppColors.kenteGold.withValues(alpha: 0.35),
-              blurRadius: 24,
-              spreadRadius: 4,
+              blurRadius: 18,
+              spreadRadius: 3,
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_label, style: AppTextStyles.displayMedium),
-            const SizedBox(height: 4),
+            Text(
+              _label,
+              style: AppTextStyles.displayMedium.copyWith(fontSize: 19),
+            ),
+            const SizedBox(height: 3),
             Text(
               '+$_bonus bonus',
               style: AppTextStyles.displaySmall.copyWith(
                 color: AppColors.tileSelected,
-                fontSize: 15,
+                fontSize: 12,
               ),
             ),
           ],

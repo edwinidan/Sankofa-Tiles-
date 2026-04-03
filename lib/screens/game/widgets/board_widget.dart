@@ -426,22 +426,13 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
   }
 
   List<_BurstParticle> _buildConfetti(Random rng) {
-    const colors = [
-      Color(0xFFD32F2F), // kente red
-      Color(0xFF2E7D32), // forest green
-      AppColors.kenteGold,
-      Color(0xFF1A1A1A), // near-black
-      Color(0xFFFF9A1A), // orange
-      Color(0xFF00897B), // teal
-      Color(0xFFFFD600), // bright yellow
-    ];
     return List.generate(28, (_) {
       final angle = rng.nextDouble() * 2 * pi;
       final speed = 70.0 + rng.nextDouble() * 110.0;
       return _BurstParticle(
         vx: cos(angle) * speed,
         vy: sin(angle) * speed - 20,
-        color: colors[rng.nextInt(colors.length)],
+        color: AppColors.kenteGold,
         size: 3.5 + rng.nextDouble() * 3.0,
         angle: rng.nextDouble() * 2 * pi,
         angularV: (rng.nextDouble() - 0.5) * 12.0, // ±6 rad/s spin

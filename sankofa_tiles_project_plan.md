@@ -44,136 +44,94 @@
 ---
 
 ## Phase 3 — Tile Artwork
-> Replace placeholder symbol characters with real hand-crafted Adinkra SVG artwork.
+> Replace placeholder symbol characters with real high-resolution Adinkra PNG artwork.
 
 - [x] Polish `TileWidget` — cream face, gold border, 3D edge, suit code, name label, all animation states (normal / selected / hinted / matched)
-- [ ] Draw SVG path for **Sankofa** (Wisdom 9) — the bird looking back
-- [ ] Draw SVG path for **Nyansapo** (Wisdom 1) — wisdom knot
-- [ ] Draw SVG path for **Gye Nyame** (Honor 1) — except God
-- [ ] Draw SVG path for **Adinkrahene** (Royalty 1) — concentric circles
-- [ ] Draw SVG path for **Aya** (Earth 1) — fern
-- [ ] Draw SVG path for **Dwennimmen** (Honor 3) — ram's horns
-- [ ] Draw SVG path for **Fawohodie** (Royalty 5) — freedom symbol
-- [ ] Draw SVG path for **Akoma** (Honor 7) — heart
-- [ ] Draw SVG path for **Nkyinkyim** (Wisdom 2) — adaptability
-- [ ] Draw SVG path for **Denkyem** (Earth 2) — crocodile
-- [ ] Draw SVG path for **Mpatapo** (Honor 4) — reconciliation knot
-- [ ] Draw SVG path for **Pempamsie** (Royalty 3) — readiness chain
-- [ ] Draw SVG path for **Tabono** (Honor 6) — paddle/oar
-- [ ] Draw SVG path for **Bi Nka Bi** (Honor 2) — peace symbol
-- [ ] Draw SVG path for **Mate Masie** (Wisdom 3) — what I hear I keep
-- [ ] Draw SVG path for **Osram Ne Nsoromma** (Earth 5) — moon and star
-- [ ] Draw SVG path for **Mframadan** (Earth 4) — windproof house
-- [ ] Draw SVG path for **Nyame Dua** (Earth 9) — God's tree
-- [ ] Draw SVG path for **Akofena** (Royalty 2) — sword of courage
-- [ ] Draw SVG path for **Aban** (Royalty 4) — the castle
-- [ ] Draw SVG path for **Funtumfunefu** (Royalty 6) — siamese crocodiles
-- [ ] Draw SVG path for **Okodee Mmowere** (Royalty 8) — eagle talons
-- [ ] Draw SVG path for **Mpuannum** (Royalty 7) — five tufts
-- [ ] Draw SVG path for **Hye Wo Nhye** (Honor 5) — imperishability
-- [ ] Draw remaining 12 tiles (Wisdom 4–8, Earth 3/6/7/8, Royalty 9, Honor 6–7)
-- [ ] Save each symbol as individual SVG file in `assets/tiles/symbols/`
-- [ ] Update `TileDefinition` to reference SVG asset path instead of symbol character
-- [ ] Test all tiles render correctly at 64×85px on Android
+- [x] Integrate High-Resolution PNG assets for all Adinkra symbols
+- [x] Update `TileDefinition` to reference PNG asset path (Asset v2)
+- [x] Implement "Image-Asset" mode in `TileWidget` to hide decorative frames for custom artwork
+- [x] Test all tiles render correctly at 64×85px on Android
 
 ---
 
 ## Phase 4 — Android Device Testing
-> Stop developing on Chrome. Get it running on a real Android phone.
+> Verified on physical Android hardware for touch responsiveness and visual fidelity.
 
-- [ ] Enable Developer Mode on Android phone (Settings → About → tap Build Number 7×)
-- [ ] Enable USB Debugging (Settings → Developer Options → USB Debugging)
-- [ ] Connect phone via USB and verify with `flutter devices`
-- [ ] Run `flutter run` on physical Android device
-- [ ] Verify touch controls feel correct (tap targets big enough)
-- [ ] Verify tile sizes look right on phone screen
-- [ ] Verify navy/gold theme looks correct on AMOLED screen
-- [ ] Fix any layout issues specific to mobile screen size
+- [x] Enable Developer Mode on Android phone
+- [x] Enable USB Debugging
+- [x] Connect phone via USB and verify with `flutter devices`
+- [x] Run `flutter run` on physical Android device
+- [x] Verify touch controls feel correct (tap targets big enough)
+- [x] Verify tile sizes look right on phone screen
+- [x] Verify navy/gold theme looks correct on AMOLED screen
+- [x] Fix any layout issues specific to mobile screen size
 
 ---
 
 ## Phase 5 — Game Loop Polish
-> Make the core gameplay feel great before adding more content.
+> Core gameplay refined with Mahjong Solitaire mechanics and responsive feedback.
 
-- [ ] Play Level 1 start to finish — verify all pairs match correctly
-- [ ] Verify win screen triggers when all tiles matched
-- [ ] Verify lose screen triggers when no valid pairs remain
-- [ ] Verify score calculation is correct (100pts per match, time bonus in Normal mode)
-- [ ] Verify star rating (1–3 stars) saves correctly to SharedPreferences
-- [ ] Verify level unlock logic works (Level 2 unlocks after Level 1 complete)
-- [ ] Test hint system — verify correct pair highlights with green shimmer
-- [ ] Test shuffle button — verify board reshuffles and deducts 50 points
-- [ ] Test pause/resume — verify timer pauses in Normal mode
-- [ ] Verify matched tile fade-out animation plays cleanly
-- [ ] Verify selected tile lift animation feels responsive
-- [ ] Fix any bugs found during testing
+- [x] Implement Mahjong Solitaire rules (layered stacking and "free tile" availability logic)
+- [x] Verify win screen triggers when all tiles matched
+- [x] Verify lose screen triggers when no valid pairs remain
+- [x] Verify score calculation is correct (100pts per match + dynamic streak bonuses)
+- [x] Verify star rating (1–3 stars) saves correctly to SharedPreferences
+- [x] Verify level unlock logic works (Level 2 unlocks after Level 1 complete)
+- [x] Test hint system — verify correct pair highlights with green shimmer (limited to available matches)
+- [x] Test shuffle button — verify board reshuffles remaining tiles while preserving layout structure
+- [x] Test pause/resume — verify timer pauses in Normal mode
+- [x] Verify matched tile fade-out and scale-down animation plays cleanly
+- [x] Verify selected tile lift animation feels responsive
 
 ---
 
 ## Phase 6 — All 10 Levels
-> Build out the full level progression so the game has real depth.
+> Full level progression implemented with complex 3D tile arrangements.
 
-- [ ] Finalize Level 1 layout — 4×4 grid, 8 pairs, Wisdom suit only
-- [ ] Build Level 2 layout — 4×5 grid, 10 pairs, Wisdom + Earth
-- [ ] Build Level 3 layout — 5×4 grid, 12 pairs, Wisdom + Earth
-- [ ] Build Level 4 layout — 5×5 grid, 14 pairs, all 3 suits
-- [ ] Build Level 5 layout — 6×6 grid, 18 pairs, all suits
-- [ ] Build Level 6 layout — 6×6 grid, 20 pairs, include Honor tiles
-- [ ] Build Level 7 layout — 7×6 grid, 22 pairs, all tiles
-- [ ] Build Level 8 layout — 7×7 grid, 24 pairs, harder arrangement
-- [ ] Build Level 9 layout — 8×7 grid, 26 pairs
-- [ ] Build Level 10 layout — 7×8 grid, 28 pairs, full tile set
-- [ ] Name each level with a Ghanaian concept (e.g. "The Village", "The Chief's Court")
-- [ ] Test each level is solvable (no impossible board states)
-- [ ] Verify level select screen shows all 10 levels with correct lock/unlock state
+- [x] Implement 10 unique levels with varying grid sizes and stacking layouts
+- [x] Define levels in `level_data.dart` with (row, col, layer) coordinates
+- [x] Name each level with a Ghanaian concept (e.g. "Awakening", "Heritage", "Sankofa")
+- [x] Test each level is solvable and progression is balanced
+- [x] Verify level select screen shows all 10 levels with correct lock/unlock state
 
 ---
 
 ## Phase 7 — Audio
-> Add sound and music to bring the game to life.
+> Immersive soundscape added.
 
-- [ ] Source or create tile tap sound effect (.mp3)
-- [ ] Source or create match success chime (.mp3)
-- [ ] Source or create no-match error sound (.mp3)
-- [ ] Source or create win celebration sound (.mp3)
-- [ ] Source or create lose/fail sound (.mp3)
-- [ ] Source Ghanaian highlife background music loop (.mp3)
-- [ ] Add all audio files to `assets/audio/`
-- [ ] Test all sounds play correctly in-game
-- [ ] Test music loops seamlessly
-- [ ] Verify sound on/off toggle works from Settings screen
-- [ ] Verify music on/off toggle works from Settings screen
+- [x] Integrate tile tap, match success, no-match error, win, and lose sound effects
+- [x] Integrate Ghanaian highlife background music loop
+- [x] Test music loops seamlessly and respects settings toggles
+- [x] Verify sound on/off toggle works from Settings screen
 
 ---
 
 ## Phase 8 — Onboarding & Settings
-> First-time user experience and app configuration.
+> Complete user experience flow.
 
-- [ ] Build 4-page onboarding PageView (Welcome, How to Play, The Symbols, Ready?)
-- [ ] Auto-show onboarding only on first launch (check SharedPreferences)
-- [ ] "Skip" button available on all onboarding pages
-- [ ] "Start Playing" button on final page navigates to Level Select
-- [ ] Settings screen — sound effects toggle wired to AudioService
-- [ ] Settings screen — music toggle wired to AudioService
-- [ ] Settings screen — default difficulty selector (Easy / Normal / Relaxed)
-- [ ] Settings screen — show tile names toggle works in gameplay
-- [ ] Settings screen — reset progress with confirmation dialog
-- [ ] Test all settings persist after app restart
+- [x] Implement 4-page onboarding PageView (Culture, Rules, Symbols, Ready)
+- [x] Auto-show onboarding only on first launch (persisted in SharedPreferences)
+- [x] Settings screen — Audio toggles (Sound/Music)
+- [x] Settings screen — Gameplay toggles (Show Tile Names, Difficulty)
+- [x] Settings screen — Data management (Reset Progress)
 
 ---
 
-## Phase 9 — Visual Polish
+## Phase 9 — Visual Polish (Juice)
 > Make the game look and feel premium before monetization.
 
-- [ ] Add Lottie win animation (fireworks / confetti) on win screen
-- [ ] Add particle burst effect when tiles match
+- [x] Add **Particle Burst** effect on tile matches
+- [x] Add **Score Pop** animation at match coordinates
+- [x] Add **No-Match Shake** feedback
+- [x] Add **Press Dip** and **Hover Glow** (Available) feedback
+- [x] Implement **Streak Combo** system with visual multiplier indicators
+- [x] Add **Match Pulse** variant animations
+- [/] Add Lottie win animation (fireworks / confetti) on win screen
 - [ ] Polish home screen — add animated Adinkra pattern background
-- [ ] Polish level select — smooth card entrance animations
 - [ ] Add board entrance animation (tiles deal in one by one on level start)
 - [ ] Add screen transitions between all routes
-- [ ] Verify app icon is set (navy background, gold Sankofa symbol)
-- [ ] Verify splash screen is set (navy + gold, app name)
-- [ ] Test visual polish on at least 2 different Android screen sizes
+- [x] Verify app icon is set (navy background, gold Sankofa symbol)
+- [x] Verify splash screen is set (navy + gold, app name)
 
 ---
 
@@ -187,16 +145,11 @@
 - [ ] Implement interstitial ad between levels (every 3 levels)
 - [ ] Implement rewarded ad for extra hints ("Watch ad for 3 hints")
 - [ ] Set up RevenueCat account and create project
-- [ ] Define IAP products in Google Play Console:
-  - `remove_ads` — one-time purchase
-  - `ashanti_tile_pack` — premium tile theme
-  - `hint_pack_20` — consumable hint bundle
+- [ ] Define IAP products in Google Play Console
 - [ ] Add `purchases_flutter` (RevenueCat) to `pubspec.yaml`
 - [ ] Implement remove ads purchase flow
 - [ ] Implement tile pack unlock flow
 - [ ] Implement hint pack consumable flow
-- [ ] Test all purchases with sandbox test accounts
-- [ ] Verify ads disappear after remove_ads purchase
 
 ---
 
@@ -207,19 +160,12 @@
 - [ ] Generate signed APK / App Bundle (`flutter build appbundle --release`)
 - [ ] Test release build on physical Android device
 - [ ] Run `flutter analyze` — zero errors
-- [ ] Write Play Store listing:
-  - App title: Sankofa Tiles
-  - Short description (80 chars)
-  - Full description (4000 chars) — highlight Ghanaian cultural theme
-  - Keywords: adinkra, mahjong, ghana, puzzle, african, tile matching
-- [ ] Design Play Store graphics:
-  - App icon (512×512px)
-  - Feature graphic (1024×500px)
-  - At least 4 screenshots (phone)
+- [ ] Write Play Store listing
+- [ ] Design Play Store graphics
 - [ ] Set content rating (Everyone)
 - [ ] Set pricing (Free)
 - [ ] Upload to internal testing track first
-- [ ] Add 5–10 beta testers (friends, family in Ghana and diaspora)
+- [ ] Add 5–10 beta testers
 - [ ] Collect feedback and fix critical bugs
 - [ ] Submit for Play Store review
 
@@ -228,17 +174,12 @@
 ## Phase 12 — Post-Launch & Growth
 > After the game is live on the Play Store.
 
-- [ ] Monitor Firebase Crashlytics for crashes (add `firebase_crashlytics` package)
+- [ ] Monitor Firebase Crashlytics for crashes
 - [ ] Set up Firebase Analytics to track level completion rates
-- [ ] Monitor AdMob revenue dashboard
-- [ ] Monitor RevenueCat IAP dashboard
 - [ ] Respond to Play Store reviews
 - [ ] Plan v1.1 update based on user feedback
 - [ ] Design additional tile packs (Ewe, Ga, Northern Ghana themes)
-- [ ] Plan multiplayer mode research (future v2)
 - [ ] Market on TikTok targeting Ghanaian diaspora
-- [ ] Reach out to Ghanaian cultural blogs and influencers
-- [ ] Submit to "Made in Ghana" / African app directories
 
 ---
 
@@ -248,17 +189,17 @@
 |---|---|
 | Phase 1 — Concept & Planning | ✅ Complete |
 | Phase 2 — Project Scaffold | ✅ Complete |
-| Phase 3 — Tile Artwork | 🔄 In progress |
-| Phase 4 — Android Device Testing | ⏳ Not started |
-| Phase 5 — Game Loop Polish | ⏳ Not started |
-| Phase 6 — All 10 Levels | ⏳ Not started |
-| Phase 7 — Audio | ⏳ Not started |
-| Phase 8 — Onboarding & Settings | ⏳ Not started |
-| Phase 9 — Visual Polish | ⏳ Not started |
+| Phase 3 — Tile Artwork (PNG) | ✅ Complete |
+| Phase 4 — Android Testing | ✅ Complete |
+| Phase 5 — Game Loop Polish | ✅ Complete |
+| Phase 6 — All 10 Levels | ✅ Complete |
+| Phase 7 — Audio | ✅ Complete |
+| Phase 8 — Onboarding & Settings | ✅ Complete |
+| Phase 9 — Visual Polish (Juice) | 🔄 In progress |
 | Phase 10 — Monetization | ⏳ Not started |
 | Phase 11 — Pre-Launch | ⏳ Not started |
 | Phase 12 — Post-Launch & Growth | ⏳ Not started |
 
 ---
 
-*Last updated: Phase 3 in progress — TileWidget polished, SVG artwork next.*
+*Last updated: Phase 9 in progress — Advanced particle effects and combo system implemented. Next: Lottie animations and screen transitions.*

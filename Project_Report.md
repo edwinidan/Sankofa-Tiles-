@@ -19,6 +19,7 @@
 13. [Tile Catalogue](#13-tile-catalogue)
 14. [Level Catalogue](#14-level-catalogue)
 15. [Recent Changes](#15-recent-changes)
+16. [Visual Feedback & Juice](#16-visual-feedback--juice)
 
 ---
 
@@ -97,9 +98,9 @@ lib/
 │   │   ├── game_screen.dart    # Main gameplay screen
 │   │   └── widgets/
 │   │       ├── tile_widget.dart    # Physical tile rendering
-│   │       ├── board_widget.dart   # Responsive grid layout
-│   │       ├── game_hud.dart       # Score/time/moves chips
-│   │       └── hint_overlay.dart   # Hint active indicator
+100: │       ├── board_widget.dart   # Responsive grid layout
+101: │       ├── game_hud.dart       # Score/time/moves chips
+102: │       └── hint_overlay.dart   # Hint active indicator
 │   ├── result/                 # Win/lose result screen
 │   └── settings/               # Settings toggles
 │
@@ -427,72 +428,57 @@ On `startLevel(levelId, difficulty)`:
 2. Build a list of tile definition IDs — each unique ID appears **twice** (a pair).
 3. Shuffle the list.
 4. Trim to `tileCount`.
-5. Assign tiles to grid positions in row-major order.
+5. Assign tiles to specific 3D coordinates `(row, col, layer)` defined in the level layout.
 6. Store in `GameState.tiles`.
 
-### 9.2 Match Logic
+### 9.2 Mahjong Solitaire Logic (Layered Stacking)
+
+The game follows classic Mahjong Solitaire rules for tile interaction:
+
+- **Availability:** A tile is only "free" (selectable) if:
+    1. It is not covered by any tile in a layer above it.
+    2. It has at least one side (left or right) completely clear of adjacent tiles on the same layer.
+- **Visual Stacking:** Tiles are rendered with 3D offsets (`layer * 4.0` pixels) to create depth.
+- **Selection:** Only "available" tiles can be tapped. Unavailable tiles are dimmed or lack the "available glow."
+
+### 9.3 Match Logic
 
 ```
-Player taps Tile A:
+Player taps Tile A (Available):
   → Tile A becomes selected.
 
 Player taps Tile A again:
   → Tile A is deselected.
 
-Player taps Tile B (Tile A already selected):
+Player taps Tile B (Available, Tile A already selected):
   if A.def.id == B.def.id:
     → Both marked isMatched.
-    → score += 100, moves += 1.
+    → score += 100 + Streak Bonus.
+    → Particle burst and score pop triggered.
     → _checkWin() called.
   else:
-    → Both shown for 400ms, then deselected.
+    → Both shake (mismatch animation).
+    → Deselected after 600ms.
+    → Streak reset to 0.
     → _checkStuck() called.
 ```
 
-### 9.3 Scoring
+### 9.4 Scoring & Streaks
 
 | Component | Formula |
 |---|---|
 | Match points | 100 per matched pair |
+| **Streak Bonus** | Bonus points for rapid successive matches (3+ streak) |
 | Time bonus (normal only) | `max(0, 300 - secondsElapsed) × 2` |
 | Shuffle penalty | -50 per use (clamped at 0) |
 
-### 9.4 Win / Lose Conditions
+### 9.5 Win / Lose Conditions
 
 | Condition | Trigger |
 |---|---|
 | **Win** | All tiles matched (`remainingPairs == 0`) |
-| **Lose (stuck)** | No remaining pairs can be matched (`isStuck == true`) |
+| **Lose (stuck)** | No remaining *available* pairs can be matched (`isStuck == true`) |
 | **Lose (time)** | Normal difficulty, `secondsElapsed >= 300` (5 minutes) |
-
-### 9.5 Difficulty Modes
-
-| Mode | Timer | Hints | Time Bonus |
-|---|---|---|---|
-| Easy | None | Unlimited | No |
-| Normal | 5 minutes | 3 | Yes |
-| Relaxed | None | Unlimited | No |
-
-> Note: hint count enforcement for Normal mode is tracked in state (`hintsUsed`) but the UI does not yet gate the hint button when `hintsUsed >= 3`.
-
-### 9.6 Hint System
-
-`useHint()`:
-1. Scans `tiles` for the first `def.id` that has ≥ 2 unmatched tiles.
-2. Marks both `isHinted = true`.
-3. After 2 seconds, clears `isHinted` on both.
-4. Increments `hintsUsed`.
-
-The hinted tiles pulse with a green border (`#2E8B57`) and opacity cycling between 0.6 and 1.0 every 800ms.
-
-### 9.7 Shuffle
-
-`shuffleRemaining()`:
-1. Collects grid positions of all unmatched tiles.
-2. Shuffles those positions.
-3. Reassigns tiles to the shuffled positions (new `row`/`col` values).
-4. Deducts 50 points from score (clamped at 0).
-5. Clears any active selection.
 
 ---
 
@@ -571,59 +557,16 @@ Implemented with **GoRouter**. All routes are defined in `createAppRouter()`.
 
 ## 13. Tile Catalogue
 
-### Suit: Wisdom (W1–W9)
+The tile system has transitioned from unicode symbols to **High-Resolution PNG Assets** (Asset v2) for better cultural representation and visual fidelity.
 
-| Code | Name | Symbol | Meaning |
-|---|---|---|---|
-| W1 | Nyansapo | ✦ | Wisdom knot |
-| W2 | Nkyinkyim | ~ | Adaptability |
-| W3 | Mate Masie | ◈ | What I hear I keep |
-| W4 | Hwehwemudua | ⊞ | Excellence |
-| W5 | Nea Onnim | ? | He who does not know |
-| W6 | Ananse Ntentan | ⊛ | Spider web — creativity |
-| W7 | Ese Ne Tekrema | ≋ | Teeth and tongue |
-| W8 | Nteasee | ◎ | Understanding |
-| W9 | Sankofa | ⟳ | Go back and get it |
+### Image Assets
+Most tiles now use custom artwork located in `assets/tiles/symbols/asset v2/`. When an `assetPath` is provided in the `TileDefinition`, the `TileWidget` renders the image and hides the default decorative frame to let the artwork fill the tile face.
 
-### Suit: Earth & Nature (E1–E9)
-
-| Code | Name | Symbol | Meaning |
-|---|---|---|---|
-| E1 | Aya | ❋ | Fern — endurance |
-| E2 | Denkyem | ≈ | Crocodile — adaptability |
-| E3 | Asase Ye Duru | ⊕ | The earth is heavy |
-| E4 | Mframadan | ⌂ | Windproof house |
-| E5 | Osram Ne Nsoromma | ☽ | Moon and star |
-| E6 | Okuafo Pa | ⚘ | The good farmer |
-| E7 | Abe Dua | ♣ | Palm tree |
-| E8 | Akoko Nan | ⩕ | Hen's foot — nurturing |
-| E9 | Nyame Dua | ✙ | God's tree |
-
-### Suit: Royalty & Power (R1–R9)
-
-| Code | Name | Symbol | Meaning |
-|---|---|---|---|
-| R1 | Adinkrahene | ⦾ | Chief of Adinkra |
-| R2 | Akofena | † | Sword of war — courage |
-| R3 | Pempamsie | ⛓ | Readiness |
-| R4 | Aban | ⬡ | The castle — authority |
-| R5 | Fawohodie | ☆ | Freedom |
-| R6 | Funtumfunefu | ∞ | Siamese crocodiles |
-| R7 | Mpuannum | ✵ | Five tufts — royalty |
-| R8 | Okodee Mmowere | ⋙ | Eagle talons — strength |
-| R9 | Nyame Nwu Na Mawu | ⟁ | God never dies |
-
-### Honor Tiles (H1–H7)
-
-| Code | Name | Symbol | Meaning |
-|---|---|---|---|
-| H1 | Gye Nyame | ☀ | Except God |
-| H2 | Bi Nka Bi | ◯ | Peace and unity |
-| H3 | Dwennimmen | ⚏ | Strength with humility |
-| H4 | Mpatapo | ⊗ | Reconciliation |
-| H5 | Hye Wo Nhye | ◇ | Imperishability |
-| H6 | Tabono | ⊠ | Paddle — hard work |
-| H7 | Akoma | ♥ | Heart — patience |
+### Suit Summary
+- **Wisdom (W):** Nyansapo, Nkyinkyim, Mate Masie, etc.
+- **Earth & Nature (E):** Denkyem, Aya, Asase Ye Duru, etc.
+- **Royalty & Power (R):** Adinkrahene, Akofena, Aban, etc.
+- **Honor (H):** Gye Nyame, Dwennimmen, Mpatapo, etc.
 
 ---
 
@@ -648,26 +591,31 @@ Each level requires 1 star on the previous level to unlock. Level 1 is always ac
 
 ## 15. Recent Changes
 
-### Tile Widget — Physical Mahjong Design (Current Session)
+### 15.1 Advanced Visual Feedback (Juice Phase)
+- **Particle Burst System:** High-performance particle effects triggered on successful matches.
+- **Score Pops:** Animated floating text showing points earned at the match location.
+- **No-Match Shake:** Haptic-like visual shake when trying to match incompatible tiles.
+- **Available Glow:** Subtle outer glow on "free" tiles to guide the player.
+- **Streak Combo System:** Tracks consecutive matches to reward players with bonus points and visual multipliers.
 
-The `TileWidget` was fully redesigned from a flat card to a physical Mahjong tile appearance.
+### 15.2 Mahjong Solitaire Implementation
+- **3D Stacking:** Implemented a full coordinate system `(row, col, layer)` allowing for complex pyramid and bridge layouts.
+- **Layer Offsets:** Fine-tuned to **11x11** for a pronounced 3D effect.
+- **Availability Logic:** Strict enforcement of "free tile" rules (no top cover, one side open).
+- **Auto-Stuck Detection:** The game now detects when no available matches remain and triggers a loss or suggests a shuffle.
 
-**Visual changes:**
-- Tile size updated from 56 × 72 px to **64 × 85 px** (default).
-- 3D raised bottom edge: a dark-gold (`#8B6914`) slab fills the full tile height; the ivory face Container is 5 px shorter and aligned to the top, leaving the slab visible at the bottom.
-- Rounded corners increased from 8 px to **9 px**.
-- **Suit code** (e.g., `W1`, `E3`, `R7`, `H2`) added top-left in 9 px bold Georgia serif, dark-gold colour.
-- **Adinkra symbol** rendered in 28 px Georgia serif, dark-gold, centred on the face.
-- **Tile name** placed bottom-centre in 7.5 px, visible only when the *Show Tile Names* setting is on.
+### 15.3 Visual Refinement
+- **Asset Migration:** Moved all tile symbols to high-res transparent PNGs.
+- **Scale Update:** Increased tile scaling to **1.634** on larger screens for better visibility.
+- **Layout Precision:** Fixed tile spacing to fill the board width exactly with zero gaps, creating a "solid" block feel.
 
-**State changes:**
-- **Selected:** face turns `#FFF8E8`, border becomes `#EF9F27` at 2.5 px, tile lifts 10 px (was 8 px) via `AnimatedContainer` Y translation.
-- **Hinted:** border switches to `#2E8B57` at 2.5 px; entire tile opacity pulses 0.6 → 1.0 every **800 ms** (was 600 ms) using `Curves.easeInOut` + `repeat(reverse: true)`.
-- **Matched:** uses Flutter's implicit `AnimatedOpacity` (→ 0, 400 ms) and `AnimatedScale` (→ 0, 400 ms) instead of an explicit `AnimationController`, eliminating the second ticker.
+---
 
-**Implementation simplification:**
-- Dropped `TickerProviderStateMixin` back to `SingleTickerProviderStateMixin` (only the hint controller is explicit).
-- Removed the old `AppTextStyles` import (tile text styles are now defined inline to match the serif spec).
+## 16. Visual Feedback & Juice
 
-**Board aspect ratio fix (`board_widget.dart`):**
-- Updated `tileH = tileW * (72 / 56)` → `tileH = tileW * (85 / 64)` to match the new tile proportions and prevent squashed tiles in the grid.
+To create a "Premium" feel, several micro-interaction systems were added:
+
+- **The "Dip" Effect:** Tapping a tile briefly scales it down (`0.95x`) to provide tactile feedback.
+- **Match Variants:** Different match animations (bursts, streaks, pulses) randomly selected to keep gameplay feeling fresh.
+- **Combo Indicators:** Visual "Streak!" text that grows and intensifies as the player maintains a matching rhythm.
+- **Adaptive Spacing:** `BoardWidget` dynamically calculates tile dimensions to ensure the 3D stack fits perfectly on any mobile screen aspect ratio.
