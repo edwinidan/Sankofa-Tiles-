@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/haptic_service.dart';
 import '../../models/game_state.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
@@ -39,6 +40,12 @@ class SettingsScreen extends ConsumerWidget {
             label: 'Background Music',
             value: settings.musicEnabled,
             onChanged: notifier.setMusicEnabled,
+          ),
+
+          const SizedBox(height: 8),
+          _HapticTile(
+            selected: settings.hapticIntensity,
+            onChanged: notifier.setHapticIntensity,
           ),
 
           const SizedBox(height: 16),
@@ -223,6 +230,82 @@ class _DifficultyTile extends StatelessWidget {
                     ),
                     child: Text(
                       label,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: isSelected
+                            ? AppColors.kenteGold
+                            : AppColors.textMuted,
+                        fontSize: 11,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HapticTile extends StatelessWidget {
+  final HapticIntensity selected;
+  final Future<void> Function(HapticIntensity) onChanged;
+
+  const _HapticTile({required this.selected, required this.onChanged});
+
+  static const _labels = {
+    HapticIntensity.off: 'Off',
+    HapticIntensity.low: 'Low',
+    HapticIntensity.medium: 'Medium',
+    HapticIntensity.high: 'High',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.navyMid,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.navyLight, width: 1),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.vibration, color: AppColors.kenteGold),
+              const SizedBox(width: 16),
+              Text('Haptic Feedback', style: AppTextStyles.bodyLarge),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: HapticIntensity.values.map((level) {
+              final isSelected = selected == level;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(level),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.kenteGold.withValues(alpha: 0.2)
+                          : AppColors.navyDeep,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.kenteGold
+                            : AppColors.navyLight,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(
+                      _labels[level]!,
                       style: AppTextStyles.labelSmall.copyWith(
                         color: isSelected
                             ? AppColors.kenteGold

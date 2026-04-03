@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/game_state.dart';
+import '../../core/utils/haptic_service.dart';
 import '../../providers/game_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'widgets/board_widget.dart';
@@ -29,6 +30,31 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   int _displayedStreak = 0;
   DateTime? _lastMatchTime;
 
+  void _fireComboHaptic(int streak) {
+    final count = streak.clamp(2, 5);
+    final delays = List.generate(count, (i) => 70 * i);
+    HapticService.sequence(
+      ref.read(settingsProvider).hapticIntensity,
+      delays,
+    );
+  }
+
+  void _fireWinHaptic() {
+    // Two quick doubles then a triple — triumphant celebration
+    HapticService.sequence(
+      ref.read(settingsProvider).hapticIntensity,
+      [0, 90, 180, 340, 430, 580],
+    );
+  }
+
+  void _fireLostHaptic() {
+    // Three slow heavy impacts — sombre, deliberate
+    HapticService.sequence(
+      ref.read(settingsProvider).hapticIntensity,
+      [0, 200, 400],
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +74,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       // Navigate to result when game ends
       if (prev?.status != next.status &&
           (next.status == GameStatus.won || next.status == GameStatus.lost)) {
+        if (next.status == GameStatus.won) {
+          _fireWinHaptic();
+        } else {
+          _fireLostHaptic();
+        }
         final capturedNext = next;
         Future.delayed(const Duration(milliseconds: 600), () {
           if (!mounted) return;
@@ -76,9 +107,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         }
 
         _lastMatchTime = now;
-
+ 
         if (showBanner) {
-          HapticFeedback.heavyImpact();
+          _fireComboHaptic(next.currentStreak);
           setState(() {
             _showCombo = true;
             _displayedStreak = next.currentStreak;

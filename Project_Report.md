@@ -591,12 +591,12 @@ Each level requires 1 star on the previous level to unlock. Level 1 is always ac
 
 ## 15. Recent Changes
 
-### 15.1 Advanced Visual Feedback (Juice Phase)
-- **Particle Burst System:** High-performance particle effects triggered on successful matches.
-- **Score Pops:** Animated floating text showing points earned at the match location.
-- **No-Match Shake:** Haptic-like visual shake when trying to match incompatible tiles.
-- **Available Glow:** Subtle outer glow on "free" tiles to guide the player.
-- **Streak Combo System:** Tracks consecutive matches to reward players with bonus points and visual multipliers.
+### 15.1 Advanced Visual & Tactile Feedback (Juice Phase)
+- **Haptic Feedback Profile**: Comprehensive tactile vibration system using `lightImpact` for taps, `mediumImpact` for matches, `vibrate` for errors, and `heavyImpact` for speed bursts.
+- **Particle Burst System:** High-performance particle effects (Gold Confetti, Inferno, Nova) triggered on successful matches.
+- **Score Pops & Combo Indicators:** Repositioned, scaled-down banner rewarding rapid play with a time-gated Speed Streak (within 2s and 5s windows).
+- **No-Match Shake & Ripple:** Tactile and visual feedback for invalid moves.
+- **Available Glow:** Subtle outer pulse on "free" tiles to guide the player.
 
 ### 15.2 Mahjong Solitaire Implementation
 - **3D Stacking:** Implemented a full coordinate system `(row, col, layer)` allowing for complex pyramid and bridge layouts.
@@ -617,5 +617,6 @@ To create a "Premium" feel, several micro-interaction systems were added:
 
 - **The "Dip" Effect:** Tapping a tile briefly scales it down (`0.95x`) to provide tactile feedback.
 - **Match Variants:** Different match animations (bursts, streaks, pulses) randomly selected to keep gameplay feeling fresh.
-- **Combo Indicators:** Visual "Streak!" text that grows and intensifies as the player maintains a matching rhythm.
+- **Speed Combo Indicators:** Visual "X x Combo!" banner that is **time-gated** (requires matching within 2s, 5s, or 4s) to reward high-intensity play.
 - **Adaptive Spacing:** `BoardWidget` dynamically calculates tile dimensions to ensure the 3D stack fits perfectly on any mobile screen aspect ratio.
+- **Physical Feedback:** `lightImpact` click whenever a tile is pressed down, enhancing the "clicky" feel of the ivory tiles.

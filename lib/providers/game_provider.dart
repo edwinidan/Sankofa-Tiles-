@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_state.dart';
 import '../models/tile_model.dart';
 import '../core/constants/tile_data.dart';
 import '../core/constants/level_data.dart';
 import '../core/utils/audio_service.dart';
+import '../core/utils/haptic_service.dart';
+import 'settings_provider.dart';
 
 final audioServiceProvider = Provider<AudioService>((ref) {
   final service = AudioService();
@@ -15,14 +16,18 @@ final audioServiceProvider = Provider<AudioService>((ref) {
 
 final gameProvider = StateNotifierProvider<GameNotifier, GameState>((ref) {
   final audio = ref.watch(audioServiceProvider);
-  return GameNotifier(audio);
+  return GameNotifier(audio, ref);
 });
 
 class GameNotifier extends StateNotifier<GameState> {
   final AudioService _audio;
+  final Ref _ref;
   Timer? _timer;
 
-  GameNotifier(this._audio) : super(GameState.initial());
+  GameNotifier(this._audio, this._ref) : super(GameState.initial());
+
+  HapticIntensity get _hapticIntensity =>
+      _ref.read(settingsProvider).hapticIntensity;
 
   void startLevel(int levelId, DifficultyMode difficulty) {
     _timer?.cancel();
@@ -134,8 +139,8 @@ class GameNotifier extends StateNotifier<GameState> {
     final updatedTiles = _updateTile(uid, isSelected: true);
 
     if (firstTile.def.id == secondTile.def.id) {
-      // Match!
-      HapticFeedback.mediumImpact();
+      // Match! — double-thud slam-lock
+      HapticService.sequence(_hapticIntensity, [0, 80]);
       _audio.playMatch();
 
       final matchedTiles = updatedTiles.map((t) {
@@ -167,8 +172,8 @@ class GameNotifier extends StateNotifier<GameState> {
         state = state.copyWith(pendingScorePops: const []);
       });
     } else {
-      // No match — shake both tiles then deselect; reset streak
-      HapticFeedback.vibrate();
+      // No match — sharp "denied" slam
+      HapticService.heavyImpact(_hapticIntensity);
       _audio.playNoMatch();
 
       final mismatchedTiles = updatedTiles.map((t) {

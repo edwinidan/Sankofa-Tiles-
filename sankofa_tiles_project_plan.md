@@ -124,8 +124,9 @@
 - [x] Add **Score Pop** animation at match coordinates
 - [x] Add **No-Match Shake** feedback
 - [x] Add **Press Dip** and **Hover Glow** (Available) feedback
-- [x] Implement **Streak Combo** system with visual multiplier indicators
-- [x] Add **Match Pulse** variant animations
+- [x] Implement **Streak Combo** system with time-gated "Speed Streak" logic (2s, 5s windows)
+- [x] Integrate full **Haptic Feedback Profile** (impacts for taps, matches, errors, and combos)
+- [x] Refine **Match Burst** animations (e.g. single-color Gold confetti)
 - [/] Add Lottie win animation (fireworks / confetti) on win screen
 - [ ] Polish home screen — add animated Adinkra pattern background
 - [ ] Add board entrance animation (tiles deal in one by one on level start)
@@ -202,4 +203,4 @@
 
 ---
 
-*Last updated: Phase 9 in progress — Advanced particle effects and combo system implemented. Next: Lottie animations and screen transitions.*
+*Last updated: Phase 9 in progress — Haptic profile and time-based Speed Streak banner implemented. Next: Lottie animations and screen transitions.*

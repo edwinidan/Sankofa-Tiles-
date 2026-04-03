@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/utils/storage_service.dart';
+import '../core/utils/haptic_service.dart';
 import '../models/game_state.dart';
 
 final storageServiceProvider = Provider<StorageService>((ref) {
@@ -11,12 +12,14 @@ class SettingsState {
   final bool musicEnabled;
   final DifficultyMode defaultDifficulty;
   final bool showTileNames;
+  final HapticIntensity hapticIntensity;
 
   const SettingsState({
     required this.soundEnabled,
     required this.musicEnabled,
     required this.defaultDifficulty,
     required this.showTileNames,
+    required this.hapticIntensity,
   });
 
   SettingsState copyWith({
@@ -24,11 +27,13 @@ class SettingsState {
     bool? musicEnabled,
     DifficultyMode? defaultDifficulty,
     bool? showTileNames,
+    HapticIntensity? hapticIntensity,
   }) => SettingsState(
     soundEnabled: soundEnabled ?? this.soundEnabled,
     musicEnabled: musicEnabled ?? this.musicEnabled,
     defaultDifficulty: defaultDifficulty ?? this.defaultDifficulty,
     showTileNames: showTileNames ?? this.showTileNames,
+    hapticIntensity: hapticIntensity ?? this.hapticIntensity,
   );
 }
 
@@ -40,6 +45,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     musicEnabled: _storage.isMusicEnabled(),
     defaultDifficulty: _storage.getDefaultDifficulty(),
     showTileNames: _storage.isShowTileNames(),
+    hapticIntensity: _storage.getHapticIntensity(),
   ));
 
   Future<void> setSoundEnabled(bool val) async {
@@ -60,6 +66,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setShowTileNames(bool val) async {
     await _storage.setShowTileNames(val);
     state = state.copyWith(showTileNames: val);
+  }
+
+  Future<void> setHapticIntensity(HapticIntensity intensity) async {
+    await _storage.setHapticIntensity(intensity);
+    state = state.copyWith(hapticIntensity: intensity);
   }
 
   Future<void> resetProgress() async {

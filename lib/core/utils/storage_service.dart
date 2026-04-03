@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/game_state.dart';
 import '../../models/level_model.dart';
+import 'haptic_service.dart';
 
 class StorageService {
   static const _prefixBestScore = 'best_score_';
@@ -10,6 +11,7 @@ class StorageService {
   static const _keyMusicEnabled = 'music_enabled';
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyShowTileNames = 'show_tile_names';
+  static const _keyHapticIntensity = 'haptic_intensity';
 
   late SharedPreferences _prefs;
 
@@ -81,6 +83,18 @@ class StorageService {
   bool isShowTileNames() => _prefs.getBool(_keyShowTileNames) ?? true;
   Future<void> setShowTileNames(bool val) async =>
       _prefs.setBool(_keyShowTileNames, val);
+
+  // Haptic intensity
+  HapticIntensity getHapticIntensity() {
+    final val = _prefs.getString(_keyHapticIntensity);
+    return HapticIntensity.values.firstWhere(
+      (h) => h.name == val,
+      orElse: () => HapticIntensity.high,
+    );
+  }
+
+  Future<void> setHapticIntensity(HapticIntensity intensity) async =>
+      _prefs.setString(_keyHapticIntensity, intensity.name);
 
   // Reset
   Future<void> resetAllProgress() async {

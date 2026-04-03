@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/tile_model.dart';
 import '../../../core/constants/tile_data.dart';
+import '../../../core/utils/haptic_service.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -80,6 +80,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     super.didUpdateWidget(oldWidget);
     if (widget.tile.isMismatched && !oldWidget.tile.isMismatched) {
       _shakeController.forward(from: 0);
+    }
+    // Snap-click when tile lifts (selection confirmed)
+    if (widget.tile.isSelected && !oldWidget.tile.isSelected) {
+      HapticService.selectionClick(ref.read(settingsProvider).hapticIntensity);
     }
   }
 
@@ -215,7 +219,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
       body = GestureDetector(
         onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
         onTapDown: (_) {
-          HapticFeedback.lightImpact();
+          HapticService.tilePress(ref.read(settingsProvider).hapticIntensity);
           setState(() => _isPressed = true);
         },
         onTapUp: (_) => setState(() => _isPressed = false),
