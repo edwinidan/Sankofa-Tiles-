@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_state.dart';
 import '../models/tile_model.dart';
@@ -134,6 +135,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (firstTile.def.id == secondTile.def.id) {
       // Match!
+      HapticFeedback.mediumImpact();
+      _audio.playMatch();
+
       final matchedTiles = updatedTiles.map((t) {
         if (t.uid == firstUid || t.uid == uid) {
           return t.copyWith(isMatched: true, isSelected: false, isHinted: false);
@@ -156,7 +160,6 @@ class GameNotifier extends StateNotifier<GameState> {
         ],
       );
 
-      _audio.playMatch();
       _checkWin();
 
       Future.delayed(const Duration(milliseconds: 900), () {
@@ -165,6 +168,9 @@ class GameNotifier extends StateNotifier<GameState> {
       });
     } else {
       // No match — shake both tiles then deselect; reset streak
+      HapticFeedback.vibrate();
+      _audio.playNoMatch();
+
       final mismatchedTiles = updatedTiles.map((t) {
         if (t.uid == firstUid || t.uid == uid) {
           return t.copyWith(isMismatched: true);
@@ -178,8 +184,6 @@ class GameNotifier extends StateNotifier<GameState> {
         clearSelectedTile: true,
         currentStreak: 0,
       );
-
-      _audio.playNoMatch();
 
       Future.delayed(const Duration(milliseconds: 600), () {
         if (!mounted) return;

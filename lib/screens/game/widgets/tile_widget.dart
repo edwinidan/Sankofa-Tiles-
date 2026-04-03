@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/tile_model.dart';
@@ -213,7 +214,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
       body = GestureDetector(
         onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
-        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapDown: (_) {
+          HapticFeedback.lightImpact();
+          setState(() => _isPressed = true);
+        },
         onTapUp: (_) => setState(() => _isPressed = false),
         onTapCancel: () => setState(() => _isPressed = false),
         child: AnimatedContainer(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,7 @@ class GameScreen extends ConsumerStatefulWidget {
 class _GameScreenState extends ConsumerState<GameScreen> {
   bool _showCombo = false;
   int _displayedStreak = 0;
+  DateTime? _lastMatchTime;
 
   @override
   void initState() {
@@ -54,16 +56,39 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         });
       }
 
-      // Show combo banner when streak reaches or extends past 3
-      if (next.currentStreak >= 3 &&
-          next.currentStreak != (prev?.currentStreak ?? 0)) {
-        setState(() {
-          _showCombo = true;
-          _displayedStreak = next.currentStreak;
-        });
-        Future.delayed(const Duration(milliseconds: 1800), () {
-          if (mounted) setState(() => _showCombo = false);
-        });
+      // Time-based Combo Trigger
+      // Only show banner if matches are fast: (2 in 2s, 3 in 5s, 4+ in 4s)
+      if (next.currentStreak > (prev?.currentStreak ?? 0)) {
+        final now = DateTime.now();
+        bool showBanner = false;
+
+        if (_lastMatchTime != null) {
+          final diff = now.difference(_lastMatchTime!).inMilliseconds / 1000.0;
+          final streak = next.currentStreak;
+
+          if (streak == 2 && diff <= 2.0) {
+            showBanner = true;
+          } else if (streak == 3 && diff <= 5.0) {
+            showBanner = true;
+          } else if (streak >= 4 && diff <= 4.0) {
+            showBanner = true;
+          }
+        }
+
+        _lastMatchTime = now;
+
+        if (showBanner) {
+          HapticFeedback.heavyImpact();
+          setState(() {
+            _showCombo = true;
+            _displayedStreak = next.currentStreak;
+          });
+          Future.delayed(const Duration(milliseconds: 1800), () {
+            if (mounted) setState(() => _showCombo = false);
+          });
+        }
+      } else if (next.currentStreak == 0) {
+        _lastMatchTime = null;
       }
     });
 
