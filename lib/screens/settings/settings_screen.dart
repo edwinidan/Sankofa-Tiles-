@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/haptic_service.dart';
@@ -16,66 +16,70 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: AppColors.navyDeep,
-      appBar: AppBar(
-        title: Text('Settings', style: AppTextStyles.displaySmall),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => context.go('/'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) safeBack(context);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        appBar: AppBar(
+          title: Text('Settings', style: AppTextStyles.displaySmall),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios),
+            onPressed: () => safeBack(context),
+          ),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const _SectionHeader(title: 'Audio'),
-          _ToggleTile(
-            icon: Icons.volume_up_outlined,
-            label: 'Sound Effects',
-            value: settings.soundEnabled,
-            onChanged: notifier.setSoundEnabled,
-          ),
-          _ToggleTile(
-            icon: Icons.music_note_outlined,
-            label: 'Background Music',
-            value: settings.musicEnabled,
-            onChanged: notifier.setMusicEnabled,
-          ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const _SectionHeader(title: 'Audio'),
+            _ToggleTile(
+              icon: Icons.volume_up_outlined,
+              label: 'Sound Effects',
+              value: settings.soundEnabled,
+              onChanged: notifier.setSoundEnabled,
+            ),
+            _ToggleTile(
+              icon: Icons.music_note_outlined,
+              label: 'Background Music',
+              value: settings.musicEnabled,
+              onChanged: notifier.setMusicEnabled,
+            ),
 
-          const SizedBox(height: 8),
-          _HapticTile(
-            selected: settings.hapticIntensity,
-            onChanged: notifier.setHapticIntensity,
-          ),
+            const SizedBox(height: 8),
+            _HapticTile(
+              selected: settings.hapticIntensity,
+              onChanged: notifier.setHapticIntensity,
+            ),
 
-          const SizedBox(height: 16),
-          const AdinkraDivider(),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            const AdinkraDivider(),
+            const SizedBox(height: 16),
 
-          const _SectionHeader(title: 'Gameplay'),
-          _ToggleTile(
-            icon: Icons.text_fields,
-            label: 'Show Tile Names',
-            description: 'Display Adinkra symbol names on tiles',
-            value: settings.showTileNames,
-            onChanged: notifier.setShowTileNames,
-          ),
+            const _SectionHeader(title: 'Gameplay'),
+            _ToggleTile(
+              icon: Icons.text_fields,
+              label: 'Show Tile Names',
+              description: 'Display Adinkra symbol names on tiles',
+              value: settings.showTileNames,
+              onChanged: notifier.setShowTileNames,
+            ),
 
-          const SizedBox(height: 8),
-          _DifficultyTile(
-            selected: settings.defaultDifficulty,
-            onChanged: notifier.setDefaultDifficulty,
-          ),
+            const SizedBox(height: 8),
+            _DifficultyTile(
+              selected: settings.defaultDifficulty,
+              onChanged: notifier.setDefaultDifficulty,
+            ),
 
-          const SizedBox(height: 16),
-          const AdinkraDivider(),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            const AdinkraDivider(),
+            const SizedBox(height: 16),
 
-          const _SectionHeader(title: 'Data'),
-          _ResetTile(
-            onReset: () => _confirmReset(context, ref),
-          ),
-        ],
+            const _SectionHeader(title: 'Data'),
+            _ResetTile(onReset: () => _confirmReset(context, ref)),
+          ],
+        ),
       ),
     );
   }
@@ -107,9 +111,9 @@ class SettingsScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.pop(context);
               ref.read(settingsProvider.notifier).resetProgress();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Progress reset.')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Progress reset.')));
             },
             child: const Text('Reset'),
           ),
@@ -179,10 +183,7 @@ class _DifficultyTile extends StatelessWidget {
   final DifficultyMode selected;
   final Future<void> Function(DifficultyMode) onChanged;
 
-  const _DifficultyTile({
-    required this.selected,
-    required this.onChanged,
-  });
+  const _DifficultyTile({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -207,8 +208,7 @@ class _DifficultyTile extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: DifficultyMode.values.map((mode) {
-              final label =
-                  mode.name[0].toUpperCase() + mode.name.substring(1);
+              final label = mode.name[0].toUpperCase() + mode.name.substring(1);
               final isSelected = selected == mode;
               return Expanded(
                 child: GestureDetector(
@@ -337,7 +337,10 @@ class _ResetTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.navyMid,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.5), width: 1),
+          border: Border.all(
+            color: AppColors.errorRed.withValues(alpha: 0.5),
+            width: 1,
+          ),
         ),
         child: ListTile(
           leading: const Icon(Icons.delete_outline, color: AppColors.errorRed),
@@ -349,10 +352,7 @@ class _ResetTile extends StatelessWidget {
             'Clears all scores and unlocked levels',
             style: AppTextStyles.bodySmall,
           ),
-          trailing: const Icon(
-            Icons.chevron_right,
-            color: AppColors.errorRed,
-          ),
+          trailing: const Icon(Icons.chevron_right, color: AppColors.errorRed),
         ),
       ),
     );

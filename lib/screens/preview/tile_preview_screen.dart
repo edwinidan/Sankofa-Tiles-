@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/tile_data.dart';
+import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/tile_model.dart';
 import '../game/widgets/tile_widget.dart';
@@ -29,6 +30,10 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
           style: TextStyle(color: AppColors.kenteGold),
         ),
         iconTheme: const IconThemeData(color: AppColors.kenteGold),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => safeBack(context),
+        ),
       ),
       body: Column(
         children: [

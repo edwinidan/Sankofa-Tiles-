@@ -48,11 +48,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     _stars = computeStars(widget.gameState.score, level.starThresholds);
 
-    ref.read(progressProvider).saveLevelResult(
-      widget.gameState.levelId,
-      widget.gameState.score,
-      _stars,
-    );
+    ref
+        .read(progressProvider)
+        .saveLevelResult(
+          widget.gameState.levelId,
+          widget.gameState.score,
+          _stars,
+        );
   }
 
   @override
@@ -112,7 +114,10 @@ class _WinContent extends StatelessWidget {
         // Starburst animation
         ScaleTransition(
           scale: scaleAnim,
-          child: const Text('✦', style: TextStyle(fontSize: 64, color: AppColors.kenteGold)),
+          child: const Text(
+            '✦',
+            style: TextStyle(fontSize: 64, color: AppColors.kenteGold),
+          ),
         ),
 
         const SizedBox(height: 16),
@@ -121,7 +126,9 @@ class _WinContent extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           level?.name ?? '',
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.kenteGoldDim),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.kenteGoldDim,
+          ),
         ),
 
         const SizedBox(height: 24),
@@ -149,9 +156,17 @@ class _WinContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Score breakdown
-        _ScoreRow(label: 'Matches', value: '${gameState.moves} × 100', score: matchScore),
+        _ScoreRow(
+          label: 'Matches',
+          value: '${gameState.moves} × 100',
+          score: matchScore,
+        ),
         if (gameState.difficulty == DifficultyMode.normal)
-          _ScoreRow(label: 'Time Bonus', value: '${300 - gameState.secondsElapsed.clamp(0, 300)}s × 2', score: timeBonus),
+          _ScoreRow(
+            label: 'Time Bonus',
+            value: '${300 - gameState.secondsElapsed.clamp(0, 300)}s × 2',
+            score: timeBonus,
+          ),
         const Divider(color: AppColors.kenteGoldDim),
         _ScoreRow(
           label: 'TOTAL',
@@ -168,7 +183,7 @@ class _WinContent extends StatelessWidget {
               child: KenteButton(
                 label: 'MENU',
                 icon: Icons.list,
-                onTap: () => context.go('/level-select'),
+                onTap: () => context.go('/'),
               ),
             ),
             const SizedBox(width: 12),
@@ -177,9 +192,7 @@ class _WinContent extends StatelessWidget {
                 label: 'NEXT',
                 icon: Icons.arrow_forward,
                 onTap: gameState.levelId < kLevels.length
-                    ? () => context.go(
-                          '/level-select',
-                        )
+                    ? () => context.go('/level-select')
                     : null,
               ),
             ),
@@ -202,7 +215,10 @@ class _LoseContent extends StatelessWidget {
       children: [
         const Spacer(),
 
-        const Text('◌', style: TextStyle(fontSize: 64, color: AppColors.textMuted)),
+        const Text(
+          '◌',
+          style: TextStyle(fontSize: 64, color: AppColors.textMuted),
+        ),
 
         const SizedBox(height: 16),
         Text('No More Moves', style: AppTextStyles.displayMedium),
@@ -234,7 +250,7 @@ class _LoseContent extends StatelessWidget {
               child: KenteButton(
                 label: 'MENU',
                 icon: Icons.list,
-                onTap: () => context.go('/level-select'),
+                onTap: () => context.go('/'),
               ),
             ),
             const SizedBox(width: 12),

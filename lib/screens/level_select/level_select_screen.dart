@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/level_data.dart';
+import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/game_state.dart';
@@ -18,44 +19,50 @@ class LevelSelectScreen extends ConsumerWidget {
     final progress = ref.watch(progressProvider);
     final settings = ref.watch(settingsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.navyDeep,
-      appBar: AppBar(
-        title: Text('Choose Your Level', style: AppTextStyles.displaySmall),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => context.go('/'),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.1,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) safeBack(context);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        appBar: AppBar(
+          title: Text('Choose Your Level', style: AppTextStyles.displaySmall),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios),
+            onPressed: () => safeBack(context),
           ),
-          itemCount: kLevels.length,
-          itemBuilder: (context, i) {
-            final level = kLevels[i];
-            final unlocked = progress.isLevelUnlocked(level.id);
-            final stars = progress.getStars(level.id);
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: kLevels.length,
+            itemBuilder: (context, i) {
+              final level = kLevels[i];
+              final unlocked = progress.isLevelUnlocked(level.id);
+              final stars = progress.getStars(level.id);
 
-            return _LevelCard(
-              level: level,
-              unlocked: unlocked,
-              stars: stars,
-              defaultDifficulty: settings.defaultDifficulty,
-              onTap: unlocked
-                  ? () => _showDifficultySheet(
+              return _LevelCard(
+                level: level,
+                unlocked: unlocked,
+                stars: stars,
+                defaultDifficulty: settings.defaultDifficulty,
+                onTap: unlocked
+                    ? () => _showDifficultySheet(
                         context,
                         level.id,
                         settings.defaultDifficulty,
                       )
-                  : null,
-            );
-          },
+                    : null,
+              );
+            },
+          ),
         ),
       ),
     );
@@ -131,15 +138,15 @@ class _LevelCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: unlocked
-                        ? AppColors.kenteGold
-                        : AppColors.navyLight,
+                    color: unlocked ? AppColors.kenteGold : AppColors.navyLight,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     '${level.id}',
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: unlocked ? AppColors.navyDeep : AppColors.textMuted,
+                      color: unlocked
+                          ? AppColors.navyDeep
+                          : AppColors.textMuted,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -289,10 +296,7 @@ class _DifficultySheetState extends State<_DifficultySheet> {
             width: double.infinity,
             onTap: () {
               Navigator.pop(context);
-              context.go(
-                '/game/${widget.levelId}',
-                extra: _selected,
-              );
+              context.go('/game/${widget.levelId}', extra: _selected);
             },
           ),
           const SizedBox(height: 8),

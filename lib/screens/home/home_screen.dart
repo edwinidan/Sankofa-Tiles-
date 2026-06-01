@@ -33,21 +33,21 @@ class HomeScreen extends StatelessWidget {
                     label: 'PLAY',
                     icon: Icons.play_arrow_rounded,
                     width: double.infinity,
-                    onTap: () => context.go('/level-select'),
+                    onTap: () => context.push('/level-select'),
                   ),
                   const SizedBox(height: 16),
                   KenteButton(
                     label: 'SETTINGS',
                     icon: Icons.settings_outlined,
                     width: double.infinity,
-                    onTap: () => context.go('/settings'),
+                    onTap: () => context.push('/settings'),
                   ),
                   const SizedBox(height: 16),
                   KenteButton(
                     label: 'HOW TO PLAY',
                     icon: Icons.help_outline,
                     width: double.infinity,
-                    onTap: () => context.go('/onboarding'),
+                    onTap: () => context.push('/onboarding'),
                   ),
                   const SizedBox(height: 16),
                   KenteButton(
@@ -65,10 +65,7 @@ class HomeScreen extends StatelessWidget {
             // Version
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                'v1.0.0',
-                style: AppTextStyles.bodySmall,
-              ),
+              child: Text('v1.0.0', style: AppTextStyles.bodySmall),
             ),
           ],
         ),
@@ -85,10 +82,7 @@ class _LogoSection extends StatelessWidget {
         // Decorative Adinkra rings
         const Text(
           '◎',
-          style: TextStyle(
-            color: AppColors.kenteGold,
-            fontSize: 48,
-          ),
+          style: TextStyle(color: AppColors.kenteGold, fontSize: 48),
         ),
         const SizedBox(height: 8),
         RichText(
@@ -99,10 +93,7 @@ class _LogoSection extends StatelessWidget {
               TextSpan(text: 'SANKOFA'),
               TextSpan(
                 text: '  ⟳  ',
-                style: TextStyle(
-                  color: AppColors.kenteGoldDim,
-                  fontSize: 24,
-                ),
+                style: TextStyle(color: AppColors.kenteGoldDim, fontSize: 24),
               ),
               TextSpan(text: 'TILES'),
             ],

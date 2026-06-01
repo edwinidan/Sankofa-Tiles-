@@ -19,12 +19,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _controller = PageController();
   int _currentPage = 0;
 
-  final _pages = const [
-    _Page1(),
-    _Page2(),
-    _Page3(),
-    _Page4(),
-  ];
+  final _pages = const [_Page1(), _Page2(), _Page3(), _Page4()];
 
   @override
   void dispose() {
@@ -73,10 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
             // Dots + navigation
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
                   // Dots
@@ -124,7 +116,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _finish() async {
     final storage = ref.read(storageServiceProvider);
     await storage.setOnboardingComplete();
-    if (mounted) context.go('/level-select');
+    if (mounted) context.go('/');
   }
 }
 
@@ -162,7 +154,10 @@ class _Page2 extends StatelessWidget {
             text: 'Tap another tile with the same Adinkra symbol',
           ),
           const SizedBox(height: 12),
-          const _StepRow(number: '3', text: 'Matching pairs are removed from the board'),
+          const _StepRow(
+            number: '3',
+            text: 'Matching pairs are removed from the board',
+          ),
           const SizedBox(height: 12),
           const _StepRow(
             number: '4',
@@ -189,7 +184,12 @@ class _Page3 extends StatelessWidget {
   const _Page3();
 
   static const _exampleTiles = [
-    'nyansapo', 'sankofa', 'gye_nyame', 'akoma', 'adinkrahene', 'aya',
+    'nyansapo',
+    'sankofa',
+    'gye_nyame',
+    'akoma',
+    'adinkrahene',
+    'aya',
   ];
 
   @override
@@ -250,10 +250,7 @@ class _OnboardingPage extends StatelessWidget {
         children: [
           Text(
             symbol,
-            style: const TextStyle(
-              color: AppColors.kenteGold,
-              fontSize: 64,
-            ),
+            style: const TextStyle(color: AppColors.kenteGold, fontSize: 64),
           ),
           const SizedBox(height: 12),
           Text(
@@ -306,9 +303,7 @@ class _StepRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(text, style: AppTextStyles.bodyMedium),
-        ),
+        Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
       ],
     );
   }

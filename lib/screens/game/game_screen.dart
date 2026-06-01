@@ -33,26 +33,28 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void _fireComboHaptic(int streak) {
     final count = streak.clamp(2, 5);
     final delays = List.generate(count, (i) => 70 * i);
-    HapticService.sequence(
-      ref.read(settingsProvider).hapticIntensity,
-      delays,
-    );
+    HapticService.sequence(ref.read(settingsProvider).hapticIntensity, delays);
   }
 
   void _fireWinHaptic() {
     // Two quick doubles then a triple — triumphant celebration
-    HapticService.sequence(
-      ref.read(settingsProvider).hapticIntensity,
-      [0, 90, 180, 340, 430, 580],
-    );
+    HapticService.sequence(ref.read(settingsProvider).hapticIntensity, [
+      0,
+      90,
+      180,
+      340,
+      430,
+      580,
+    ]);
   }
 
   void _fireLostHaptic() {
     // Three slow heavy impacts — sombre, deliberate
-    HapticService.sequence(
-      ref.read(settingsProvider).hapticIntensity,
-      [0, 200, 400],
-    );
+    HapticService.sequence(ref.read(settingsProvider).hapticIntensity, [
+      0,
+      200,
+      400,
+    ]);
   }
 
   @override
@@ -67,10 +69,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(gameProvider.notifier).startLevel(
-            widget.levelId,
-            widget.difficulty,
-          );
+      ref
+          .read(gameProvider.notifier)
+          .startLevel(widget.levelId, widget.difficulty);
     });
   }
 
@@ -115,7 +116,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         }
 
         _lastMatchTime = now;
- 
+
         if (showBanner) {
           _fireComboHaptic(next.currentStreak);
           setState(() {
@@ -150,29 +151,26 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         ? _PausedOverlay(
                             onResume: () =>
                                 ref.read(gameProvider.notifier).resumeGame(),
-                            onQuit: () => context.go('/level-select'),
+                            onQuit: () => context.go('/'),
                           )
                         : const BoardWidget(),
                     if (_showCombo)
                       IgnorePointer(
-                        child: _ComboOverlay(
-                          key: ValueKey(_displayedStreak),
-                          streak: _displayedStreak,
-                        )
-                            .animate()
-                            .scale(
-                              begin: const Offset(0.2, 0.2),
-                              end: const Offset(1.0, 1.0),
-                              duration: 280.ms,
-                              curve: Curves.elasticOut,
-                            )
-                            .shake(hz: 4, duration: 220.ms)
-                            .then(delay: 620.ms)
-                            .fade(
-                              begin: 1.0,
-                              end: 0.0,
-                              duration: 480.ms,
-                            ),
+                        child:
+                            _ComboOverlay(
+                                  key: ValueKey(_displayedStreak),
+                                  streak: _displayedStreak,
+                                )
+                                .animate()
+                                .scale(
+                                  begin: const Offset(0.2, 0.2),
+                                  end: const Offset(1.0, 1.0),
+                                  duration: 280.ms,
+                                  curve: Curves.elasticOut,
+                                )
+                                .shake(hz: 4, duration: 220.ms)
+                                .then(delay: 620.ms)
+                                .fade(begin: 1.0, end: 0.0, duration: 480.ms),
                       ),
                   ],
                 ),
@@ -210,7 +208,7 @@ class _TopBar extends ConsumerWidget {
                   },
                   onQuit: () {
                     Navigator.pop(context);
-                    context.go('/level-select');
+                    context.go('/');
                   },
                 ),
               );
@@ -276,11 +274,7 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
 
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
+  const _ActionButton({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -330,10 +324,7 @@ class _PausedOverlay extends StatelessWidget {
           children: [
             Text('PAUSED', style: AppTextStyles.displayMedium),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: onResume,
-              child: const Text('Resume'),
-            ),
+            ElevatedButton(onPressed: onResume, child: const Text('Resume')),
             const SizedBox(height: 12),
             TextButton(
               onPressed: onQuit,
@@ -360,8 +351,8 @@ class _ComboOverlay extends StatelessWidget {
   int get _bonus => streak >= 5
       ? 200
       : streak == 4
-          ? 100
-          : 50;
+      ? 100
+      : 50;
 
   @override
   Widget build(BuildContext context) {
@@ -423,14 +414,8 @@ class _QuitDialog extends StatelessWidget {
         style: AppTextStyles.bodyMedium,
       ),
       actions: [
-        TextButton(
-          onPressed: onResume,
-          child: const Text('Stay'),
-        ),
-        ElevatedButton(
-          onPressed: onQuit,
-          child: const Text('Leave'),
-        ),
+        TextButton(onPressed: onResume, child: const Text('Stay')),
+        ElevatedButton(onPressed: onQuit, child: const Text('Leave')),
       ],
     );
   }
