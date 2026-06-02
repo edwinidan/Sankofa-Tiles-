@@ -46,17 +46,19 @@ class SettingsScreen extends ConsumerWidget {
               value: settings.musicEnabled,
               onChanged: notifier.setMusicEnabled,
             ),
-
+            _MusicVolumeTile(
+              value: settings.musicVolume,
+              enabled: settings.musicEnabled,
+              onChanged: notifier.setMusicVolume,
+            ),
             const SizedBox(height: 8),
             _HapticTile(
               selected: settings.hapticIntensity,
               onChanged: notifier.setHapticIntensity,
             ),
-
             const SizedBox(height: 16),
             const AdinkraDivider(),
             const SizedBox(height: 16),
-
             const _SectionHeader(title: 'Gameplay'),
             _ToggleTile(
               icon: Icons.text_fields,
@@ -65,17 +67,14 @@ class SettingsScreen extends ConsumerWidget {
               value: settings.showTileNames,
               onChanged: notifier.setShowTileNames,
             ),
-
             const SizedBox(height: 8),
             _DifficultyTile(
               selected: settings.defaultDifficulty,
               onChanged: notifier.setDefaultDifficulty,
             ),
-
             const SizedBox(height: 16),
             const AdinkraDivider(),
             const SizedBox(height: 16),
-
             const _SectionHeader(title: 'Data'),
             _ResetTile(onReset: () => _confirmReset(context, ref)),
           ],
@@ -174,6 +173,70 @@ class _ToggleTile extends StatelessWidget {
             : null,
         value: value,
         onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _MusicVolumeTile extends StatelessWidget {
+  final double value;
+  final bool enabled;
+  final Future<void> Function(double) onChanged;
+
+  const _MusicVolumeTile({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (value * 100).round();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.navyMid,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.navyLight, width: 1),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.volume_down_outlined,
+                color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Music Volume',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color:
+                        enabled ? AppColors.textPrimary : AppColors.textMuted,
+                  ),
+                ),
+              ),
+              Text(
+                '$percent%',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value,
+            min: 0,
+            max: 1,
+            divisions: 10,
+            activeColor: AppColors.kenteGold,
+            inactiveColor: AppColors.navyLight,
+            onChanged: enabled ? (val) => onChanged(val) : null,
+          ),
+        ],
       ),
     );
   }

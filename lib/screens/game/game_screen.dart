@@ -151,26 +151,28 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         ? _PausedOverlay(
                             onResume: () =>
                                 ref.read(gameProvider.notifier).resumeGame(),
-                            onQuit: () => context.go('/'),
+                            onQuit: () {
+                              ref.read(gameProvider.notifier).leaveGame();
+                              context.go('/');
+                            },
                           )
                         : const BoardWidget(),
                     if (_showCombo)
                       IgnorePointer(
-                        child:
-                            _ComboOverlay(
-                                  key: ValueKey(_displayedStreak),
-                                  streak: _displayedStreak,
-                                )
-                                .animate()
-                                .scale(
-                                  begin: const Offset(0.2, 0.2),
-                                  end: const Offset(1.0, 1.0),
-                                  duration: 280.ms,
-                                  curve: Curves.elasticOut,
-                                )
-                                .shake(hz: 4, duration: 220.ms)
-                                .then(delay: 620.ms)
-                                .fade(begin: 1.0, end: 0.0, duration: 480.ms),
+                        child: _ComboOverlay(
+                          key: ValueKey(_displayedStreak),
+                          streak: _displayedStreak,
+                        )
+                            .animate()
+                            .scale(
+                              begin: const Offset(0.2, 0.2),
+                              end: const Offset(1.0, 1.0),
+                              duration: 280.ms,
+                              curve: Curves.elasticOut,
+                            )
+                            .shake(hz: 4, duration: 220.ms)
+                            .then(delay: 620.ms)
+                            .fade(begin: 1.0, end: 0.0, duration: 480.ms),
                       ),
                   ],
                 ),
@@ -208,6 +210,7 @@ class _TopBar extends ConsumerWidget {
                   },
                   onQuit: () {
                     Navigator.pop(context);
+                    ref.read(gameProvider.notifier).leaveGame();
                     context.go('/');
                   },
                 ),
@@ -217,10 +220,37 @@ class _TopBar extends ConsumerWidget {
           const Spacer(),
           Text('Level $levelId', style: AppTextStyles.displaySmall),
           const Spacer(),
-          const SizedBox(width: 48), // balance
+          IconButton(
+            tooltip: 'Settings',
+            icon:
+                const Icon(Icons.settings_outlined, color: AppColors.kenteGold),
+            onPressed: () => _openGameSettings(context, ref),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _openGameSettings(BuildContext context, WidgetRef ref) async {
+    final wasPlaying = ref.read(gameProvider).status == GameStatus.playing;
+    if (wasPlaying) {
+      ref.read(gameProvider.notifier).pauseGame();
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.navyMid,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) => const _GameSettingsSheet(),
+    );
+
+    if (!context.mounted) return;
+    if (wasPlaying && ref.read(gameProvider).status == GameStatus.paused) {
+      ref.read(gameProvider.notifier).resumeGame();
+    }
   }
 }
 
@@ -303,6 +333,236 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+class _GameSettingsSheet extends ConsumerWidget {
+  const _GameSettingsSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.navyLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Text('Settings', style: AppTextStyles.displaySmall),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Close',
+                  icon: const Icon(Icons.close, color: AppColors.kenteGold),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _SheetSwitchTile(
+              icon: Icons.volume_up_outlined,
+              label: 'Sound Effects',
+              value: settings.soundEnabled,
+              onChanged: notifier.setSoundEnabled,
+            ),
+            _SheetSwitchTile(
+              icon: Icons.music_note_outlined,
+              label: 'Background Music',
+              value: settings.musicEnabled,
+              onChanged: notifier.setMusicEnabled,
+            ),
+            _SheetVolumeTile(
+              value: settings.musicVolume,
+              enabled: settings.musicEnabled,
+              onChanged: notifier.setMusicVolume,
+            ),
+            _SheetSwitchTile(
+              icon: Icons.text_fields,
+              label: 'Show Tile Names',
+              value: settings.showTileNames,
+              onChanged: notifier.setShowTileNames,
+            ),
+            _SheetHapticTile(
+              selected: settings.hapticIntensity,
+              onChanged: notifier.setHapticIntensity,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetSwitchTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool value;
+  final Future<void> Function(bool) onChanged;
+
+  const _SheetSwitchTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      secondary: Icon(icon, color: AppColors.kenteGold),
+      title: Text(label, style: AppTextStyles.bodyLarge),
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _SheetVolumeTile extends StatelessWidget {
+  final double value;
+  final bool enabled;
+  final Future<void> Function(double) onChanged;
+
+  const _SheetVolumeTile({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (value * 100).round();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.volume_down_outlined,
+                color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Music Volume',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color:
+                        enabled ? AppColors.textPrimary : AppColors.textMuted,
+                  ),
+                ),
+              ),
+              Text(
+                '$percent%',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value,
+            min: 0,
+            max: 1,
+            divisions: 10,
+            activeColor: AppColors.kenteGold,
+            inactiveColor: AppColors.navyLight,
+            onChanged: enabled ? (val) => onChanged(val) : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetHapticTile extends StatelessWidget {
+  final HapticIntensity selected;
+  final Future<void> Function(HapticIntensity) onChanged;
+
+  const _SheetHapticTile({required this.selected, required this.onChanged});
+
+  static const _labels = {
+    HapticIntensity.off: 'Off',
+    HapticIntensity.low: 'Low',
+    HapticIntensity.medium: 'Medium',
+    HapticIntensity.high: 'High',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.vibration, color: AppColors.kenteGold),
+              const SizedBox(width: 16),
+              Text('Haptic Feedback', style: AppTextStyles.bodyLarge),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: HapticIntensity.values.map((level) {
+              final isSelected = selected == level;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(level),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.kenteGold.withValues(alpha: 0.2)
+                          : AppColors.navyDeep,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.kenteGold
+                            : AppColors.navyLight,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(
+                      _labels[level]!,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: isSelected
+                            ? AppColors.kenteGold
+                            : AppColors.textMuted,
+                        fontSize: 11,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PausedOverlay extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onQuit;
@@ -351,8 +611,8 @@ class _ComboOverlay extends StatelessWidget {
   int get _bonus => streak >= 5
       ? 200
       : streak == 4
-      ? 100
-      : 50;
+          ? 100
+          : 50;
 
   @override
   Widget build(BuildContext context) {

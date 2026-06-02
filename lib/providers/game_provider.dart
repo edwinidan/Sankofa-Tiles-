@@ -17,6 +17,7 @@ final audioServiceProvider = Provider<AudioService>((ref) {
   final service = AudioService(
     sound: settings.soundEnabled,
     music: settings.musicEnabled,
+    musicVolume: settings.musicVolume,
   );
 
   // Keep AudioService in sync whenever the user changes settings.
@@ -26,6 +27,9 @@ final audioServiceProvider = Provider<AudioService>((ref) {
     }
     if (prev?.musicEnabled != next.musicEnabled) {
       service.setMusicEnabled(next.musicEnabled);
+    }
+    if (prev?.musicVolume != next.musicVolume) {
+      service.setMusicVolume(next.musicVolume);
     }
   });
 
@@ -397,6 +401,8 @@ class GameNotifier extends StateNotifier<GameState> {
     final pairs = BoardSolver.findAvailableMatchingPairs(state.tiles);
     if (pairs.isEmpty) return;
 
+    _audio.playHint();
+
     TilePair pair = pairs.first;
     for (final candidate in pairs) {
       if (BoardSolver.isSafeMove(
@@ -484,6 +490,8 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
+    _audio.playShuffle();
+
     state = state.copyWith(
       tiles: solvableShuffle,
       score: (state.score - 50).clamp(0, 999999),
@@ -495,6 +503,12 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.status != GameStatus.playing) return;
     _timer?.cancel();
     state = state.copyWith(status: GameStatus.paused);
+  }
+
+  void leaveGame() {
+    _timer?.cancel();
+    unawaited(_audio.stopBackgroundMusic());
+    state = GameState.initial();
   }
 
   void resumeGame() {

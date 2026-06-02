@@ -4,12 +4,14 @@ import '../core/utils/haptic_service.dart';
 import '../models/game_state.dart';
 
 final storageServiceProvider = Provider<StorageService>((ref) {
-  throw UnimplementedError('StorageService must be overridden in ProviderScope');
+  throw UnimplementedError(
+      'StorageService must be overridden in ProviderScope');
 });
 
 class SettingsState {
   final bool soundEnabled;
   final bool musicEnabled;
+  final double musicVolume;
   final DifficultyMode defaultDifficulty;
   final bool showTileNames;
   final HapticIntensity hapticIntensity;
@@ -17,6 +19,7 @@ class SettingsState {
   const SettingsState({
     required this.soundEnabled,
     required this.musicEnabled,
+    required this.musicVolume,
     required this.defaultDifficulty,
     required this.showTileNames,
     required this.hapticIntensity,
@@ -25,28 +28,33 @@ class SettingsState {
   SettingsState copyWith({
     bool? soundEnabled,
     bool? musicEnabled,
+    double? musicVolume,
     DifficultyMode? defaultDifficulty,
     bool? showTileNames,
     HapticIntensity? hapticIntensity,
-  }) => SettingsState(
-    soundEnabled: soundEnabled ?? this.soundEnabled,
-    musicEnabled: musicEnabled ?? this.musicEnabled,
-    defaultDifficulty: defaultDifficulty ?? this.defaultDifficulty,
-    showTileNames: showTileNames ?? this.showTileNames,
-    hapticIntensity: hapticIntensity ?? this.hapticIntensity,
-  );
+  }) =>
+      SettingsState(
+        soundEnabled: soundEnabled ?? this.soundEnabled,
+        musicEnabled: musicEnabled ?? this.musicEnabled,
+        musicVolume: musicVolume ?? this.musicVolume,
+        defaultDifficulty: defaultDifficulty ?? this.defaultDifficulty,
+        showTileNames: showTileNames ?? this.showTileNames,
+        hapticIntensity: hapticIntensity ?? this.hapticIntensity,
+      );
 }
 
 class SettingsNotifier extends StateNotifier<SettingsState> {
   final StorageService _storage;
 
-  SettingsNotifier(this._storage) : super(SettingsState(
-    soundEnabled: _storage.isSoundEnabled(),
-    musicEnabled: _storage.isMusicEnabled(),
-    defaultDifficulty: _storage.getDefaultDifficulty(),
-    showTileNames: _storage.isShowTileNames(),
-    hapticIntensity: _storage.getHapticIntensity(),
-  ));
+  SettingsNotifier(this._storage)
+      : super(SettingsState(
+          soundEnabled: _storage.isSoundEnabled(),
+          musicEnabled: _storage.isMusicEnabled(),
+          musicVolume: _storage.getMusicVolume(),
+          defaultDifficulty: _storage.getDefaultDifficulty(),
+          showTileNames: _storage.isShowTileNames(),
+          hapticIntensity: _storage.getHapticIntensity(),
+        ));
 
   Future<void> setSoundEnabled(bool val) async {
     await _storage.setSoundEnabled(val);
@@ -56,6 +64,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setMusicEnabled(bool val) async {
     await _storage.setMusicEnabled(val);
     state = state.copyWith(musicEnabled: val);
+  }
+
+  Future<void> setMusicVolume(double val) async {
+    final volume = val.clamp(0.0, 1.0);
+    await _storage.setMusicVolume(volume);
+    state = state.copyWith(musicVolume: volume);
   }
 
   Future<void> setDefaultDifficulty(DifficultyMode mode) async {

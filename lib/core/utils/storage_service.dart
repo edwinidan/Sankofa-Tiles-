@@ -9,6 +9,7 @@ class StorageService {
   static const _keyDefaultDifficulty = 'default_difficulty';
   static const _keySoundEnabled = 'sound_enabled';
   static const _keyMusicEnabled = 'music_enabled';
+  static const _keyMusicVolume = 'music_volume';
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyShowTileNames = 'show_tile_names';
   static const _keyHapticIntensity = 'haptic_intensity';
@@ -34,8 +35,7 @@ class StorageService {
   int getBestScore(int levelId) =>
       _prefs.getInt('$_prefixBestScore$levelId') ?? 0;
 
-  int getStars(int levelId) =>
-      _prefs.getInt('$_prefixStars$levelId') ?? 0;
+  int getStars(int levelId) => _prefs.getInt('$_prefixStars$levelId') ?? 0;
 
   LevelResult? getLevelResult(int levelId) {
     final score = getBestScore(levelId);
@@ -72,6 +72,9 @@ class StorageService {
   bool isMusicEnabled() => _prefs.getBool(_keyMusicEnabled) ?? true;
   Future<void> setMusicEnabled(bool val) async =>
       _prefs.setBool(_keyMusicEnabled, val);
+  double getMusicVolume() => _prefs.getDouble(_keyMusicVolume) ?? 0.7;
+  Future<void> setMusicVolume(double val) async =>
+      _prefs.setDouble(_keyMusicVolume, val.clamp(0.0, 1.0));
 
   // Onboarding
   bool isOnboardingComplete() =>
@@ -98,8 +101,10 @@ class StorageService {
 
   // Reset
   Future<void> resetAllProgress() async {
-    final keys = _prefs.getKeys()
-        .where((k) => k.startsWith(_prefixBestScore) || k.startsWith(_prefixStars))
+    final keys = _prefs
+        .getKeys()
+        .where(
+            (k) => k.startsWith(_prefixBestScore) || k.startsWith(_prefixStars))
         .toList();
     for (final k in keys) {
       await _prefs.remove(k);
