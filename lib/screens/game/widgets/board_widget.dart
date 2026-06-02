@@ -19,78 +19,59 @@ class BoardWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final cols = levelDef.boardCols;
-    final rows = levelDef.boardRows;
-
-    const gapH = 0.0;
-    const gapV = 0.0;
-    // Increased offsets so higher layers shift significantly further left and up
-    const layerOffsetX = 24.0;
-    const layerOffsetY = 24.0;
-
-    final maxLayer = gameState.tiles.isEmpty
-        ? 0
-        : gameState.tiles.map((t) => t.layer).reduce((a, b) => a > b ? a : b);
-
-    final yOffset = maxLayer * layerOffsetY;
-    final xOffset = maxLayer * layerOffsetX;
-
     final availableUids = gameState.availableTileUids;
-
     final sortedTiles = [...gameState.tiles]
       ..sort((a, b) => a.layer.compareTo(b.layer));
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth  = constraints.maxWidth  - 16;
-        final availableHeight = constraints.maxHeight - 16;
+        final availableWidth = max(0.0, constraints.maxWidth - 16);
+        final availableHeight = max(0.0, constraints.maxHeight - 16);
+        final layoutBounds = _BoardLayoutBounds.fromTiles(gameState.tiles);
 
-        double tileW = ((availableWidth - xOffset) / cols).clamp(30.0, 65.0);
-        double tileH = tileW * (85 / 64);
+        final tileW = layoutBounds.tileWidthFor(
+          availableWidth: availableWidth,
+          availableHeight: availableHeight,
+        );
+        final tileH = tileW * _tileAspectRatio;
+        final boardW = layoutBounds.widthInTileUnits * tileW;
+        final boardH = layoutBounds.heightInTileUnits * tileW;
+        final boardLeft = (availableWidth - boardW) / 2;
+        final boardTop = (availableHeight - boardH) / 2;
 
-        final boardH0 = rows * tileH + yOffset;
-        if (boardH0 > availableHeight) {
-          final s = availableHeight / boardH0;
-          tileW *= s;
-          tileH *= s;
+        Offset tileOffset(int row, int col, int layer) {
+          final projected = layoutBounds.project(row, col, layer, tileW);
+          return Offset(
+            boardLeft + projected.dx - layoutBounds.minX * tileW,
+            boardTop + projected.dy - layoutBounds.minY * tileW,
+          );
         }
 
-        final boardW = cols * tileW + xOffset;
-        final boardH = rows * tileH + yOffset;
-
-        Widget board = Container(
-          width: boardW,
-          height: boardH,
-          padding: EdgeInsets.zero,
+        Widget board = SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
           child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                ...sortedTiles.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final tile  = entry.value;
-                  final x = tile.col * (tileW + gapH)
-                             + xOffset - tile.layer * layerOffsetX;
-                  final y = tile.row * (tileH + gapV)
-                             - tile.layer * layerOffsetY
-                             + yOffset;
+            clipBehavior: Clip.none,
+            children: [
+              ...sortedTiles.asMap().entries.map((entry) {
+                final index = entry.key;
+                final tile = entry.value;
+                final offset = tileOffset(tile.row, tile.col, tile.layer);
+                final isAvail = availableUids.contains(tile.uid);
 
-                  final isAvail = availableUids.contains(tile.uid);
+                Widget child = TileWidget(
+                  key: ValueKey(tile.uid),
+                  tile: tile,
+                  width: tileW,
+                  height: tileH,
+                  isAvailable: isAvail,
+                );
 
-                  Widget child = TileWidget(
-                    key: ValueKey(tile.uid),
-                    tile: tile,
-                    width: tileW,
-                    height: tileH,
-                    isAvailable: isAvail,
-                  );
+                if (!tile.isMatched && !isAvail) {
+                  child = IgnorePointer(child: child);
+                }
 
-                  // Make unavailable tiles un-clickable, but fully solid (no transparency)
-                  if (!tile.isMatched && !isAvail) {
-                    child = IgnorePointer(child: child);
-                  }
-
-                  // Staggered entry — ripples across the board by sorted index
-                  child = child
+                child = child
                     .animate(delay: (index * 25).ms)
                     .fadeIn(duration: 300.ms)
                     .slideY(
@@ -99,93 +80,159 @@ class BoardWidget extends ConsumerWidget {
                       curve: Curves.easeOut,
                     );
 
-                  return Positioned(
-                    left: x,
-                    top: y,
-                    width: tileW,
-                    height: tileH,
-                    child: child,
-                  );
-                }),
-
-                // Particle burst + score pop overlays — one per matched tile pos
-                ...gameState.pendingScorePops.map((pop) {
-                  final x = pop.col * (tileW + gapH)
-                             + xOffset - pop.layer * layerOffsetX;
-                  final y = pop.row * (tileH + gapV)
-                             - pop.layer * layerOffsetY
-                             + yOffset;
-                  return _MatchBurstOverlay(
-                    key: ValueKey('burst_${pop.row}_${pop.col}_${pop.layer}'),
-                    x: x,
-                    y: y,
-                    tileW: tileW,
-                    tileH: tileH,
-                  );
-                }),
-                ...gameState.pendingScorePops.map((pop) {
-                  final x = pop.col * (tileW + gapH)
-                             + xOffset - pop.layer * layerOffsetX;
-                  final y = pop.row * (tileH + gapV)
-                             - pop.layer * layerOffsetY
-                             + yOffset;
-                  return _ScorePopOverlay(
-                    key: ValueKey('pop_${pop.row}_${pop.col}_${pop.layer}'),
-                    x: x,
-                    y: y,
-                    tileW: tileW,
-                    tileH: tileH,
-                  );
-                }),
-
-                // Win: gold shimmer wash over the board
-                if (gameState.status == GameStatus.won)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.kenteGold.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      )
-                        .animate()
-                        .fadeIn(duration: 500.ms)
-                        .shimmer(
+                return Positioned(
+                  left: offset.dx,
+                  top: offset.dy,
+                  width: tileW,
+                  height: tileH,
+                  child: child,
+                );
+              }),
+              ...gameState.pendingScorePops.map((pop) {
+                final offset = tileOffset(pop.row, pop.col, pop.layer);
+                return _MatchBurstOverlay(
+                  key: ValueKey('burst_${pop.row}_${pop.col}_${pop.layer}'),
+                  x: offset.dx,
+                  y: offset.dy,
+                  tileW: tileW,
+                  tileH: tileH,
+                );
+              }),
+              ...gameState.pendingScorePops.map((pop) {
+                final offset = tileOffset(pop.row, pop.col, pop.layer);
+                return _ScorePopOverlay(
+                  key: ValueKey('pop_${pop.row}_${pop.col}_${pop.layer}'),
+                  x: offset.dx,
+                  y: offset.dy,
+                  tileW: tileW,
+                  tileH: tileH,
+                );
+              }),
+              if (gameState.status == GameStatus.won)
+                Positioned(
+                  left: boardLeft,
+                  top: boardTop,
+                  width: boardW,
+                  height: boardH,
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.kenteGold.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ).animate().fadeIn(duration: 500.ms).shimmer(
                           delay: 300.ms,
                           duration: 1400.ms,
                           color: AppColors.kenteGold.withValues(alpha: 0.40),
                         ),
-                    ),
                   ),
-
-                // Lose: red tint fades in after the shake settles
-                if (gameState.status == GameStatus.lost)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      )
-                        .animate()
-                        .fadeIn(delay: 380.ms, duration: 350.ms),
-                    ),
+                ),
+              if (gameState.status == GameStatus.lost)
+                Positioned(
+                  left: boardLeft,
+                  top: boardTop,
+                  width: boardW,
+                  height: boardH,
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ).animate().fadeIn(delay: 380.ms, duration: 350.ms),
                   ),
-              ],
-            ),
-          );
+                ),
+            ],
+          ),
+        );
 
-        // Lose: shake the board, then red tint overlay takes over
         if (gameState.status == GameStatus.lost) {
           board = board
-            .animate()
-            .shake(duration: 420.ms, hz: 5, offset: const Offset(6, 0));
+              .animate()
+              .shake(duration: 420.ms, hz: 5, offset: const Offset(6, 0));
         }
 
-        return Center(child: board);
+        return board;
       },
     );
+  }
+}
+
+const _tileAspectRatio = 85 / 64;
+const _layoutStepX = 0.5;
+const _layoutStepY = _tileAspectRatio * 0.5;
+const _layerOffsetXInTileUnits = 0.14;
+const _layerOffsetYInTileUnits = _tileAspectRatio * 0.10;
+
+class _BoardLayoutBounds {
+  final double minX;
+  final double maxX;
+  final double minY;
+  final double maxY;
+
+  const _BoardLayoutBounds({
+    required this.minX,
+    required this.maxX,
+    required this.minY,
+    required this.maxY,
+  });
+
+  double get widthInTileUnits => maxX - minX;
+  double get heightInTileUnits => maxY - minY;
+
+  static _BoardLayoutBounds fromTiles(List tiles) {
+    if (tiles.isEmpty) {
+      return const _BoardLayoutBounds(minX: 0, maxX: 1, minY: 0, maxY: 1);
+    }
+
+    var minX = double.infinity;
+    var maxX = -double.infinity;
+    var minY = double.infinity;
+    var maxY = -double.infinity;
+
+    for (final tile in tiles) {
+      final left = _projectX(tile.col, tile.layer);
+      final top = _projectY(tile.row, tile.layer);
+      minX = min(minX, left);
+      maxX = max(maxX, left + 1);
+      minY = min(minY, top);
+      maxY = max(maxY, top + _tileAspectRatio);
+    }
+
+    return _BoardLayoutBounds(
+      minX: minX,
+      maxX: maxX,
+      minY: minY,
+      maxY: maxY,
+    );
+  }
+
+  double tileWidthFor({
+    required double availableWidth,
+    required double availableHeight,
+  }) {
+    if (availableWidth <= 0 || availableHeight <= 0) return 30;
+
+    final fitW = availableWidth / widthInTileUnits;
+    final fitH = availableHeight / heightInTileUnits;
+    final fitted = min(fitW, fitH);
+
+    return min(fitted, 65.0).clamp(24.0, 65.0);
+  }
+
+  Offset project(int row, int col, int layer, double tileW) {
+    return Offset(
+      _projectX(col, layer) * tileW,
+      _projectY(row, layer) * tileW,
+    );
+  }
+
+  static double _projectX(int col, int layer) {
+    return col * _layoutStepX - layer * _layerOffsetXInTileUnits;
+  }
+
+  static double _projectY(int row, int layer) {
+    return row * _layoutStepY - layer * _layerOffsetYInTileUnits;
   }
 }
 
@@ -200,7 +247,7 @@ class _BurstParticle {
   final double vy;
   final Color color;
   final double size;
-  final double angle;    // initial rotation (radians) — confetti only
+  final double angle; // initial rotation (radians) — confetti only
   final double angularV; // angular velocity (rad/s)   — confetti only
 
   const _BurstParticle({
@@ -377,9 +424,9 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
     _variant = _BurstVariant.values[rng.nextInt(_BurstVariant.values.length)];
 
     final ms = switch (_variant) {
-      _BurstVariant.inferno  => 700,
+      _BurstVariant.inferno => 700,
       _BurstVariant.confetti => 850,
-      _BurstVariant.nova     => 600,
+      _BurstVariant.nova => 600,
     };
     _ctrl = AnimationController(
       vsync: this,
@@ -387,9 +434,9 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
     )..forward();
 
     _particles = switch (_variant) {
-      _BurstVariant.inferno  => _buildInferno(rng),
+      _BurstVariant.inferno => _buildInferno(rng),
       _BurstVariant.confetti => _buildConfetti(rng),
-      _BurstVariant.nova     => _buildNova(rng),
+      _BurstVariant.nova => _buildNova(rng),
     };
   }
 
@@ -433,9 +480,9 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
 
   List<_BurstParticle> _buildNova(Random rng) {
     const colors = [
-      Color(0xFFFFFFFF),   // white
-      Color(0xFFFFF5A0),   // near-white yellow
-      Color(0xFFFFE066),   // warm yellow
+      Color(0xFFFFFFFF), // white
+      Color(0xFFFFF5A0), // near-white yellow
+      Color(0xFFFFE066), // warm yellow
       AppColors.kenteGold,
     ];
     final particles = <_BurstParticle>[];
@@ -475,7 +522,7 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
     // Paint area: 280×280, centered on the tile center
     const paintSize = 280.0;
     final left = widget.x + widget.tileW / 2 - paintSize / 2;
-    final top  = widget.y + widget.tileH / 2 - paintSize / 2;
+    final top = widget.y + widget.tileH / 2 - paintSize / 2;
 
     return Positioned(
       left: left,
@@ -538,8 +585,7 @@ class _ScorePopOverlayState extends State<_ScorePopOverlay>
     );
     _opacity = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 55),
-      TweenSequenceItem(
-          tween: Tween<double>(begin: 1.0, end: 0.0), weight: 45),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0), weight: 45),
     ]).animate(_ctrl);
     _ctrl.forward();
   }

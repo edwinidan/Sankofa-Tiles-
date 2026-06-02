@@ -1,6 +1,8 @@
+import '../core/utils/board_solver.dart';
 import 'tile_model.dart';
 
 enum GameStatus { idle, playing, paused, won, lost }
+
 enum DifficultyMode { easy, normal, relaxed }
 
 class GameState {
@@ -31,38 +33,17 @@ class GameState {
     this.currentStreak = 0,
   });
 
-  int get remainingPairs =>
-      tiles.where((t) => !t.isMatched).length ~/ 2;
+  int get remainingPairs => tiles.where((t) => !t.isMatched).length ~/ 2;
 
-  bool get hasWon =>
-      tiles.isNotEmpty && tiles.every((t) => t.isMatched);
+  bool get hasWon => tiles.isNotEmpty && tiles.every((t) => t.isMatched);
 
   Set<String> get availableTileUids {
-    final occupied = <(int, int, int)>{};
-    for (final t in tiles) {
-      if (!t.isMatched) occupied.add((t.row, t.col, t.layer));
-    }
-    final result = <String>{};
-    for (final t in tiles) {
-      if (t.isMatched) continue;
-      // Rule 1: not covered from above
-      if (occupied.contains((t.row, t.col, t.layer + 1))) continue;
-      // Rule 2: at least one lateral side is open
-      final leftBlocked  = occupied.contains((t.row, t.col - 1, t.layer));
-      final rightBlocked = occupied.contains((t.row, t.col + 1, t.layer));
-      if (!leftBlocked || !rightBlocked) result.add(t.uid);
-    }
-    return result;
+    return BoardSolver.getFreeTiles(tiles).map((tile) => tile.uid).toSet();
   }
 
   bool get isStuck {
-    final avail = availableTileUids;
-    if (avail.isEmpty) return false;
-    final counts = <String, int>{};
-    for (final t in tiles) {
-      if (avail.contains(t.uid)) counts[t.def.id] = (counts[t.def.id] ?? 0) + 1;
-    }
-    return counts.values.every((c) => c < 2);
+    final remaining = tiles.where((t) => !t.isMatched).length;
+    return remaining > 0 && !BoardSolver.hasAvailableMove(tiles);
   }
 
   GameState copyWith({
@@ -78,28 +59,31 @@ class GameState {
     int? levelId,
     List<({int row, int col, int layer})>? pendingScorePops,
     int? currentStreak,
-  }) => GameState(
-    tiles: tiles ?? this.tiles,
-    status: status ?? this.status,
-    difficulty: difficulty ?? this.difficulty,
-    score: score ?? this.score,
-    moves: moves ?? this.moves,
-    hintsUsed: hintsUsed ?? this.hintsUsed,
-    secondsElapsed: secondsElapsed ?? this.secondsElapsed,
-    selectedTileUid: clearSelectedTile ? null : (selectedTileUid ?? this.selectedTileUid),
-    levelId: levelId ?? this.levelId,
-    pendingScorePops: pendingScorePops ?? this.pendingScorePops,
-    currentStreak: currentStreak ?? this.currentStreak,
-  );
+  }) =>
+      GameState(
+        tiles: tiles ?? this.tiles,
+        status: status ?? this.status,
+        difficulty: difficulty ?? this.difficulty,
+        score: score ?? this.score,
+        moves: moves ?? this.moves,
+        hintsUsed: hintsUsed ?? this.hintsUsed,
+        secondsElapsed: secondsElapsed ?? this.secondsElapsed,
+        selectedTileUid: clearSelectedTile
+            ? null
+            : (selectedTileUid ?? this.selectedTileUid),
+        levelId: levelId ?? this.levelId,
+        pendingScorePops: pendingScorePops ?? this.pendingScorePops,
+        currentStreak: currentStreak ?? this.currentStreak,
+      );
 
   static GameState initial() => const GameState(
-    tiles: [],
-    status: GameStatus.idle,
-    difficulty: DifficultyMode.normal,
-    score: 0,
-    moves: 0,
-    hintsUsed: 0,
-    secondsElapsed: 0,
-    levelId: 1,
-  );
+        tiles: [],
+        status: GameStatus.idle,
+        difficulty: DifficultyMode.normal,
+        score: 0,
+        moves: 0,
+        hintsUsed: 0,
+        secondsElapsed: 0,
+        levelId: 1,
+      );
 }
