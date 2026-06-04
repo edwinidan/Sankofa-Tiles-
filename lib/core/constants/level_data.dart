@@ -97,6 +97,35 @@ const _extendedIds = [
   'nyame_baatanpa',
 ];
 
+const kTileV2TestLevelId = 0;
+
+final tileV2TestLevel = LevelDefinition(
+  id: kTileV2TestLevelId,
+  name: 'Tile V2 Scale Test',
+  boardRows: 4,
+  boardCols: 6,
+  tileCount: 28,
+  tileIds: const [
+    'aban',
+    'abe_dua',
+    'abode_santann',
+    'abusua_pa',
+    'adinkrahene',
+    'agyindawuru',
+    'akoben',
+    'denkyem',
+    'dwennimmen',
+    'gye_nyame',
+    'nea_onnim',
+    'nkyinkyim',
+    'nsoromma',
+    'odo_nnyew_fie_kwan',
+  ],
+  unlockRequirement: 0,
+  starThresholds: const [0, 0, 0],
+  layout: level4Layout,
+);
+
 final List<LevelDefinition> kLevels = [
   // Level 1 — 16 tiles, 2 layers (4×3 base + 2×2 cap)
   LevelDefinition(
@@ -561,6 +590,8 @@ final List<LevelDefinition> kLevels = [
 ];
 
 LevelDefinition? getLevelById(int id) {
+  if (id == kTileV2TestLevelId) return tileV2TestLevel;
+
   try {
     return kLevels.firstWhere((l) => l.id == id);
   } catch (_) {

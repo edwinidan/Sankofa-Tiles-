@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/tile_theme_type.dart';
 import '../../models/game_state.dart';
 import '../../models/level_model.dart';
 import 'haptic_service.dart';
@@ -13,6 +14,7 @@ class StorageService {
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyShowTileNames = 'show_tile_names';
   static const _keyHapticIntensity = 'haptic_intensity';
+  static const _keyTileTheme = 'tile_theme';
 
   late SharedPreferences _prefs;
 
@@ -98,6 +100,13 @@ class StorageService {
 
   Future<void> setHapticIntensity(HapticIntensity intensity) async =>
       _prefs.setString(_keyHapticIntensity, intensity.name);
+
+  // Tile theme
+  TileThemeType? getTileTheme() =>
+      tileThemeFromName(_prefs.getString(_keyTileTheme));
+
+  Future<void> setTileTheme(TileThemeType theme) async =>
+      _prefs.setString(_keyTileTheme, theme.storedName);
 
   // Reset
   Future<void> resetAllProgress() async {

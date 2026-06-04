@@ -6,13 +6,18 @@ import '../../../core/constants/tile_data.dart';
 import '../../../core/utils/haptic_service.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../providers/tile_theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/tile_theme_resolver.dart';
+import '../../../core/theme/tile_theme_type.dart';
 
 const _kDefaultTileW = 64.0;
 const _kDefaultTileH = 85.0;
 const _kEdgeH = 5.0;
 const _kEdgeW = 14.0;
 const _kCornerRadius = 4.0;
+const _kPaddedTileAssetScale = 1.634;
+const _kFullTileAssetScale = 1.0;
 
 class TileWidget extends ConsumerStatefulWidget {
   final TileModel tile;
@@ -21,6 +26,7 @@ class TileWidget extends ConsumerStatefulWidget {
   final bool showSuitCode;
   final bool forceHideName;
   final bool isAvailable;
+  final TileThemeType? tileThemeOverride;
 
   const TileWidget({
     super.key,
@@ -30,6 +36,7 @@ class TileWidget extends ConsumerStatefulWidget {
     this.showSuitCode = true,
     this.forceHideName = false,
     this.isAvailable = false,
+    this.tileThemeOverride,
   });
 
   @override
@@ -122,6 +129,15 @@ class _TileWidgetState extends ConsumerState<TileWidget>
   Widget build(BuildContext context) {
     final showNames = ref.watch(settingsProvider).showTileNames;
     final tile = widget.tile;
+    final resolver = widget.tileThemeOverride == null
+        ? ref.watch(tileThemeResolverProvider)
+        : TileThemeResolver(widget.tileThemeOverride!);
+    final assetPath =
+        tile.def.assetPath != null ? resolver.getAssetPath(tile.def) : null;
+    final isTileV2Theme = resolver.theme == TileThemeType.tileV2Png;
+    final assetScale = resolver.theme == TileThemeType.tileV2Png
+        ? _kFullTileAssetScale
+        : _kPaddedTileAssetScale;
     final tileW = _resolvedWidth(context);
     final tileH = _resolvedHeight(context);
 
@@ -131,6 +147,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     if (tile.isMatched) {
       body = _buildPhysicalTile(
         tile: tile,
+        assetPath: assetPath,
+        assetScale: assetScale,
         showNames: showNames,
         tileW: tileW,
         tileH: tileH,
@@ -163,6 +181,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
           opacity: _hintOpacity.value,
           child: _buildPhysicalTile(
             tile: tile,
+            assetPath: assetPath,
+            assetScale: assetScale,
             showNames: showNames,
             tileW: tileW,
             tileH: tileH,
@@ -179,18 +199,24 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     else {
       Widget physicalTile = _buildPhysicalTile(
         tile: tile,
+        assetPath: assetPath,
+        assetScale: assetScale,
         showNames: showNames,
         tileW: tileW,
         tileH: tileH,
         showSuitCode: widget.showSuitCode,
         forceHideName: widget.forceHideName,
         bgColor: tile.isSelected ? AppColors.tileSelected : AppColors.tileFace,
-        borderColor: tile.isSelected ? AppColors.kenteGold : AppColors.tileBorder,
+        borderColor:
+            tile.isSelected ? AppColors.kenteGold : AppColors.tileBorder,
         borderWidth: tile.isSelected ? 2.5 : 1.5,
       );
 
       // Available glow — gold border pulse on unselected, non-mismatched playable tiles
-      if (widget.isAvailable && !tile.isSelected && !tile.isMismatched) {
+      if (!isTileV2Theme &&
+          widget.isAvailable &&
+          !tile.isSelected &&
+          !tile.isMismatched) {
         physicalTile = AnimatedBuilder(
           animation: _glowOpacity,
           builder: (_, child) => Stack(
@@ -249,6 +275,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
   Widget _buildPhysicalTile({
     required TileModel tile,
+    required String? assetPath,
+    required double assetScale,
     required bool showNames,
     required double tileW,
     required double tileH,
@@ -260,15 +288,15 @@ class _TileWidgetState extends ConsumerState<TileWidget>
   }) {
     // Tiles with an image asset: scale up slightly so the PNG's built-in
     // padding is pushed outside the clip boundary, filling the slot fully.
-    if (tile.def.assetPath != null) {
+    if (assetPath != null) {
       return SizedBox(
         width: tileW,
         height: tileH,
         child: ClipRect(
           child: Transform.scale(
-            scale: 1.634,
+            scale: assetScale,
             child: Image.asset(
-              tile.def.assetPath!,
+              assetPath,
               fit: BoxFit.fill,
             ),
           ),
@@ -306,6 +334,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
               ),
               child: _buildTileContent(
                 tile: tile,
+                assetPath: assetPath,
                 showNames: showNames,
                 faceH: tileH - _kEdgeH,
                 showSuitCode: showSuitCode,
@@ -320,6 +349,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
   Widget _buildTileContent({
     required TileModel tile,
+    required String? assetPath,
     required bool showNames,
     required double faceH,
     bool showSuitCode = true,
@@ -346,12 +376,12 @@ class _TileWidgetState extends ConsumerState<TileWidget>
             ),
           ),
         // Adinkra symbol — centered or full-fill for image assets
-        if (tile.def.assetPath != null)
+        if (assetPath != null)
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(_kCornerRadius),
               child: Image.asset(
-                tile.def.assetPath!,
+                assetPath,
                 fit: BoxFit.fill,
               ),
             ),

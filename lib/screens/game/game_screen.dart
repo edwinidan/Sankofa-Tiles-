@@ -4,21 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/game_state.dart';
 import '../../core/utils/haptic_service.dart';
+import '../../core/utils/audio_service.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/tile_theme_type.dart';
+import '../../core/constants/level_data.dart';
 import 'widgets/board_widget.dart';
 import 'widgets/game_hud.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final int levelId;
   final DifficultyMode difficulty;
+  final TileThemeType? tileThemeOverride;
 
   const GameScreen({
     super.key,
     required this.levelId,
     required this.difficulty,
+    this.tileThemeOverride,
   });
 
   @override
@@ -29,6 +34,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   bool _showCombo = false;
   int _displayedStreak = 0;
   DateTime? _lastMatchTime;
+  late final Stopwatch _levelLoadStopwatch;
+  late final AudioService _audioService;
+  bool _reportedReadyFrame = false;
 
   void _fireComboHaptic(int streak) {
     final count = streak.clamp(2, 5);
@@ -61,14 +69,20 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void dispose() {
     // Stop music whenever we leave the game screen — covers quit dialog,
     // back navigation, and the post-game result redirect.
-    ref.read(audioServiceProvider).stopBackgroundMusic();
+    _audioService.stopBackgroundMusic();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    _levelLoadStopwatch = Stopwatch()..start();
+    _audioService = ref.read(audioServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint(
+        '[LEVEL_LOAD] level=${widget.levelId} first game screen frame took '
+        '${_levelLoadStopwatch.elapsedMilliseconds} ms',
+      );
       ref
           .read(gameProvider.notifier)
           .startLevel(widget.levelId, widget.difficulty);
@@ -78,6 +92,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
+    if (!_reportedReadyFrame && gameState.status == GameStatus.playing) {
+      _reportedReadyFrame = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _levelLoadStopwatch.stop();
+        debugPrint(
+          '[LEVEL_LOAD] level=${widget.levelId} first ready frame took '
+          '${_levelLoadStopwatch.elapsedMilliseconds} ms',
+        );
+      });
+    }
 
     ref.listen<GameState>(gameProvider, (prev, next) {
       // Navigate to result when game ends
@@ -137,7 +161,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(levelId: widget.levelId),
+            _TopBar(
+              levelId: widget.levelId,
+              title:
+                  widget.levelId == kTileV2TestLevelId ? 'Tile V2 Test' : null,
+            ),
 
             const GameHud(),
 
@@ -156,7 +184,23 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                               context.go('/');
                             },
                           )
-                        : const BoardWidget(),
+                        : gameState.status == GameStatus.loadFailed
+                            ? _LoadFailedOverlay(
+                                message: gameState.loadError ??
+                                    'We could not prepare this board.',
+                                onRetry: () =>
+                                    ref.read(gameProvider.notifier).startLevel(
+                                          widget.levelId,
+                                          widget.difficulty,
+                                        ),
+                                onBack: () {
+                                  ref.read(gameProvider.notifier).leaveGame();
+                                  context.go('/level-select');
+                                },
+                              )
+                            : BoardWidget(
+                                tileThemeOverride: widget.tileThemeOverride,
+                              ),
                     if (_showCombo)
                       IgnorePointer(
                         child: _ComboOverlay(
@@ -189,7 +233,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
 class _TopBar extends ConsumerWidget {
   final int levelId;
-  const _TopBar({required this.levelId});
+  final String? title;
+  const _TopBar({required this.levelId, this.title});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -218,7 +263,7 @@ class _TopBar extends ConsumerWidget {
             },
           ),
           const Spacer(),
-          Text('Level $levelId', style: AppTextStyles.displaySmall),
+          Text(title ?? 'Level $levelId', style: AppTextStyles.displaySmall),
           const Spacer(),
           IconButton(
             tooltip: 'Settings',
@@ -590,6 +635,56 @@ class _PausedOverlay extends StatelessWidget {
               onPressed: onQuit,
               child: Text(
                 'Quit to Menu',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadFailedOverlay extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+
+  const _LoadFailedOverlay({
+    required this.message,
+    required this.onRetry,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: AppColors.navyMid,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.kenteGold, width: 2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('BOARD UNAVAILABLE', style: AppTextStyles.displaySmall),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(onPressed: onRetry, child: const Text('Try Again')),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onBack,
+              child: Text(
+                'Back to Levels',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textMuted,
                 ),

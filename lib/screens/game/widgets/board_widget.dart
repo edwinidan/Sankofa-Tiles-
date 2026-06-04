@@ -6,10 +6,13 @@ import '../../../models/game_state.dart';
 import '../../../providers/game_provider.dart';
 import '../../../core/constants/level_data.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/tile_theme_type.dart';
 import 'tile_widget.dart';
 
 class BoardWidget extends ConsumerWidget {
-  const BoardWidget({super.key});
+  final TileThemeType? tileThemeOverride;
+
+  const BoardWidget({super.key, this.tileThemeOverride});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +30,11 @@ class BoardWidget extends ConsumerWidget {
       builder: (context, constraints) {
         final availableWidth = max(0.0, constraints.maxWidth - 16);
         final availableHeight = max(0.0, constraints.maxHeight - 16);
-        final layoutBounds = _BoardLayoutBounds.fromTiles(gameState.tiles);
+        final metrics = _BoardLayoutMetrics.forLevel(gameState.levelId);
+        final layoutBounds = _BoardLayoutBounds.fromTiles(
+          gameState.tiles,
+          metrics: metrics,
+        );
 
         final tileW = layoutBounds.tileWidthFor(
           availableWidth: availableWidth,
@@ -65,6 +72,7 @@ class BoardWidget extends ConsumerWidget {
                   width: tileW,
                   height: tileH,
                   isAvailable: isAvail,
+                  tileThemeOverride: tileThemeOverride,
                 );
 
                 if (!tile.isMatched && !isAvail) {
@@ -163,26 +171,70 @@ const _layoutStepX = 0.5;
 const _layoutStepY = _tileAspectRatio * 0.5;
 const _layerOffsetXInTileUnits = 0.14;
 const _layerOffsetYInTileUnits = _tileAspectRatio * 0.10;
+const _tileV2TestStepScale = 0.85;
+
+class _BoardLayoutMetrics {
+  final double stepX;
+  final double stepY;
+  final double layerOffsetX;
+  final double layerOffsetY;
+
+  const _BoardLayoutMetrics({
+    required this.stepX,
+    required this.stepY,
+    required this.layerOffsetX,
+    required this.layerOffsetY,
+  });
+
+  static const normal = _BoardLayoutMetrics(
+    stepX: _layoutStepX,
+    stepY: _layoutStepY,
+    layerOffsetX: _layerOffsetXInTileUnits,
+    layerOffsetY: _layerOffsetYInTileUnits,
+  );
+
+  static const tileV2Test = _BoardLayoutMetrics(
+    stepX: _layoutStepX * _tileV2TestStepScale,
+    stepY: _layoutStepY * _tileV2TestStepScale,
+    layerOffsetX: _layerOffsetXInTileUnits,
+    layerOffsetY: _layerOffsetYInTileUnits,
+  );
+
+  static _BoardLayoutMetrics forLevel(int levelId) {
+    return levelId == kTileV2TestLevelId ? tileV2Test : normal;
+  }
+}
 
 class _BoardLayoutBounds {
   final double minX;
   final double maxX;
   final double minY;
   final double maxY;
+  final _BoardLayoutMetrics metrics;
 
   const _BoardLayoutBounds({
     required this.minX,
     required this.maxX,
     required this.minY,
     required this.maxY,
+    required this.metrics,
   });
 
   double get widthInTileUnits => maxX - minX;
   double get heightInTileUnits => maxY - minY;
 
-  static _BoardLayoutBounds fromTiles(List tiles) {
+  static _BoardLayoutBounds fromTiles(
+    List tiles, {
+    required _BoardLayoutMetrics metrics,
+  }) {
     if (tiles.isEmpty) {
-      return const _BoardLayoutBounds(minX: 0, maxX: 1, minY: 0, maxY: 1);
+      return _BoardLayoutBounds(
+        minX: 0,
+        maxX: 1,
+        minY: 0,
+        maxY: 1,
+        metrics: metrics,
+      );
     }
 
     var minX = double.infinity;
@@ -191,8 +243,8 @@ class _BoardLayoutBounds {
     var maxY = -double.infinity;
 
     for (final tile in tiles) {
-      final left = _projectX(tile.col, tile.layer);
-      final top = _projectY(tile.row, tile.layer);
+      final left = metrics.projectX(tile.col, tile.layer);
+      final top = metrics.projectY(tile.row, tile.layer);
       minX = min(minX, left);
       maxX = max(maxX, left + 1);
       minY = min(minY, top);
@@ -204,6 +256,7 @@ class _BoardLayoutBounds {
       maxX: maxX,
       minY: minY,
       maxY: maxY,
+      metrics: metrics,
     );
   }
 
@@ -222,17 +275,19 @@ class _BoardLayoutBounds {
 
   Offset project(int row, int col, int layer, double tileW) {
     return Offset(
-      _projectX(col, layer) * tileW,
-      _projectY(row, layer) * tileW,
+      metrics.projectX(col, layer) * tileW,
+      metrics.projectY(row, layer) * tileW,
     );
   }
+}
 
-  static double _projectX(int col, int layer) {
-    return col * _layoutStepX - layer * _layerOffsetXInTileUnits;
+extension on _BoardLayoutMetrics {
+  double projectX(int col, int layer) {
+    return col * stepX - layer * layerOffsetX;
   }
 
-  static double _projectY(int row, int layer) {
-    return row * _layoutStepY - layer * _layerOffsetYInTileUnits;
+  double projectY(int row, int layer) {
+    return row * stepY - layer * layerOffsetY;
   }
 }
 

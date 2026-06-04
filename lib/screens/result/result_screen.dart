@@ -43,14 +43,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   }
 
   void _saveResult() {
+    if (widget.gameState.levelId == kTileV2TestLevelId) return;
+
     final level = getLevelById(widget.gameState.levelId);
     if (level == null) return;
 
     _stars = computeStars(widget.gameState.score, level.starThresholds);
 
-    ref
-        .read(progressProvider)
-        .saveLevelResult(
+    ref.read(progressProvider).saveLevelResult(
           widget.gameState.levelId,
           widget.gameState.score,
           _stars,
@@ -181,9 +181,15 @@ class _WinContent extends StatelessWidget {
           children: [
             Expanded(
               child: KenteButton(
-                label: 'MENU',
+                label: gameState.levelId == kTileV2TestLevelId
+                    ? 'TILE PREVIEW'
+                    : 'MENU',
                 icon: Icons.list,
-                onTap: () => context.go('/'),
+                onTap: () => context.go(
+                  gameState.levelId == kTileV2TestLevelId
+                      ? '/tile-preview'
+                      : '/',
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -191,7 +197,8 @@ class _WinContent extends StatelessWidget {
               child: KenteButton(
                 label: 'NEXT',
                 icon: Icons.arrow_forward,
-                onTap: gameState.levelId < kLevels.length
+                onTap: gameState.levelId > kTileV2TestLevelId &&
+                        gameState.levelId < kLevels.length
                     ? () => context.go('/level-select')
                     : null,
               ),
@@ -214,12 +221,10 @@ class _LoseContent extends StatelessWidget {
     return Column(
       children: [
         const Spacer(),
-
         const Text(
           '◌',
           style: TextStyle(fontSize: 64, color: AppColors.textMuted),
         ),
-
         const SizedBox(height: 16),
         Text('No More Moves', style: AppTextStyles.displayMedium),
         const SizedBox(height: 12),
@@ -234,23 +239,25 @@ class _LoseContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-
         const SizedBox(height: 24),
         const AdinkraDivider(),
         const SizedBox(height: 24),
-
         _ScoreRow(label: 'Score reached', value: '', score: gameState.score),
         _ScoreRow(label: 'Pairs matched', value: '', score: gameState.moves),
-
         const Spacer(),
-
         Row(
           children: [
             Expanded(
               child: KenteButton(
-                label: 'MENU',
+                label: gameState.levelId == kTileV2TestLevelId
+                    ? 'TILE PREVIEW'
+                    : 'MENU',
                 icon: Icons.list,
-                onTap: () => context.go('/'),
+                onTap: () => context.go(
+                  gameState.levelId == kTileV2TestLevelId
+                      ? '/tile-preview'
+                      : '/',
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -259,7 +266,9 @@ class _LoseContent extends StatelessWidget {
                 label: 'RETRY',
                 icon: Icons.refresh,
                 onTap: () => context.go(
-                  '/game/${gameState.levelId}',
+                  gameState.levelId == kTileV2TestLevelId
+                      ? '/tile-v2-test-level'
+                      : '/game/${gameState.levelId}',
                   extra: gameState.difficulty,
                 ),
               ),

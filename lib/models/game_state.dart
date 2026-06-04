@@ -1,7 +1,7 @@
 import '../core/utils/board_solver.dart';
 import 'tile_model.dart';
 
-enum GameStatus { idle, playing, paused, won, lost }
+enum GameStatus { idle, playing, paused, won, lost, loadFailed }
 
 enum DifficultyMode { easy, normal, relaxed }
 
@@ -14,6 +14,7 @@ class GameState {
   final int hintsUsed;
   final int secondsElapsed;
   final String? selectedTileUid;
+  final String? loadError;
   final int levelId;
 
   final List<({int row, int col, int layer})> pendingScorePops;
@@ -29,6 +30,7 @@ class GameState {
     required this.secondsElapsed,
     required this.levelId,
     this.selectedTileUid,
+    this.loadError,
     this.pendingScorePops = const [],
     this.currentStreak = 0,
   });
@@ -56,6 +58,8 @@ class GameState {
     int? secondsElapsed,
     String? selectedTileUid,
     bool clearSelectedTile = false,
+    String? loadError,
+    bool clearLoadError = false,
     int? levelId,
     List<({int row, int col, int layer})>? pendingScorePops,
     int? currentStreak,
@@ -71,6 +75,7 @@ class GameState {
         selectedTileUid: clearSelectedTile
             ? null
             : (selectedTileUid ?? this.selectedTileUid),
+        loadError: clearLoadError ? null : (loadError ?? this.loadError),
         levelId: levelId ?? this.levelId,
         pendingScorePops: pendingScorePops ?? this.pendingScorePops,
         currentStreak: currentStreak ?? this.currentStreak,
@@ -84,6 +89,7 @@ class GameState {
         moves: 0,
         hintsUsed: 0,
         secondsElapsed: 0,
+        loadError: null,
         levelId: 1,
       );
 }

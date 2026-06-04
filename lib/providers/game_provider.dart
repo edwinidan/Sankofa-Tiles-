@@ -45,25 +45,36 @@ final gameProvider = StateNotifierProvider<GameNotifier, GameState>((ref) {
 class GameNotifier extends StateNotifier<GameState> {
   final AudioService _audio;
   final Ref _ref;
+  final int _reverseSolvedAttempts;
   Timer? _timer;
 
-  GameNotifier(this._audio, this._ref) : super(GameState.initial());
+  GameNotifier(
+    this._audio,
+    this._ref, {
+    int reverseSolvedAttempts = _maxReverseSolvedAttempts,
+  })  : _reverseSolvedAttempts = reverseSolvedAttempts,
+        super(GameState.initial());
 
   HapticIntensity get _hapticIntensity =>
       _ref.read(settingsProvider).hapticIntensity;
 
-  static const _maxGenerationAttempts = 100;
+  static const _maxGenerationAttempts = 12;
+  static const _maxReverseSolvedAttempts = 100;
+  static const _reverseSolvedTileThreshold = 40;
   static const _maxShuffleAttempts = 80;
   static const _generationSearchNodes = 6000;
   static const _moveSearchNodes = 50000;
 
   void startLevel(int levelId, DifficultyMode difficulty) {
+    final totalStopwatch = Stopwatch()..start();
+    debugPrint('[LEVEL_LOAD] level=$levelId start');
     _timer?.cancel();
 
     final levelDef = getLevelById(levelId);
     if (levelDef == null) return;
 
     // Build tile pairs
+    final tileModelStopwatch = Stopwatch()..start();
     final tileDefs = levelDef.tileIds
         .map((id) {
           try {
@@ -84,50 +95,128 @@ class GameNotifier extends StateNotifier<GameState> {
     for (int i = 0; i < numPairs; i++) {
       selectedPairs.add(tileDefs[i % tileDefs.length]);
     }
+    debugPrint(
+      '[LEVEL_LOAD] level=$levelId prepareTileDefinitions took '
+      '${tileModelStopwatch.elapsedMilliseconds} ms',
+    );
 
     var attemptsUsed = 0;
     var usedFallback = false;
+    var generationStrategy = 'random';
+    var solverMilliseconds = 0;
+    var solverNodes = 0;
     List<TileModel>? tiles;
 
-    for (var attempt = 1; attempt <= _maxGenerationAttempts; attempt++) {
-      attemptsUsed = attempt;
-      final candidate = _buildRandomBoard(selectedPairs, levelDef.layout);
-      if (BoardSolver.isSolvable(
-        candidate,
-        maxSearchNodes: _generationSearchNodes,
-      )) {
-        tiles = candidate;
-        break;
+    final generationStopwatch = Stopwatch()..start();
+    try {
+      if (levelDef.tileCount >= _reverseSolvedTileThreshold) {
+        generationStrategy = 'reverseSolved';
+        tiles = _buildReverseSolvedBoard(selectedPairs, levelDef.layout);
+      } else {
+        for (var attempt = 1; attempt <= _maxGenerationAttempts; attempt++) {
+          attemptsUsed = attempt;
+          final candidate = _buildRandomBoard(selectedPairs, levelDef.layout);
+          final profile = BoardSolver.profileSolvability(
+            candidate,
+            maxSearchNodes: _generationSearchNodes,
+          );
+          solverMilliseconds += profile.elapsed.inMilliseconds;
+          solverNodes += profile.nodesVisited;
+          if (profile.isSolvable) {
+            tiles = candidate;
+            break;
+          }
+        }
+
+        if (tiles == null) {
+          usedFallback = true;
+          generationStrategy = 'reverseSolved';
+          tiles = _buildReverseSolvedBoard(selectedPairs, levelDef.layout);
+        }
       }
-    }
 
-    if (tiles == null) {
-      usedFallback = true;
-      tiles = _buildReverseSolvedBoard(selectedPairs, levelDef.layout);
-    }
+      generationStopwatch.stop();
+      debugPrint(
+        '[LEVEL_LOAD] level=$levelId generateBoard took '
+        '${generationStopwatch.elapsedMilliseconds} ms',
+      );
+      debugPrint(
+        '[LEVEL_LOAD] level=$levelId solvability checks took '
+        '$solverMilliseconds ms nodes=$solverNodes attempts=$attemptsUsed '
+        'strategy=$generationStrategy fallback=$usedFallback',
+      );
 
-    final solvable = BoardSolver.isSolvable(tiles);
+      if (tiles == null) {
+        _handleLevelLoadFailure(levelId, difficulty, totalStopwatch);
+        return;
+      }
+
+      final finalProfile = BoardSolver.profileSolvability(tiles);
+      debugPrint(
+        '[LEVEL_LOAD] level=$levelId final solvability check took '
+        '${finalProfile.elapsed.inMilliseconds} ms '
+        'nodes=${finalProfile.nodesVisited} solvable=${finalProfile.isSolvable}',
+      );
+      if (!finalProfile.isSolvable) {
+        _handleLevelLoadFailure(levelId, difficulty, totalStopwatch);
+        return;
+      }
+
+      final stateStopwatch = Stopwatch()..start();
+      state = GameState(
+        tiles: tiles,
+        status: GameStatus.playing,
+        difficulty: difficulty,
+        score: 0,
+        moves: 0,
+        hintsUsed: 0,
+        secondsElapsed: 0,
+        levelId: levelId,
+      );
+      stateStopwatch.stop();
+      debugPrint(
+        '[LEVEL_LOAD] level=$levelId state update took '
+        '${stateStopwatch.elapsedMilliseconds} ms',
+      );
+
+      if (difficulty == DifficultyMode.normal) {
+        _startTimer();
+      }
+
+      _audio.startBackgroundMusic();
+      totalStopwatch.stop();
+      debugPrint(
+        '[LEVEL_LOAD] level=$levelId total took '
+        '${totalStopwatch.elapsedMilliseconds} ms',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('[LEVEL_LOAD] level=$levelId failed: $error\n$stackTrace');
+      _handleLevelLoadFailure(levelId, difficulty, totalStopwatch);
+    }
+  }
+
+  void _handleLevelLoadFailure(
+    int levelId,
+    DifficultyMode difficulty,
+    Stopwatch totalStopwatch,
+  ) {
+    _timer?.cancel();
+    totalStopwatch.stop();
     debugPrint(
-      'Level $levelId solvable=$solvable generationAttempts=$attemptsUsed '
-      'fallback=$usedFallback',
+      '[LEVEL_LOAD] level=$levelId failed safely after '
+      '${totalStopwatch.elapsedMilliseconds} ms',
     );
-
     state = GameState(
-      tiles: tiles,
-      status: GameStatus.playing,
+      tiles: const [],
+      status: GameStatus.loadFailed,
       difficulty: difficulty,
       score: 0,
       moves: 0,
       hintsUsed: 0,
       secondsElapsed: 0,
       levelId: levelId,
+      loadError: 'We could not prepare this board. Please try again.',
     );
-
-    if (difficulty == DifficultyMode.normal) {
-      _startTimer();
-    }
-
-    _audio.startBackgroundMusic();
   }
 
   List<TileModel> _buildRandomBoard(
@@ -148,73 +237,77 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  List<TileModel> _buildReverseSolvedBoard(
+  List<TileModel>? _buildReverseSolvedBoard(
     List<TileDefinition> selectedPairs,
     List<TilePosition> layout,
   ) {
     final seedDef = selectedPairs.first;
-    var remaining = [
-      for (final position in layout)
-        TileModel(
-          def: seedDef,
-          row: position.row,
-          col: position.col,
-          layer: position.layer,
-        ),
-    ];
-    final removalOrder = <({int row, int col, int layer})>[];
     final rng = Random();
 
-    while (remaining.isNotEmpty) {
-      final freeTiles = BoardSolver.getFreeTiles(remaining)..shuffle(rng);
-      if (freeTiles.length < 2) {
-        debugPrint('Reverse-solved generation hit a blocked layout.');
-        return _buildRandomBoard(selectedPairs, layout);
+    for (var attempt = 1; attempt <= _reverseSolvedAttempts; attempt++) {
+      var remaining = [
+        for (final position in layout)
+          TileModel(
+            def: seedDef,
+            row: position.row,
+            col: position.col,
+            layer: position.layer,
+          ),
+      ];
+      final removalOrder = <({int row, int col, int layer})>[];
+
+      while (remaining.isNotEmpty) {
+        final freeTiles = BoardSolver.getFreeTiles(remaining)..shuffle(rng);
+        if (freeTiles.length < 2) break;
+
+        final first = freeTiles[0];
+        final second = freeTiles[1];
+        removalOrder.add((row: first.row, col: first.col, layer: first.layer));
+        removalOrder
+            .add((row: second.row, col: second.col, layer: second.layer));
+
+        remaining = remaining
+            .where((tile) => tile.uid != first.uid && tile.uid != second.uid)
+            .toList();
       }
 
-      final first = freeTiles[0];
-      final second = freeTiles[1];
-      removalOrder.add((row: first.row, col: first.col, layer: first.layer));
-      removalOrder.add((row: second.row, col: second.col, layer: second.layer));
+      if (remaining.isNotEmpty) continue;
 
-      remaining = remaining
-          .map((tile) {
-            if (tile.uid == first.uid || tile.uid == second.uid) {
-              return tile.copyWith(isMatched: true);
-            }
-            return tile;
-          })
-          .where((tile) => !tile.isMatched)
-          .toList();
+      final shuffledPairs = [...selectedPairs]..shuffle(rng);
+      final tiles = <TileModel>[];
+      for (var i = 0; i < shuffledPairs.length; i++) {
+        final def = shuffledPairs[i];
+        final first = removalOrder[i * 2];
+        final second = removalOrder[i * 2 + 1];
+        tiles
+          ..add(
+            TileModel(
+              def: def,
+              row: first.row,
+              col: first.col,
+              layer: first.layer,
+            ),
+          )
+          ..add(
+            TileModel(
+              def: def,
+              row: second.row,
+              col: second.col,
+              layer: second.layer,
+            ),
+          );
+      }
+
+      debugPrint(
+        'Used reverse-solved board generation in $attempt attempt(s).',
+      );
+      return tiles;
     }
 
-    final shuffledPairs = [...selectedPairs]..shuffle(rng);
-    final tiles = <TileModel>[];
-    for (var i = 0; i < shuffledPairs.length; i++) {
-      final def = shuffledPairs[i];
-      final first = removalOrder[i * 2];
-      final second = removalOrder[i * 2 + 1];
-      tiles
-        ..add(
-          TileModel(
-            def: def,
-            row: first.row,
-            col: first.col,
-            layer: first.layer,
-          ),
-        )
-        ..add(
-          TileModel(
-            def: def,
-            row: second.row,
-            col: second.col,
-            layer: second.layer,
-          ),
-        );
-    }
-
-    debugPrint('Used reverse-solved board generation.');
-    return tiles;
+    debugPrint(
+      'Reverse-solved generation exhausted $_reverseSolvedAttempts attempt(s).',
+    );
+    return null;
   }
 
   void _startTimer() {

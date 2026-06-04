@@ -8,6 +8,8 @@ import '../../screens/game/game_screen.dart';
 import '../../screens/result/result_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/preview/tile_preview_screen.dart';
+import '../constants/level_data.dart';
+import '../theme/tile_theme_type.dart';
 import '../utils/storage_service.dart';
 
 GoRouter createAppRouter(StorageService storage) {
@@ -36,12 +38,21 @@ GoRouter createAppRouter(StorageService storage) {
       GoRoute(
         path: '/game/:levelId',
         builder: (context, state) {
-          final levelId = int.tryParse(state.pathParameters['levelId'] ?? '1') ?? 1;
+          final levelId =
+              int.tryParse(state.pathParameters['levelId'] ?? '1') ?? 1;
           final difficulty = state.extra is DifficultyMode
               ? state.extra as DifficultyMode
               : DifficultyMode.normal;
           return GameScreen(levelId: levelId, difficulty: difficulty);
         },
+      ),
+      GoRoute(
+        path: '/tile-v2-test-level',
+        builder: (context, state) => const GameScreen(
+          levelId: kTileV2TestLevelId,
+          difficulty: DifficultyMode.relaxed,
+          tileThemeOverride: TileThemeType.tileV2Png,
+        ),
       ),
       GoRoute(
         path: '/result',

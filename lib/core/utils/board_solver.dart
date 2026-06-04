@@ -2,6 +2,18 @@ import '../../models/tile_model.dart';
 
 typedef TilePair = ({TileModel first, TileModel second});
 
+class SolvabilityProfile {
+  final bool isSolvable;
+  final int nodesVisited;
+  final Duration elapsed;
+
+  const SolvabilityProfile({
+    required this.isSolvable,
+    required this.nodesVisited,
+    required this.elapsed,
+  });
+}
+
 class BoardSolver {
   static const int _tileSpan = 2;
 
@@ -63,14 +75,42 @@ class BoardSolver {
   static bool isSolvable(
     List<TileModel> tiles, {
     int maxSearchNodes = 250000,
+  }) =>
+      profileSolvability(
+        tiles,
+        maxSearchNodes: maxSearchNodes,
+      ).isSolvable;
+
+  static SolvabilityProfile profileSolvability(
+    List<TileModel> tiles, {
+    int maxSearchNodes = 250000,
   }) {
+    final stopwatch = Stopwatch()..start();
     final unmatched = tiles.where((t) => !t.isMatched).length;
-    if (unmatched == 0) return true;
-    if (unmatched.isOdd) return false;
+    if (unmatched == 0) {
+      return SolvabilityProfile(
+        isSolvable: true,
+        nodesVisited: 0,
+        elapsed: stopwatch.elapsed,
+      );
+    }
+    if (unmatched.isOdd) {
+      return SolvabilityProfile(
+        isSolvable: false,
+        nodesVisited: 0,
+        elapsed: stopwatch.elapsed,
+      );
+    }
 
     final memo = <String, bool>{};
     final budget = _SearchBudget(maxSearchNodes);
-    return _isSolvable(tiles, memo, budget);
+    final result = _isSolvable(tiles, memo, budget);
+    stopwatch.stop();
+    return SolvabilityProfile(
+      isSolvable: result,
+      nodesVisited: budget.consumed,
+      elapsed: stopwatch.elapsed,
+    );
   }
 
   static bool isSafeMove(
@@ -172,9 +212,12 @@ class BoardSolver {
 }
 
 class _SearchBudget {
+  final int initial;
   int remaining;
 
-  _SearchBudget(this.remaining);
+  _SearchBudget(this.remaining) : initial = remaining;
+
+  int get consumed => initial - remaining;
 
   bool consume() {
     if (remaining <= 0) return false;

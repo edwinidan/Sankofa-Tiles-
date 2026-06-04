@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/tile_data.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/tile_model.dart';
+import '../../providers/tile_theme_provider.dart';
 import '../game/widgets/tile_widget.dart';
+import '../../widgets/kente_button.dart';
 
 class TilePreviewScreen extends ConsumerStatefulWidget {
   const TilePreviewScreen({super.key});
@@ -20,6 +23,8 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
   Widget build(BuildContext context) {
     final def = kAllTiles[_selectedIndex];
     final tile = TileModel(def: def, row: 0, col: 0);
+    final resolver = ref.watch(tileThemeResolverProvider);
+    final assetPath = def.assetPath != null ? resolver.getAssetPath(def) : null;
 
     return Scaffold(
       backgroundColor: AppColors.navyDeep,
@@ -40,9 +45,9 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
           // Large tile preview
           Expanded(
             child: Center(
-              child: def.assetPath != null
+              child: assetPath != null
                   ? Image.asset(
-                      def.assetPath!,
+                      assetPath,
                       width: 180,
                       height: 180,
                       fit: BoxFit.contain,
@@ -122,6 +127,15 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                   ),
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: KenteButton(
+              label: 'OPEN TILE V2 TEST LEVEL',
+              icon: Icons.science_outlined,
+              width: double.infinity,
+              onTap: () => context.push('/tile-v2-test-level'),
             ),
           ),
           const SizedBox(height: 16),
