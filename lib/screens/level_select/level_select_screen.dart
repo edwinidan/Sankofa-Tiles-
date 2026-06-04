@@ -55,10 +55,10 @@ class LevelSelectScreen extends ConsumerWidget {
                 defaultDifficulty: settings.defaultDifficulty,
                 onTap: unlocked
                     ? () => _showDifficultySheet(
-                        context,
-                        level.id,
-                        settings.defaultDifficulty,
-                      )
+                          context,
+                          level.id,
+                          settings.defaultDifficulty,
+                        )
                     : null,
               );
             },
@@ -144,9 +144,8 @@ class _LevelCard extends StatelessWidget {
                   child: Text(
                     '${level.id}',
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: unlocked
-                          ? AppColors.navyDeep
-                          : AppColors.textMuted,
+                      color:
+                          unlocked ? AppColors.navyDeep : AppColors.textMuted,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -237,7 +236,6 @@ class _DifficultySheetState extends State<_DifficultySheet> {
           const SizedBox(height: 4),
           const AdinkraDivider(),
           const SizedBox(height: 16),
-
           ...DifficultyMode.values.map((mode) {
             final label = mode.name[0].toUpperCase() + mode.name.substring(1);
             final desc = _descriptions[mode] ?? '';
@@ -258,9 +256,8 @@ class _DifficultySheetState extends State<_DifficultySheet> {
                       : AppColors.navyDeep,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected
-                        ? AppColors.kenteGold
-                        : AppColors.navyLight,
+                    color:
+                        isSelected ? AppColors.kenteGold : AppColors.navyLight,
                     width: 1.5,
                   ),
                 ),
@@ -288,7 +285,6 @@ class _DifficultySheetState extends State<_DifficultySheet> {
               ),
             );
           }),
-
           const SizedBox(height: 8),
           KenteButton(
             label: 'BEGIN',
@@ -296,7 +292,7 @@ class _DifficultySheetState extends State<_DifficultySheet> {
             width: double.infinity,
             onTap: () {
               Navigator.pop(context);
-              context.go('/game/${widget.levelId}', extra: _selected);
+              context.push('/game/${widget.levelId}', extra: _selected);
             },
           ),
           const SizedBox(height: 8),

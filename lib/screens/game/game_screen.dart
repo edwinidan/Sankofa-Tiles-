@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +39,28 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   late final Stopwatch _levelLoadStopwatch;
   late final AudioService _audioService;
   bool _reportedReadyFrame = false;
+
+  void _returnToLevelSelect() {
+    ref.read(gameProvider.notifier).leaveGame();
+    context.go('/level-select');
+  }
+
+  Future<void> _confirmQuit() async {
+    ref.read(gameProvider.notifier).pauseGame();
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _QuitDialog(
+        onResume: () {
+          Navigator.pop(context);
+          ref.read(gameProvider.notifier).resumeGame();
+        },
+        onQuit: () {
+          Navigator.pop(context);
+          _returnToLevelSelect();
+        },
+      ),
+    );
+  }
 
   void _fireComboHaptic(int streak) {
     final count = streak.clamp(2, 5);
@@ -156,75 +180,78 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: AppColors.navyDeep,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(
-              levelId: widget.levelId,
-              title:
-                  widget.levelId == kTileV2TestLevelId ? 'Tile V2 Test' : null,
-            ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) unawaited(_confirmQuit());
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(
+                levelId: widget.levelId,
+                title: widget.levelId == kTileV2TestLevelId
+                    ? 'Tile V2 Test'
+                    : null,
+                onBack: _confirmQuit,
+              ),
 
-            const GameHud(),
+              const GameHud(),
 
-            // Board + combo overlay
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Stack(
-                  children: [
-                    gameState.status == GameStatus.paused
-                        ? _PausedOverlay(
-                            onResume: () =>
-                                ref.read(gameProvider.notifier).resumeGame(),
-                            onQuit: () {
-                              ref.read(gameProvider.notifier).leaveGame();
-                              context.go('/');
-                            },
-                          )
-                        : gameState.status == GameStatus.loadFailed
-                            ? _LoadFailedOverlay(
-                                message: gameState.loadError ??
-                                    'We could not prepare this board.',
-                                onRetry: () =>
-                                    ref.read(gameProvider.notifier).startLevel(
-                                          widget.levelId,
-                                          widget.difficulty,
-                                        ),
-                                onBack: () {
-                                  ref.read(gameProvider.notifier).leaveGame();
-                                  context.go('/level-select');
-                                },
-                              )
-                            : BoardWidget(
-                                tileThemeOverride: widget.tileThemeOverride,
-                              ),
-                    if (_showCombo)
-                      IgnorePointer(
-                        child: _ComboOverlay(
-                          key: ValueKey(_displayedStreak),
-                          streak: _displayedStreak,
-                        )
-                            .animate()
-                            .scale(
-                              begin: const Offset(0.2, 0.2),
-                              end: const Offset(1.0, 1.0),
-                              duration: 280.ms,
-                              curve: Curves.elasticOut,
+              // Board + combo overlay
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Stack(
+                    children: [
+                      gameState.status == GameStatus.paused
+                          ? _PausedOverlay(
+                              onResume: () =>
+                                  ref.read(gameProvider.notifier).resumeGame(),
+                              onQuit: _returnToLevelSelect,
                             )
-                            .shake(hz: 4, duration: 220.ms)
-                            .then(delay: 620.ms)
-                            .fade(begin: 1.0, end: 0.0, duration: 480.ms),
-                      ),
-                  ],
+                          : gameState.status == GameStatus.loadFailed
+                              ? _LoadFailedOverlay(
+                                  message: gameState.loadError ??
+                                      'We could not prepare this board.',
+                                  onRetry: () => ref
+                                      .read(gameProvider.notifier)
+                                      .startLevel(
+                                        widget.levelId,
+                                        widget.difficulty,
+                                      ),
+                                  onBack: _returnToLevelSelect,
+                                )
+                              : BoardWidget(
+                                  tileThemeOverride: widget.tileThemeOverride,
+                                ),
+                      if (_showCombo)
+                        IgnorePointer(
+                          child: _ComboOverlay(
+                            key: ValueKey(_displayedStreak),
+                            streak: _displayedStreak,
+                          )
+                              .animate()
+                              .scale(
+                                begin: const Offset(0.2, 0.2),
+                                end: const Offset(1.0, 1.0),
+                                duration: 280.ms,
+                                curve: Curves.elasticOut,
+                              )
+                              .shake(hz: 4, duration: 220.ms)
+                              .then(delay: 620.ms)
+                              .fade(begin: 1.0, end: 0.0, duration: 480.ms),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            _BottomBar(gameState: gameState),
-          ],
+              _BottomBar(gameState: gameState),
+            ],
+          ),
         ),
       ),
     );
@@ -234,7 +261,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 class _TopBar extends ConsumerWidget {
   final int levelId;
   final String? title;
-  const _TopBar({required this.levelId, this.title});
+  final VoidCallback onBack;
+  const _TopBar({
+    required this.levelId,
+    required this.onBack,
+    this.title,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -244,23 +276,7 @@ class _TopBar extends ConsumerWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios, color: AppColors.kenteGold),
-            onPressed: () {
-              ref.read(gameProvider.notifier).pauseGame();
-              showDialog(
-                context: context,
-                builder: (_) => _QuitDialog(
-                  onResume: () {
-                    Navigator.pop(context);
-                    ref.read(gameProvider.notifier).resumeGame();
-                  },
-                  onQuit: () {
-                    Navigator.pop(context);
-                    ref.read(gameProvider.notifier).leaveGame();
-                    context.go('/');
-                  },
-                ),
-              );
-            },
+            onPressed: onBack,
           ),
           const Spacer(),
           Text(title ?? 'Level $levelId', style: AppTextStyles.displaySmall),

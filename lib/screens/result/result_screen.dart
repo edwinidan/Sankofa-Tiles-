@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import '../../core/constants/level_data.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/game_state.dart';
+import '../../providers/game_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
@@ -59,6 +62,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
   @override
   void dispose() {
+    unawaited(ref.read(audioServiceProvider).stopSfx());
     _controller.dispose();
     super.dispose();
   }
@@ -67,20 +71,26 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   Widget build(BuildContext context) {
     final isWin = widget.gameState.status == GameStatus.won;
 
-    return Scaffold(
-      backgroundColor: AppColors.navyDeep,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: isWin
-                ? _WinContent(
-                    gameState: widget.gameState,
-                    stars: _stars,
-                    scaleAnim: _scaleAnim,
-                  )
-                : _LoseContent(gameState: widget.gameState),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go('/level-select');
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: isWin
+                  ? _WinContent(
+                      gameState: widget.gameState,
+                      stars: _stars,
+                      scaleAnim: _scaleAnim,
+                    )
+                  : _LoseContent(gameState: widget.gameState),
+            ),
           ),
         ),
       ),
@@ -183,12 +193,12 @@ class _WinContent extends StatelessWidget {
               child: KenteButton(
                 label: gameState.levelId == kTileV2TestLevelId
                     ? 'TILE PREVIEW'
-                    : 'MENU',
+                    : 'LEVELS',
                 icon: Icons.list,
                 onTap: () => context.go(
                   gameState.levelId == kTileV2TestLevelId
                       ? '/tile-preview'
-                      : '/',
+                      : '/level-select',
                 ),
               ),
             ),
@@ -251,12 +261,12 @@ class _LoseContent extends StatelessWidget {
               child: KenteButton(
                 label: gameState.levelId == kTileV2TestLevelId
                     ? 'TILE PREVIEW'
-                    : 'MENU',
+                    : 'LEVELS',
                 icon: Icons.list,
                 onTap: () => context.go(
                   gameState.levelId == kTileV2TestLevelId
                       ? '/tile-preview'
-                      : '/',
+                      : '/level-select',
                 ),
               ),
             ),

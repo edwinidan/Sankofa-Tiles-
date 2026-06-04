@@ -324,6 +324,7 @@ class GameNotifier extends StateNotifier<GameState> {
       _timer?.cancel();
       state = state.copyWith(status: GameStatus.lost);
       _audio.playLose();
+      _audio.stopBackgroundMusic();
     }
   }
 
@@ -600,7 +601,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   void leaveGame() {
     _timer?.cancel();
-    unawaited(_audio.stopBackgroundMusic());
+    unawaited(_audio.stopGameAudio());
     state = GameState.initial();
   }
 

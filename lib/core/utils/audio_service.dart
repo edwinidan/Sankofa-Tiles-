@@ -28,13 +28,16 @@ class AudioService {
     ),
   );
 
-  final AudioPlayer _sfxPlayer = AudioPlayer();
+  final List<AudioPlayer> _sfxPlayers = List.generate(4, (_) => AudioPlayer());
   final AudioPlayer _musicPlayer = AudioPlayer();
+  final Map<String, DateTime> _lastSfxPlayedAt = {};
 
   bool _soundEnabled;
   bool _musicEnabled;
   double _musicVolume;
   bool _backgroundMusicRequested = false;
+  bool _backgroundMusicPlaying = false;
+  int _nextSfxPlayer = 0;
 
   AudioService({
     bool sound = true,
@@ -60,11 +63,28 @@ class AudioService {
     unawaited(_applyMusicVolume());
   }
 
-  Future<void> _playSfx(String fileName) async {
+  Future<void> _playSfx(
+    String fileName, {
+    Duration minInterval = const Duration(milliseconds: 45),
+    double volume = 1.0,
+  }) async {
     if (!_soundEnabled) return;
+
+    final now = DateTime.now();
+    final lastPlayedAt = _lastSfxPlayedAt[fileName];
+    if (lastPlayedAt != null && now.difference(lastPlayedAt) < minInterval) {
+      return;
+    }
+    _lastSfxPlayedAt[fileName] = now;
+
+    final player = _sfxPlayers[_nextSfxPlayer];
+    _nextSfxPlayer = (_nextSfxPlayer + 1) % _sfxPlayers.length;
+
     try {
-      await _sfxPlayer.play(
+      await player.setPlayerMode(PlayerMode.lowLatency);
+      await player.play(
         AssetSource('audio/$fileName'),
+        volume: volume.clamp(0.0, 1.0),
         ctx: _sfxAudioContext,
       );
     } catch (e) {
@@ -72,17 +92,30 @@ class AudioService {
     }
   }
 
-  Future<void> playTileTap() => _playSfx('tile_tap.mp3');
-  Future<void> playMatch() => _playSfx('match.mp3');
-  Future<void> playNoMatch() => _playSfx('no_match.mp3');
-  Future<void> playWin() => _playSfx('win.mp3');
-  Future<void> playLose() => _playSfx('lose.mp3');
-  Future<void> playHint() => _playSfx('tile_tap.mp3');
-  Future<void> playShuffle() => _playSfx('tile_tap.mp3');
+  Future<void> playTileTap() => _playSfx(
+        'tile_tap.ogg',
+        minInterval: const Duration(milliseconds: 70),
+        volume: 0.75,
+      );
+  Future<void> playMatch() => _playSfx('match.ogg', volume: 0.9);
+  Future<void> playNoMatch() => _playSfx('no_match.ogg', volume: 0.8);
+  Future<void> playWin() => _playSfx('win.ogg', volume: 0.9);
+  Future<void> playLose() => _playSfx('lose.ogg', volume: 0.85);
+  Future<void> playHint() => _playSfx(
+        'hint.ogg',
+        minInterval: const Duration(milliseconds: 120),
+        volume: 0.7,
+      );
+  Future<void> playShuffle() => _playSfx(
+        'shuffle.ogg',
+        minInterval: const Duration(milliseconds: 160),
+        volume: 0.7,
+      );
 
   Future<void> startBackgroundMusic() async {
     _backgroundMusicRequested = true;
     if (!_musicEnabled) return;
+    if (_backgroundMusicPlaying) return;
     try {
       await _musicPlayer.setReleaseMode(ReleaseMode.loop);
       await _musicPlayer.play(
@@ -90,6 +123,7 @@ class AudioService {
         volume: _musicVolume,
         ctx: _musicAudioContext,
       );
+      _backgroundMusicPlaying = true;
     } catch (e) {
       debugPrint('[AudioService] Music: $e');
     }
@@ -105,9 +139,25 @@ class AudioService {
     }
     try {
       await _musicPlayer.stop();
+      _backgroundMusicPlaying = false;
     } catch (e) {
       debugPrint('[AudioService] Stop music: $e');
     }
+  }
+
+  Future<void> stopSfx() async {
+    try {
+      await Future.wait(_sfxPlayers.map((player) => player.stop()));
+    } catch (e) {
+      debugPrint('[AudioService] Stop SFX: $e');
+    }
+  }
+
+  Future<void> stopGameAudio() async {
+    await Future.wait([
+      stopBackgroundMusic(),
+      stopSfx(),
+    ]);
   }
 
   Future<void> _applyMusicVolume() async {
@@ -119,11 +169,13 @@ class AudioService {
   }
 
   void dispose() {
-    unawaited(
-      _sfxPlayer.dispose().catchError(
-            (Object e) => debugPrint('[AudioService] Dispose SFX: $e'),
-          ),
-    );
+    for (final player in _sfxPlayers) {
+      unawaited(
+        player.dispose().catchError(
+              (Object e) => debugPrint('[AudioService] Dispose SFX: $e'),
+            ),
+      );
+    }
     unawaited(
       _musicPlayer.dispose().catchError(
             (Object e) => debugPrint('[AudioService] Dispose music: $e'),

@@ -1,9 +1,11 @@
 # Audio Assets
 
 Place audio files here:
-- tile_tap.mp3
-- match.mp3
-- no_match.mp3
-- win.mp3
-- lose.mp3
+- tile_tap.ogg
+- match.ogg
+- no_match.ogg
+- hint.ogg
+- shuffle.ogg
+- win.ogg
+- lose.ogg
 - background_music.mp3
