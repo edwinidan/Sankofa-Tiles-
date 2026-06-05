@@ -1,4 +1,5 @@
 import 'layout_data.dart';
+import 'tile_data.dart';
 
 class LevelDefinition {
   final int id;
@@ -98,33 +99,94 @@ const _extendedIds = [
 ];
 
 const kTileV2TestLevelId = 0;
+const kTileV2FirstLevelId = 101;
 
 final tileV2TestLevel = LevelDefinition(
   id: kTileV2TestLevelId,
-  name: 'Tile V2 Scale Test',
-  boardRows: 4,
-  boardCols: 6,
-  tileCount: 28,
-  tileIds: const [
-    'aban',
-    'abe_dua',
-    'abode_santann',
-    'abusua_pa',
-    'adinkrahene',
-    'agyindawuru',
-    'akoben',
-    'denkyem',
-    'dwennimmen',
-    'gye_nyame',
-    'nea_onnim',
-    'nkyinkyim',
-    'nsoromma',
-    'odo_nnyew_fie_kwan',
-  ],
+  name: 'Tile V2 Full Test',
+  boardRows: 6,
+  boardCols: 7,
+  tileCount: 68,
+  tileIds: kTileV2TileIds,
   unlockRequirement: 0,
   starThresholds: const [0, 0, 0],
-  layout: level4Layout,
+  layout: level13Layout,
 );
+
+List<String> _tileV2IdsForPairs(int pairCount) =>
+    kTileV2TileIds.take(pairCount).toList(growable: false);
+
+final List<LevelDefinition> kTileV2Levels = [
+  LevelDefinition(
+    id: 101,
+    name: 'V2 First Look',
+    boardRows: 4,
+    boardCols: 6,
+    tileCount: 28,
+    tileIds: _tileV2IdsForPairs(14),
+    unlockRequirement: 0,
+    starThresholds: const [700, 1100, 1400],
+    layout: level4Layout,
+  ),
+  LevelDefinition(
+    id: 102,
+    name: 'V2 New Roots',
+    boardRows: 5,
+    boardCols: 6,
+    tileCount: 36,
+    tileIds: _tileV2IdsForPairs(18),
+    unlockRequirement: 101,
+    starThresholds: const [900, 1400, 1800],
+    layout: level5Layout,
+  ),
+  LevelDefinition(
+    id: 103,
+    name: 'V2 Council',
+    boardRows: 5,
+    boardCols: 7,
+    tileCount: 44,
+    tileIds: _tileV2IdsForPairs(22),
+    unlockRequirement: 102,
+    starThresholds: const [1100, 1750, 2200],
+    layout: level7Layout,
+  ),
+  LevelDefinition(
+    id: 104,
+    name: 'V2 Heritage',
+    boardRows: 5,
+    boardCols: 7,
+    tileCount: 52,
+    tileIds: _tileV2IdsForPairs(26),
+    unlockRequirement: 103,
+    starThresholds: const [1300, 2100, 2600],
+    layout: level9Layout,
+  ),
+  LevelDefinition(
+    id: 105,
+    name: 'V2 Legacy',
+    boardRows: 5,
+    boardCols: 8,
+    tileCount: 60,
+    tileIds: _tileV2IdsForPairs(30),
+    unlockRequirement: 104,
+    starThresholds: const [1600, 2600, 3200],
+    layout: level11Layout,
+  ),
+  LevelDefinition(
+    id: 106,
+    name: 'V2 Complete Set',
+    boardRows: 6,
+    boardCols: 7,
+    tileCount: 68,
+    tileIds: kTileV2TileIds,
+    unlockRequirement: 105,
+    starThresholds: const [2000, 3200, 4000],
+    layout: level13Layout,
+  ),
+];
+
+bool isTileV2LevelId(int id) =>
+    id == kTileV2TestLevelId || kTileV2Levels.any((level) => level.id == id);
 
 final List<LevelDefinition> kLevels = [
   // Level 1 — 16 tiles, 2 layers (4×3 base + 2×2 cap)
@@ -593,7 +655,7 @@ LevelDefinition? getLevelById(int id) {
   if (id == kTileV2TestLevelId) return tileV2TestLevel;
 
   try {
-    return kLevels.firstWhere((l) => l.id == id);
+    return [...kLevels, ...kTileV2Levels].firstWhere((l) => l.id == id);
   } catch (_) {
     return null;
   }

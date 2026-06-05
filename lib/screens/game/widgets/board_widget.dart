@@ -201,7 +201,7 @@ class _BoardLayoutMetrics {
   );
 
   static _BoardLayoutMetrics forLevel(int levelId) {
-    return levelId == kTileV2TestLevelId ? tileV2Test : normal;
+    return isTileV2LevelId(levelId) ? tileV2Test : normal;
   }
 }
 

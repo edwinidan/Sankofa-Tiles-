@@ -95,11 +95,37 @@ void main() {
     final state = container.read(gameProvider);
     expect(kLevels.any((level) => level.id == kTileV2TestLevelId), isFalse);
     expect(state.status, GameStatus.playing);
-    expect(state.tiles, hasLength(28));
+    expect(state.tiles, hasLength(68));
     expect(BoardSolver.isSolvable(state.tiles), isTrue);
     expect(
       state.tiles.map((tile) => tile.def.id).toSet(),
       tileV2TestLevel.tileIds.toSet(),
     );
+  });
+
+  test('Tile V2 progression reaches the full 34 pair set', () {
+    final container = ProviderContainer(
+      overrides: [
+        audioServiceProvider.overrideWithValue(
+          AudioService(sound: false, music: false),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(gameProvider.notifier);
+
+    for (final level in [kTileV2Levels.first, kTileV2Levels.last]) {
+      notifier.startLevel(level.id, DifficultyMode.relaxed);
+
+      final state = container.read(gameProvider);
+      expect(state.status, GameStatus.playing);
+      expect(state.levelId, level.id);
+      expect(state.tiles, hasLength(level.tileCount));
+      expect(BoardSolver.isSolvable(state.tiles), isTrue);
+    }
+
+    expect(kTileV2Levels.last.tileCount, 68);
+    expect(kTileV2Levels.last.tileIds, hasLength(34));
   });
 }

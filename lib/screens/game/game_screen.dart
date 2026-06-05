@@ -40,9 +40,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   late final AudioService _audioService;
   bool _reportedReadyFrame = false;
 
+  bool get _isTileV2Level => isTileV2LevelId(widget.levelId);
+
+  String get _levelSelectRoute =>
+      _isTileV2Level ? '/level-select?tileSet=v2' : '/level-select';
+
   void _returnToLevelSelect() {
     ref.read(gameProvider.notifier).leaveGame();
-    context.go('/level-select');
+    context.go(_levelSelectRoute);
   }
 
   Future<void> _confirmQuit() async {
@@ -194,7 +199,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                 levelId: widget.levelId,
                 title: widget.levelId == kTileV2TestLevelId
                     ? 'Tile V2 Test'
-                    : null,
+                    : _isTileV2Level
+                        ? 'Tile V2 Level ${widget.levelId - 100}'
+                        : null,
                 onBack: _confirmQuit,
               ),
 

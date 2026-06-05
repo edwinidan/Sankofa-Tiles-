@@ -10,7 +10,7 @@ extension TileThemeMeta on TileThemeType {
       case TileThemeType.classic:
         return 'Classic';
       case TileThemeType.tileV2Png:
-        return 'Tile V2 PNG Preview';
+        return 'Tile V2';
       case TileThemeType.christmas:
         return 'Christmas Preview';
     }

@@ -33,7 +33,7 @@ class HomeScreen extends StatelessWidget {
                     label: 'PLAY',
                     icon: Icons.play_arrow_rounded,
                     width: double.infinity,
-                    onTap: () => context.push('/level-select'),
+                    onTap: () => _showPlayModeSheet(context),
                   ),
                   const SizedBox(height: 16),
                   KenteButton(
@@ -67,6 +67,47 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 16),
               child: Text('v1.0.0', style: AppTextStyles.bodySmall),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPlayModeSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.navyMid,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: AppColors.kenteGoldDim, width: 1),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Choose Tile Set', style: AppTextStyles.displaySmall),
+            const SizedBox(height: 16),
+            KenteButton(
+              label: 'CLASSIC TILES',
+              icon: Icons.grid_view_outlined,
+              width: double.infinity,
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/level-select');
+              },
+            ),
+            const SizedBox(height: 12),
+            KenteButton(
+              label: 'TILE V2',
+              icon: Icons.auto_awesome,
+              width: double.infinity,
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/level-select?tileSet=v2');
+              },
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),

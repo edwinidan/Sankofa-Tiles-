@@ -12,12 +12,18 @@ import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
 
 class LevelSelectScreen extends ConsumerWidget {
-  const LevelSelectScreen({super.key});
+  final bool useTileV2;
+
+  const LevelSelectScreen({
+    super.key,
+    this.useTileV2 = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final settings = ref.watch(settingsProvider);
+    final levels = useTileV2 ? kTileV2Levels : kLevels;
 
     return PopScope(
       canPop: false,
@@ -27,7 +33,10 @@ class LevelSelectScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: AppColors.navyDeep,
         appBar: AppBar(
-          title: Text('Choose Your Level', style: AppTextStyles.displaySmall),
+          title: Text(
+            useTileV2 ? 'Tile V2 Levels' : 'Choose Your Level',
+            style: AppTextStyles.displaySmall,
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios),
             onPressed: () => safeBack(context),
@@ -35,33 +44,43 @@ class LevelSelectScreen extends ConsumerWidget {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: kLevels.length,
-            itemBuilder: (context, i) {
-              final level = kLevels[i];
-              final unlocked = progress.isLevelUnlocked(level.id);
-              final stars = progress.getStars(level.id);
+          child: Column(
+            children: [
+              _TileSetSwitcher(useTileV2: useTileV2),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.1,
+                  ),
+                  itemCount: levels.length,
+                  itemBuilder: (context, i) {
+                    final level = levels[i];
+                    final unlocked = progress.isLevelUnlocked(level.id);
+                    final stars = progress.getStars(level.id);
 
-              return _LevelCard(
-                level: level,
-                unlocked: unlocked,
-                stars: stars,
-                defaultDifficulty: settings.defaultDifficulty,
-                onTap: unlocked
-                    ? () => _showDifficultySheet(
-                          context,
-                          level.id,
-                          settings.defaultDifficulty,
-                        )
-                    : null,
-              );
-            },
+                    return _LevelCard(
+                      level: level,
+                      badgeLabel: '${i + 1}',
+                      unlocked: unlocked,
+                      stars: stars,
+                      defaultDifficulty: settings.defaultDifficulty,
+                      onTap: unlocked
+                          ? () => _showDifficultySheet(
+                                context,
+                                level.id,
+                                settings.defaultDifficulty,
+                                useTileV2: useTileV2,
+                              )
+                          : null,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -69,10 +88,8 @@ class LevelSelectScreen extends ConsumerWidget {
   }
 
   void _showDifficultySheet(
-    BuildContext context,
-    int levelId,
-    DifficultyMode defaultDifficulty,
-  ) {
+      BuildContext context, int levelId, DifficultyMode defaultDifficulty,
+      {required bool useTileV2}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.navyMid,
@@ -83,6 +100,78 @@ class LevelSelectScreen extends ConsumerWidget {
       builder: (_) => _DifficultySheet(
         levelId: levelId,
         defaultDifficulty: defaultDifficulty,
+        useTileV2: useTileV2,
+      ),
+    );
+  }
+}
+
+class _TileSetSwitcher extends StatelessWidget {
+  final bool useTileV2;
+
+  const _TileSetSwitcher({required this.useTileV2});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.navyMid,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.navyLight),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TileSetOption(
+              label: 'Classic',
+              selected: !useTileV2,
+              onTap: () => context.go('/level-select'),
+            ),
+          ),
+          Expanded(
+            child: _TileSetOption(
+              label: 'Tile V2',
+              selected: useTileV2,
+              onTap: () => context.go('/level-select?tileSet=v2'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TileSetOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TileSetOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: selected ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.kenteGold : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            color: selected ? AppColors.navyDeep : AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -90,6 +179,7 @@ class LevelSelectScreen extends ConsumerWidget {
 
 class _LevelCard extends StatelessWidget {
   final LevelDefinition level;
+  final String badgeLabel;
   final bool unlocked;
   final int stars;
   final DifficultyMode defaultDifficulty;
@@ -97,6 +187,7 @@ class _LevelCard extends StatelessWidget {
 
   const _LevelCard({
     required this.level,
+    required this.badgeLabel,
     required this.unlocked,
     required this.stars,
     required this.defaultDifficulty,
@@ -142,7 +233,7 @@ class _LevelCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    '${level.id}',
+                    badgeLabel,
                     style: AppTextStyles.labelSmall.copyWith(
                       color:
                           unlocked ? AppColors.navyDeep : AppColors.textMuted,
@@ -199,10 +290,12 @@ class _StarRow extends StatelessWidget {
 class _DifficultySheet extends StatefulWidget {
   final int levelId;
   final DifficultyMode defaultDifficulty;
+  final bool useTileV2;
 
   const _DifficultySheet({
     required this.levelId,
     required this.defaultDifficulty,
+    required this.useTileV2,
   });
 
   @override
@@ -292,7 +385,12 @@ class _DifficultySheetState extends State<_DifficultySheet> {
             width: double.infinity,
             onTap: () {
               Navigator.pop(context);
-              context.push('/game/${widget.levelId}', extra: _selected);
+              context.push(
+                widget.useTileV2
+                    ? '/game/${widget.levelId}?tileSet=v2'
+                    : '/game/${widget.levelId}',
+                extra: _selected,
+              );
             },
           ),
           const SizedBox(height: 8),

@@ -133,7 +133,7 @@ void main() {
 
   test('theme display names are user-facing', () {
     expect(TileThemeType.classic.displayName, 'Classic');
-    expect(TileThemeType.tileV2Png.displayName, 'Tile V2 PNG Preview');
+    expect(TileThemeType.tileV2Png.displayName, 'Tile V2');
     expect(TileThemeType.christmas.displayName, 'Christmas Preview');
   });
 }

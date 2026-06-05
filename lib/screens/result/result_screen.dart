@@ -70,11 +70,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   @override
   Widget build(BuildContext context) {
     final isWin = widget.gameState.status == GameStatus.won;
+    final levelSelectRoute = _levelSelectRouteFor(widget.gameState.levelId);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/level-select');
+        if (!didPop) context.go(levelSelectRoute);
       },
       child: Scaffold(
         backgroundColor: AppColors.navyDeep,
@@ -112,6 +113,8 @@ class _WinContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = getLevelById(gameState.levelId);
+    final isV2Level = _isTileV2ProgressLevel(gameState.levelId);
+    final levelSelectRoute = _levelSelectRouteFor(gameState.levelId);
     final matchScore = gameState.moves * 100;
     final timeBonus = gameState.difficulty == DifficultyMode.normal
         ? (300 - gameState.secondsElapsed).clamp(0, 300) * 2
@@ -198,7 +201,7 @@ class _WinContent extends StatelessWidget {
                 onTap: () => context.go(
                   gameState.levelId == kTileV2TestLevelId
                       ? '/tile-preview'
-                      : '/level-select',
+                      : levelSelectRoute,
                 ),
               ),
             ),
@@ -207,9 +210,8 @@ class _WinContent extends StatelessWidget {
               child: KenteButton(
                 label: 'NEXT',
                 icon: Icons.arrow_forward,
-                onTap: gameState.levelId > kTileV2TestLevelId &&
-                        gameState.levelId < kLevels.length
-                    ? () => context.go('/level-select')
+                onTap: _hasNextLevel(gameState.levelId, isV2Level)
+                    ? () => context.go(levelSelectRoute)
                     : null,
               ),
             ),
@@ -228,6 +230,9 @@ class _LoseContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final levelSelectRoute = _levelSelectRouteFor(gameState.levelId);
+    final retryRoute = _gameRouteFor(gameState.levelId);
+
     return Column(
       children: [
         const Spacer(),
@@ -266,7 +271,7 @@ class _LoseContent extends StatelessWidget {
                 onTap: () => context.go(
                   gameState.levelId == kTileV2TestLevelId
                       ? '/tile-preview'
-                      : '/level-select',
+                      : levelSelectRoute,
                 ),
               ),
             ),
@@ -278,7 +283,7 @@ class _LoseContent extends StatelessWidget {
                 onTap: () => context.go(
                   gameState.levelId == kTileV2TestLevelId
                       ? '/tile-v2-test-level'
-                      : '/game/${gameState.levelId}',
+                      : retryRoute,
                   extra: gameState.difficulty,
                 ),
               ),
@@ -290,6 +295,22 @@ class _LoseContent extends StatelessWidget {
     );
   }
 }
+
+bool _isTileV2ProgressLevel(int levelId) =>
+    kTileV2Levels.any((level) => level.id == levelId);
+
+bool _hasNextLevel(int levelId, bool isV2Level) {
+  if (isV2Level) return levelId < kTileV2Levels.last.id;
+  return levelId > kTileV2TestLevelId && levelId < kLevels.length;
+}
+
+String _levelSelectRouteFor(int levelId) => _isTileV2ProgressLevel(levelId)
+    ? '/level-select?tileSet=v2'
+    : '/level-select';
+
+String _gameRouteFor(int levelId) => _isTileV2ProgressLevel(levelId)
+    ? '/game/$levelId?tileSet=v2'
+    : '/game/$levelId';
 
 class _ScoreRow extends StatelessWidget {
   final String label;

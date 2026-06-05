@@ -33,7 +33,12 @@ GoRouter createAppRouter(StorageService storage) {
       ),
       GoRoute(
         path: '/level-select',
-        builder: (context, state) => const LevelSelectScreen(),
+        builder: (context, state) {
+          final tileSet = state.uri.queryParameters['tileSet'];
+          return LevelSelectScreen(
+            useTileV2: tileSet == 'v2',
+          );
+        },
       ),
       GoRoute(
         path: '/game/:levelId',
@@ -43,7 +48,13 @@ GoRouter createAppRouter(StorageService storage) {
           final difficulty = state.extra is DifficultyMode
               ? state.extra as DifficultyMode
               : DifficultyMode.normal;
-          return GameScreen(levelId: levelId, difficulty: difficulty);
+          final useTileV2 = state.uri.queryParameters['tileSet'] == 'v2' ||
+              isTileV2LevelId(levelId);
+          return GameScreen(
+            levelId: levelId,
+            difficulty: difficulty,
+            tileThemeOverride: useTileV2 ? TileThemeType.tileV2Png : null,
+          );
         },
       ),
       GoRoute(
