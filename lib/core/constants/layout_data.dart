@@ -186,3 +186,11 @@ final level20Layout = _mahjongLayout([
   [2, 2],
   [2],
 ]);
+
+// Level 21 — full symbol archive
+final level21Layout = _mahjongLayout([
+  [2, 4, 6, 8, 10, 10, 10, 8, 6, 4, 2],
+  [4, 6, 6, 4],
+  [2, 4, 4],
+  [2],
+]);

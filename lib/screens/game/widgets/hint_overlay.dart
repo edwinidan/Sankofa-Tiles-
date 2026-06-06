@@ -25,7 +25,8 @@ class HintOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lightbulb, color: AppColors.kenteGold, size: 40),
+                const Icon(Icons.lightbulb,
+                    color: AppColors.kenteGold, size: 40),
                 const SizedBox(height: 12),
                 Text('Hint Active', style: AppTextStyles.displaySmall),
                 const SizedBox(height: 8),

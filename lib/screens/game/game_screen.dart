@@ -11,21 +11,22 @@ import '../../providers/game_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/theme/tile_theme_type.dart';
-import '../../core/constants/level_data.dart';
+import '../../core/theme/sankofa_game_theme.dart';
 import 'widgets/board_widget.dart';
-import 'widgets/game_hud.dart';
+import 'widgets/game_board_backdrop.dart';
+import 'widgets/game_control_dock.dart';
+import 'widgets/game_header.dart';
+import 'widgets/game_stats_panel.dart';
+import 'widgets/parchment_background.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final int levelId;
   final DifficultyMode difficulty;
-  final TileThemeType? tileThemeOverride;
 
   const GameScreen({
     super.key,
     required this.levelId,
     required this.difficulty,
-    this.tileThemeOverride,
   });
 
   @override
@@ -40,14 +41,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   late final AudioService _audioService;
   bool _reportedReadyFrame = false;
 
-  bool get _isTileV2Level => isTileV2LevelId(widget.levelId);
-
-  String get _levelSelectRoute =>
-      _isTileV2Level ? '/level-select?tileSet=v2' : '/level-select';
-
   void _returnToLevelSelect() {
     ref.read(gameProvider.notifier).leaveGame();
-    context.go(_levelSelectRoute);
+    context.go('/level-select');
   }
 
   Future<void> _confirmQuit() async {
@@ -65,6 +61,29 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _openGameSettings() async {
+    final wasPlaying = ref.read(gameProvider).status == GameStatus.playing;
+    if (wasPlaying) {
+      ref.read(gameProvider.notifier).pauseGame();
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.panelFill,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: AppColors.panelBorder),
+      ),
+      builder: (_) => const _GameSettingsSheet(),
+    );
+
+    if (!context.mounted) return;
+    if (wasPlaying && ref.read(gameProvider).status == GameStatus.paused) {
+      ref.read(gameProvider.notifier).resumeGame();
+    }
   }
 
   void _fireComboHaptic(int streak) {
@@ -191,211 +210,72 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         if (!didPop) unawaited(_confirmQuit());
       },
       child: Scaffold(
-        backgroundColor: AppColors.navyDeep,
+        backgroundColor: SankofaGameTheme.backgroundTop,
         body: SafeArea(
-          child: Column(
-            children: [
-              _TopBar(
-                levelId: widget.levelId,
-                title: widget.levelId == kTileV2TestLevelId
-                    ? 'Tile V2 Test'
-                    : _isTileV2Level
-                        ? 'Tile V2 Level ${widget.levelId - 100}'
-                        : null,
-                onBack: _confirmQuit,
-              ),
-
-              const GameHud(),
-
-              // Board + combo overlay
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Stack(
-                    children: [
-                      gameState.status == GameStatus.paused
-                          ? _PausedOverlay(
-                              onResume: () =>
-                                  ref.read(gameProvider.notifier).resumeGame(),
-                              onQuit: _returnToLevelSelect,
-                            )
-                          : gameState.status == GameStatus.loadFailed
-                              ? _LoadFailedOverlay(
-                                  message: gameState.loadError ??
-                                      'We could not prepare this board.',
-                                  onRetry: () => ref
-                                      .read(gameProvider.notifier)
-                                      .startLevel(
-                                        widget.levelId,
-                                        widget.difficulty,
-                                      ),
-                                  onBack: _returnToLevelSelect,
-                                )
-                              : BoardWidget(
-                                  tileThemeOverride: widget.tileThemeOverride,
-                                ),
-                      if (_showCombo)
-                        IgnorePointer(
-                          child: _ComboOverlay(
-                            key: ValueKey(_displayedStreak),
-                            streak: _displayedStreak,
+          child: ParchmentBackground(
+            child: Column(
+              children: [
+                GameHeader(
+                  levelId: widget.levelId,
+                  onBack: _confirmQuit,
+                  onSettings: _openGameSettings,
+                ),
+                const GameStatsPanel(),
+                Expanded(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Stack(
+                      children: [
+                        if (gameState.status == GameStatus.paused)
+                          _PausedOverlay(
+                            onResume: () =>
+                                ref.read(gameProvider.notifier).resumeGame(),
+                            onQuit: _returnToLevelSelect,
                           )
-                              .animate()
-                              .scale(
-                                begin: const Offset(0.2, 0.2),
-                                end: const Offset(1.0, 1.0),
-                                duration: 280.ms,
-                                curve: Curves.elasticOut,
-                              )
-                              .shake(hz: 4, duration: 220.ms)
-                              .then(delay: 620.ms)
-                              .fade(begin: 1.0, end: 0.0, duration: 480.ms),
-                        ),
-                    ],
+                        else if (gameState.status == GameStatus.loadFailed)
+                          _LoadFailedOverlay(
+                            message: gameState.loadError ??
+                                'We could not prepare this board.',
+                            onRetry: () =>
+                                ref.read(gameProvider.notifier).startLevel(
+                                      widget.levelId,
+                                      widget.difficulty,
+                                    ),
+                            onBack: _returnToLevelSelect,
+                          )
+                        else
+                          GameBoardBackdrop(
+                            child: BoardWidget(
+                              key: ValueKey(widget.levelId),
+                            ),
+                          ),
+                        if (_showCombo)
+                          IgnorePointer(
+                            child: _ComboOverlay(
+                              key: ValueKey(_displayedStreak),
+                              streak: _displayedStreak,
+                            )
+                                .animate()
+                                .scale(
+                                  begin: const Offset(0.2, 0.2),
+                                  end: const Offset(1.0, 1.0),
+                                  duration: 280.ms,
+                                  curve: Curves.elasticOut,
+                                )
+                                .shake(hz: 4, duration: 220.ms)
+                                .then(delay: 620.ms)
+                                .fade(begin: 1.0, end: 0.0, duration: 480.ms),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-
-              _BottomBar(gameState: gameState),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TopBar extends ConsumerWidget {
-  final int levelId;
-  final String? title;
-  final VoidCallback onBack;
-  const _TopBar({
-    required this.levelId,
-    required this.onBack,
-    this.title,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: AppColors.kenteGold),
-            onPressed: onBack,
-          ),
-          const Spacer(),
-          Text(title ?? 'Level $levelId', style: AppTextStyles.displaySmall),
-          const Spacer(),
-          IconButton(
-            tooltip: 'Settings',
-            icon:
-                const Icon(Icons.settings_outlined, color: AppColors.kenteGold),
-            onPressed: () => _openGameSettings(context, ref),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openGameSettings(BuildContext context, WidgetRef ref) async {
-    final wasPlaying = ref.read(gameProvider).status == GameStatus.playing;
-    if (wasPlaying) {
-      ref.read(gameProvider.notifier).pauseGame();
-    }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.navyMid,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) => const _GameSettingsSheet(),
-    );
-
-    if (!context.mounted) return;
-    if (wasPlaying && ref.read(gameProvider).status == GameStatus.paused) {
-      ref.read(gameProvider.notifier).resumeGame();
-    }
-  }
-}
-
-class _BottomBar extends ConsumerWidget {
-  final GameState gameState;
-  const _BottomBar({required this.gameState});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(gameProvider.notifier);
-    final isPlaying = gameState.status == GameStatus.playing;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: AppColors.navyMid,
-        border: Border(
-          top: BorderSide(color: AppColors.kenteGoldDim, width: 1),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _ActionButton(
-            icon: Icons.lightbulb_outline,
-            label: 'Hint',
-            onTap: isPlaying ? notifier.useHint : null,
-          ),
-          _ActionButton(
-            icon: Icons.shuffle,
-            label: 'Shuffle (-50)',
-            onTap: isPlaying ? notifier.shuffleRemaining : null,
-          ),
-          _ActionButton(
-            icon: gameState.status == GameStatus.paused
-                ? Icons.play_arrow
-                : Icons.pause,
-            label: gameState.status == GameStatus.paused ? 'Resume' : 'Pause',
-            onTap: gameState.status == GameStatus.paused
-                ? notifier.resumeGame
-                : (isPlaying ? notifier.pauseGame : null),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  const _ActionButton({required this.icon, required this.label, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: enabled ? AppColors.kenteGold : AppColors.textMuted,
-            size: 24,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: enabled ? AppColors.kenteGold : AppColors.textMuted,
-              fontSize: 10,
+                const GameControlDock(),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -409,69 +289,75 @@ class _GameSettingsSheet extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
 
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          12,
-          16,
-          16 + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.navyLight,
-                  borderRadius: BorderRadius.circular(2),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.82),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            16 + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.archiveGoldPale,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Text('Settings', style: AppTextStyles.displaySmall),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'Close',
-                  icon: const Icon(Icons.close, color: AppColors.kenteGold),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _SheetSwitchTile(
-              icon: Icons.volume_up_outlined,
-              label: 'Sound Effects',
-              value: settings.soundEnabled,
-              onChanged: notifier.setSoundEnabled,
-            ),
-            _SheetSwitchTile(
-              icon: Icons.music_note_outlined,
-              label: 'Background Music',
-              value: settings.musicEnabled,
-              onChanged: notifier.setMusicEnabled,
-            ),
-            _SheetVolumeTile(
-              value: settings.musicVolume,
-              enabled: settings.musicEnabled,
-              onChanged: notifier.setMusicVolume,
-            ),
-            _SheetSwitchTile(
-              icon: Icons.text_fields,
-              label: 'Show Tile Names',
-              value: settings.showTileNames,
-              onChanged: notifier.setShowTileNames,
-            ),
-            _SheetHapticTile(
-              selected: settings.hapticIntensity,
-              onChanged: notifier.setHapticIntensity,
-            ),
-          ],
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Text('Settings', style: AppTextStyles.archiveDisplaySmall),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(Icons.close,
+                        color: AppColors.archiveGoldDeep),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _SheetSwitchTile(
+                icon: Icons.volume_up_outlined,
+                label: 'Sound Effects',
+                value: settings.soundEnabled,
+                onChanged: notifier.setSoundEnabled,
+              ),
+              _SheetSwitchTile(
+                icon: Icons.music_note_outlined,
+                label: 'Background Music',
+                value: settings.musicEnabled,
+                onChanged: notifier.setMusicEnabled,
+              ),
+              _SheetVolumeTile(
+                value: settings.musicVolume,
+                enabled: settings.musicEnabled,
+                onChanged: notifier.setMusicVolume,
+              ),
+              _SheetSwitchTile(
+                icon: Icons.text_fields,
+                label: 'Show Tile Names',
+                value: settings.showTileNames,
+                onChanged: notifier.setShowTileNames,
+              ),
+              _SheetHapticTile(
+                selected: settings.hapticIntensity,
+                onChanged: notifier.setHapticIntensity,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -495,8 +381,10 @@ class _SheetSwitchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      secondary: Icon(icon, color: AppColors.kenteGold),
-      title: Text(label, style: AppTextStyles.bodyLarge),
+      activeThumbColor: AppColors.archiveGoldDeep,
+      activeTrackColor: AppColors.archiveGoldPale,
+      secondary: Icon(icon, color: AppColors.archiveGoldDeep),
+      title: Text(label, style: AppTextStyles.archiveBodyLarge),
       value: value,
       onChanged: onChanged,
     );
@@ -526,22 +414,27 @@ class _SheetVolumeTile extends StatelessWidget {
             children: [
               Icon(
                 Icons.volume_down_outlined,
-                color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+                color: enabled
+                    ? AppColors.archiveGoldDeep
+                    : AppColors.archiveInkDim,
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   'Music Volume',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color:
-                        enabled ? AppColors.textPrimary : AppColors.textMuted,
+                  style: AppTextStyles.archiveBodyLarge.copyWith(
+                    color: enabled
+                        ? AppColors.archiveInk
+                        : AppColors.archiveInkDim,
                   ),
                 ),
               ),
               Text(
                 '$percent%',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+                style: AppTextStyles.archiveLabelSmall.copyWith(
+                  color: enabled
+                      ? AppColors.archiveGoldDeep
+                      : AppColors.archiveInkDim,
                 ),
               ),
             ],
@@ -551,8 +444,8 @@ class _SheetVolumeTile extends StatelessWidget {
             min: 0,
             max: 1,
             divisions: 10,
-            activeColor: AppColors.kenteGold,
-            inactiveColor: AppColors.navyLight,
+            activeColor: AppColors.archiveGoldDeep,
+            inactiveColor: AppColors.archiveGoldPale,
             onChanged: enabled ? (val) => onChanged(val) : null,
           ),
         ],
@@ -583,9 +476,9 @@ class _SheetHapticTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.vibration, color: AppColors.kenteGold),
+              const Icon(Icons.vibration, color: AppColors.archiveGoldDeep),
               const SizedBox(width: 16),
-              Text('Haptic Feedback', style: AppTextStyles.bodyLarge),
+              Text('Haptic Feedback', style: AppTextStyles.archiveBodyLarge),
             ],
           ),
           const SizedBox(height: 12),
@@ -600,22 +493,22 @@ class _SheetHapticTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.kenteGold.withValues(alpha: 0.2)
-                          : AppColors.navyDeep,
+                          ? AppColors.archiveGold.withValues(alpha: 0.18)
+                          : AppColors.parchmentWarm,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isSelected
-                            ? AppColors.kenteGold
-                            : AppColors.navyLight,
+                            ? AppColors.archiveGoldDeep
+                            : AppColors.panelBorder,
                         width: 1.5,
                       ),
                     ),
                     child: Text(
                       _labels[level]!,
-                      style: AppTextStyles.labelSmall.copyWith(
+                      style: AppTextStyles.archiveLabelSmall.copyWith(
                         color: isSelected
-                            ? AppColors.kenteGold
-                            : AppColors.textMuted,
+                            ? AppColors.archiveGoldDeep
+                            : AppColors.archiveInkDim,
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -643,24 +536,33 @@ class _PausedOverlay extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppColors.navyMid,
+          color: AppColors.panelFill,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.kenteGold, width: 2),
+          border: Border.all(color: AppColors.archiveGoldDeep, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowWarm.withValues(alpha: 0.20),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('PAUSED', style: AppTextStyles.displayMedium),
+            Text('PAUSED', style: AppTextStyles.archiveDisplayMedium),
             const SizedBox(height: 24),
-            ElevatedButton(onPressed: onResume, child: const Text('Resume')),
+            ElevatedButton(
+              style: _archiveElevatedButtonStyle(),
+              onPressed: onResume,
+              child: const Text('Resume'),
+            ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: onQuit,
               child: Text(
                 'Quit to Menu',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textMuted,
-                ),
+                style: AppTextStyles.archiveBodyMedium,
               ),
             ),
           ],
@@ -687,30 +589,43 @@ class _LoadFailedOverlay extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppColors.navyMid,
+          color: AppColors.panelFill,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.kenteGold, width: 2),
+          border: Border.all(color: AppColors.archiveGoldDeep, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowWarm.withValues(alpha: 0.20),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('BOARD UNAVAILABLE', style: AppTextStyles.displaySmall),
+            Text(
+              'BOARD UNAVAILABLE',
+              style: AppTextStyles.archiveDisplaySmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.archiveBodyMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(onPressed: onRetry, child: const Text('Try Again')),
+            ElevatedButton(
+              style: _archiveElevatedButtonStyle(),
+              onPressed: onRetry,
+              child: const Text('Try Again'),
+            ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: onBack,
               child: Text(
                 'Back to Levels',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textMuted,
-                ),
+                style: AppTextStyles.archiveBodyMedium,
               ),
             ),
           ],
@@ -739,14 +654,14 @@ class _ComboOverlay extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
         decoration: BoxDecoration(
-          color: AppColors.navyMid.withValues(alpha: 0.92),
+          color: AppColors.panelFill.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(11),
-          border: Border.all(color: AppColors.kenteGold, width: 1.5),
+          border: Border.all(color: AppColors.archiveGoldDeep, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppColors.kenteGold.withValues(alpha: 0.35),
+              color: AppColors.shadowWarm.withValues(alpha: 0.20),
               blurRadius: 18,
-              spreadRadius: 3,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -755,13 +670,16 @@ class _ComboOverlay extends StatelessWidget {
           children: [
             Text(
               _label,
-              style: AppTextStyles.displayMedium.copyWith(fontSize: 19),
+              style: AppTextStyles.archiveDisplayMedium.copyWith(
+                color: AppColors.archiveGoldDeep,
+                fontSize: 19,
+              ),
             ),
             const SizedBox(height: 3),
             Text(
               '+$_bonus bonus',
-              style: AppTextStyles.displaySmall.copyWith(
-                color: AppColors.tileSelected,
+              style: AppTextStyles.archiveDisplaySmall.copyWith(
+                color: AppColors.archiveInkLight,
                 fontSize: 12,
               ),
             ),
@@ -781,20 +699,43 @@ class _QuitDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.navyMid,
+      backgroundColor: AppColors.panelFill,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.kenteGold, width: 1.5),
+        side: const BorderSide(color: AppColors.archiveGoldDeep, width: 1.5),
       ),
-      title: Text('Leave Game?', style: AppTextStyles.headlineMedium),
+      title: Text('Leave Game?', style: AppTextStyles.archiveHeadlineMedium),
       content: Text(
         'Your progress will be lost.',
-        style: AppTextStyles.bodyMedium,
+        style: AppTextStyles.archiveBodyMedium,
       ),
       actions: [
-        TextButton(onPressed: onResume, child: const Text('Stay')),
-        ElevatedButton(onPressed: onQuit, child: const Text('Leave')),
+        TextButton(
+          onPressed: onResume,
+          child: Text(
+            'Stay',
+            style: AppTextStyles.archiveBodyMedium.copyWith(
+              color: AppColors.archiveGoldDeep,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          style: _archiveElevatedButtonStyle(),
+          onPressed: onQuit,
+          child: const Text('Leave'),
+        ),
       ],
     );
   }
+}
+
+ButtonStyle _archiveElevatedButtonStyle() {
+  return ElevatedButton.styleFrom(
+    backgroundColor: AppColors.archiveGoldDeep,
+    foregroundColor: AppColors.panelFill,
+    elevation: 2,
+    shadowColor: AppColors.shadowWarm.withValues(alpha: 0.24),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  );
 }

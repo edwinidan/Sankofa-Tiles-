@@ -13,7 +13,7 @@ const _generationSearchNodes = 6000;
 const _reverseSolvedTileThreshold = 40;
 
 void main() {
-  for (final levelId in [1, 5, 6, 10, 15, 20]) {
+  for (final levelId in [1, 5, 6, 10, 12, 14]) {
     _benchmarkLevel(levelId);
   }
 }

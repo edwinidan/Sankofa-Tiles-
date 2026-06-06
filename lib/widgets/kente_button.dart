@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
+import '../core/theme/sankofa_game_theme.dart';
 
 class KenteButton extends StatelessWidget {
   final String label;
@@ -25,22 +25,26 @@ class KenteButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.navyMid,
-          foregroundColor: AppColors.kenteGold,
-          disabledBackgroundColor: AppColors.navyDeep,
+          backgroundColor: SankofaGameTheme.parchment,
+          foregroundColor: SankofaGameTheme.darkText,
+          disabledBackgroundColor:
+              SankofaGameTheme.parchmentDark.withValues(alpha: 0.55),
+          disabledForegroundColor: SankofaGameTheme.mutedText,
           side: BorderSide(
-            color: onTap != null ? AppColors.kenteGold : AppColors.navyLight,
-            width: 2,
+            color: onTap != null
+                ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.72)
+                : SankofaGameTheme.mutedText.withValues(alpha: 0.35),
+            width: 1.5,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           padding: EdgeInsets.symmetric(
             horizontal: small ? 16 : 24,
             vertical: small ? 10 : 14,
           ),
           elevation: 4,
-          shadowColor: AppColors.kenteGold.withValues(alpha: 0.3),
+          shadowColor: Colors.black.withValues(alpha: 0.3),
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -52,12 +56,19 @@ class KenteButton extends StatelessWidget {
                 Icon(icon, size: small ? 16 : 20),
                 const SizedBox(width: 8),
               ],
-              Text(label, style: small ? AppTextStyles.labelSmall.copyWith(
-                fontSize: 13,
-                color: onTap != null ? AppColors.kenteGold : AppColors.textMuted,
-              ) : AppTextStyles.buttonText.copyWith(
-                color: onTap != null ? AppColors.kenteGold : AppColors.textMuted,
-              )),
+              Text(label,
+                  style: small
+                      ? AppTextStyles.labelSmall.copyWith(
+                          fontSize: 13,
+                          color: onTap != null
+                              ? SankofaGameTheme.darkText
+                              : SankofaGameTheme.mutedText,
+                        )
+                      : AppTextStyles.archiveButtonText.copyWith(
+                          color: onTap != null
+                              ? SankofaGameTheme.darkText
+                              : SankofaGameTheme.mutedText,
+                        )),
             ],
           ),
         ),

@@ -31,7 +31,7 @@ void main() {
 
     final notifier = container.read(gameProvider.notifier);
 
-    for (final levelId in [1, 5, 6, 10, 15, 20]) {
+    for (final levelId in [1, 3, 6, 14]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
       stopwatch.stop();
@@ -67,9 +67,7 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    container
-        .read(gameProvider.notifier)
-        .startLevel(20, DifficultyMode.relaxed);
+    container.read(gameProvider.notifier).startLevel(6, DifficultyMode.relaxed);
 
     final state = container.read(gameProvider);
     expect(state.status, GameStatus.loadFailed);
@@ -78,32 +76,7 @@ void main() {
     expect(state.hasWon, isFalse);
   });
 
-  test('Tile V2 test level is playable and stays outside progression', () {
-    final container = ProviderContainer(
-      overrides: [
-        audioServiceProvider.overrideWithValue(
-          AudioService(sound: false, music: false),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    container
-        .read(gameProvider.notifier)
-        .startLevel(kTileV2TestLevelId, DifficultyMode.relaxed);
-
-    final state = container.read(gameProvider);
-    expect(kLevels.any((level) => level.id == kTileV2TestLevelId), isFalse);
-    expect(state.status, GameStatus.playing);
-    expect(state.tiles, hasLength(68));
-    expect(BoardSolver.isSolvable(state.tiles), isTrue);
-    expect(
-      state.tiles.map((tile) => tile.def.id).toSet(),
-      tileV2TestLevel.tileIds.toSet(),
-    );
-  });
-
-  test('Tile V2 progression reaches the full 34 pair set', () {
+  test('main progression reaches the full 51 pair tile set', () {
     final container = ProviderContainer(
       overrides: [
         audioServiceProvider.overrideWithValue(
@@ -115,7 +88,7 @@ void main() {
 
     final notifier = container.read(gameProvider.notifier);
 
-    for (final level in [kTileV2Levels.first, kTileV2Levels.last]) {
+    for (final level in [kLevels.first, kLevels.last]) {
       notifier.startLevel(level.id, DifficultyMode.relaxed);
 
       final state = container.read(gameProvider);
@@ -125,7 +98,7 @@ void main() {
       expect(BoardSolver.isSolvable(state.tiles), isTrue);
     }
 
-    expect(kTileV2Levels.last.tileCount, 68);
-    expect(kTileV2Levels.last.tileIds, hasLength(34));
+    expect(kLevels.last.tileCount, 102);
+    expect(kLevels.last.tileIds, hasLength(51));
   });
 }

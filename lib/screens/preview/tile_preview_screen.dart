@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/tile_data.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/game_state.dart';
 import '../../models/tile_model.dart';
-import '../../providers/tile_theme_provider.dart';
 import '../game/widgets/tile_widget.dart';
 import '../../widgets/kente_button.dart';
 
@@ -23,8 +23,7 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
   Widget build(BuildContext context) {
     final def = kAllTiles[_selectedIndex];
     final tile = TileModel(def: def, row: 0, col: 0);
-    final resolver = ref.watch(tileThemeResolverProvider);
-    final assetPath = def.assetPath != null ? resolver.getAssetPath(def) : null;
+    final assetPath = def.assetPath;
 
     return Scaffold(
       backgroundColor: AppColors.navyDeep,
@@ -132,10 +131,11 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: KenteButton(
-              label: 'OPEN TILE V2 TEST LEVEL',
+              label: 'OPEN FULL TILE SET LEVEL',
               icon: Icons.science_outlined,
               width: double.infinity,
-              onTap: () => context.push('/tile-v2-test-level'),
+              onTap: () =>
+                  context.push('/game/6', extra: DifficultyMode.relaxed),
             ),
           ),
           const SizedBox(height: 16),

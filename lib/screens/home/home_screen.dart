@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/sankofa_game_theme.dart';
+import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/adinkra_divider.dart';
 
@@ -11,104 +12,82 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.navyDeep,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const Spacer(flex: 2),
-
-            // Logo area
-            _LogoSection(),
-
-            const SizedBox(height: 12),
-            const AdinkraDivider(),
-            const SizedBox(height: 32),
-
-            // Navigation buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: Column(
-                children: [
-                  KenteButton(
-                    label: 'PLAY',
-                    icon: Icons.play_arrow_rounded,
-                    width: double.infinity,
-                    onTap: () => _showPlayModeSheet(context),
+      backgroundColor: SankofaGameTheme.backgroundTop,
+      body: SankofaBackground(
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 32,
                   ),
-                  const SizedBox(height: 16),
-                  KenteButton(
-                    label: 'SETTINGS',
-                    icon: Icons.settings_outlined,
-                    width: double.infinity,
-                    onTap: () => context.push('/settings'),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 24),
+                      const _LogoSection(),
+                      const SizedBox(height: 14),
+                      const AdinkraDivider(),
+                      const SizedBox(height: 28),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 340),
+                        child: Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: SankofaGameTheme.parchmentPanelDecoration,
+                          child: Column(
+                            children: [
+                              KenteButton(
+                                label: 'PLAY',
+                                icon: Icons.play_arrow_rounded,
+                                width: double.infinity,
+                                onTap: () => context.push('/level-select'),
+                              ),
+                              const SizedBox(height: 12),
+                              KenteButton(
+                                label: 'SETTINGS',
+                                icon: Icons.settings_outlined,
+                                width: double.infinity,
+                                onTap: () => context.push('/settings'),
+                              ),
+                              const SizedBox(height: 12),
+                              KenteButton(
+                                label: 'HOW TO PLAY',
+                                icon: Icons.help_outline,
+                                width: double.infinity,
+                                onTap: () => context.push('/onboarding'),
+                              ),
+                              const SizedBox(height: 12),
+                              KenteButton(
+                                label: 'TILE PREVIEW',
+                                icon: Icons.grid_view_outlined,
+                                width: double.infinity,
+                                onTap: () => context.push('/tile-preview'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 36),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Text(
+                          'v1.0.0',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: SankofaGameTheme.mutedLightText,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  KenteButton(
-                    label: 'HOW TO PLAY',
-                    icon: Icons.help_outline,
-                    width: double.infinity,
-                    onTap: () => context.push('/onboarding'),
-                  ),
-                  const SizedBox(height: 16),
-                  KenteButton(
-                    label: 'TILE PREVIEW',
-                    icon: Icons.grid_view_outlined,
-                    width: double.infinity,
-                    onTap: () => context.push('/tile-preview'),
-                  ),
-                ],
-              ),
-            ),
-
-            const Spacer(flex: 3),
-
-            // Version
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text('v1.0.0', style: AppTextStyles.bodySmall),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPlayModeSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.navyMid,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: AppColors.kenteGoldDim, width: 1),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Choose Tile Set', style: AppTextStyles.displaySmall),
-            const SizedBox(height: 16),
-            KenteButton(
-              label: 'CLASSIC TILES',
-              icon: Icons.grid_view_outlined,
-              width: double.infinity,
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/level-select');
-              },
-            ),
-            const SizedBox(height: 12),
-            KenteButton(
-              label: 'TILE V2',
-              icon: Icons.auto_awesome,
-              width: double.infinity,
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/level-select?tileSet=v2');
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -116,25 +95,34 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _LogoSection extends StatelessWidget {
+  const _LogoSection();
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Decorative Adinkra rings
         const Text(
           '◎',
-          style: TextStyle(color: AppColors.kenteGold, fontSize: 48),
+          style: TextStyle(
+            color: SankofaGameTheme.antiqueGold,
+            fontSize: 48,
+          ),
         ),
         const SizedBox(height: 8),
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
-            style: AppTextStyles.displayLarge,
+            style: AppTextStyles.displayLarge.copyWith(
+              color: SankofaGameTheme.parchmentLight,
+            ),
             children: const [
               TextSpan(text: 'SANKOFA'),
               TextSpan(
                 text: '  ⟳  ',
-                style: TextStyle(color: AppColors.kenteGoldDim, fontSize: 24),
+                style: TextStyle(
+                  color: SankofaGameTheme.antiqueGold,
+                  fontSize: 24,
+                ),
               ),
               TextSpan(text: 'TILES'),
             ],
@@ -144,7 +132,7 @@ class _LogoSection extends StatelessWidget {
         Text(
           'A Ghanaian Mahjong Experience',
           style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.kenteGoldDim,
+            color: SankofaGameTheme.mutedLightText,
             fontStyle: FontStyle.italic,
           ),
         ),

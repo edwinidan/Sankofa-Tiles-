@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/theme/tile_theme_type.dart';
 import '../../core/utils/haptic_service.dart';
 import '../../models/game_state.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/tile_theme_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -17,7 +15,6 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
-    final tileTheme = ref.watch(tileThemeProvider);
 
     return PopScope(
       canPop: false,
@@ -74,11 +71,6 @@ class SettingsScreen extends ConsumerWidget {
             _DifficultyTile(
               selected: settings.defaultDifficulty,
               onChanged: notifier.setDefaultDifficulty,
-            ),
-            const SizedBox(height: 8),
-            _TileThemeTile(
-              selected: tileTheme,
-              onChanged: ref.read(tileThemeProvider.notifier).setTheme,
             ),
             const SizedBox(height: 16),
             const AdinkraDivider(),
@@ -390,116 +382,6 @@ class _HapticTile extends StatelessWidget {
               );
             }).toList(),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TileThemeTile extends StatelessWidget {
-  final TileThemeType selected;
-  final Future<void> Function(TileThemeType) onChanged;
-
-  const _TileThemeTile({required this.selected, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.navyMid,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.navyLight, width: 1),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.style_outlined, color: AppColors.kenteGold),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tile Theme', style: AppTextStyles.bodyLarge),
-                    Text(
-                      'Choose how tile faces appear in the game.',
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...TileThemeType.values.map((theme) {
-            final isSelected = selected == theme;
-            return GestureDetector(
-              onTap: () => onChanged(theme),
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(top: 6),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.kenteGold.withValues(alpha: 0.2)
-                      : AppColors.navyDeep,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color:
-                        isSelected ? AppColors.kenteGold : AppColors.navyLight,
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isSelected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: isSelected
-                          ? AppColors.kenteGold
-                          : AppColors.textMuted,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            theme.displayName,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: isSelected
-                                  ? AppColors.kenteGold
-                                  : AppColors.textPrimary,
-                            ),
-                          ),
-                          if (theme == TileThemeType.christmas)
-                            Text(
-                              'Preview theme. Only some tiles have Christmas '
-                              'artwork for now.',
-                              style: AppTextStyles.bodySmall,
-                            ),
-                          if (theme == TileThemeType.tileV2Png)
-                            Text(
-                              'Preview theme. Only matched Tile V2 PNG assets '
-                              'use the new style for now.',
-                              style: AppTextStyles.bodySmall,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
         ],
       ),
     );

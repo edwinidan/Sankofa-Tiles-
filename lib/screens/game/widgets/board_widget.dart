@@ -2,17 +2,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/level_data.dart';
 import '../../../models/game_state.dart';
 import '../../../providers/game_provider.dart';
-import '../../../core/constants/level_data.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/tile_theme_type.dart';
 import 'tile_widget.dart';
 
 class BoardWidget extends ConsumerWidget {
-  final TileThemeType? tileThemeOverride;
-
-  const BoardWidget({super.key, this.tileThemeOverride});
+  const BoardWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,7 +69,6 @@ class BoardWidget extends ConsumerWidget {
                   width: tileW,
                   height: tileH,
                   isAvailable: isAvail,
-                  tileThemeOverride: tileThemeOverride,
                 );
 
                 if (!tile.isMatched && !isAvail) {
@@ -186,13 +182,6 @@ class _BoardLayoutMetrics {
     required this.layerOffsetY,
   });
 
-  static const normal = _BoardLayoutMetrics(
-    stepX: _layoutStepX,
-    stepY: _layoutStepY,
-    layerOffsetX: _layerOffsetXInTileUnits,
-    layerOffsetY: _layerOffsetYInTileUnits,
-  );
-
   static const tileV2Test = _BoardLayoutMetrics(
     stepX: _layoutStepX * _tileV2TestStepScale,
     stepY: _layoutStepY * _tileV2TestStepScale,
@@ -201,7 +190,7 @@ class _BoardLayoutMetrics {
   );
 
   static _BoardLayoutMetrics forLevel(int levelId) {
-    return isTileV2LevelId(levelId) ? tileV2Test : normal;
+    return tileV2Test;
   }
 }
 

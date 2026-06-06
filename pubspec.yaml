@@ -50,11 +50,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/tiles/
-    - assets/tiles/symbols/
-    - assets/tiles/symbols/asset v2/
-    - assets/tiles/themes/christmas/
     - assets/Tile V2 png/
     - assets/Tile V2 png.2/
+    - assets/Tile v.3 png/
     - assets/audio/
     - assets/lottie/
     - assets/images/
+    - assets/background green option 2.png

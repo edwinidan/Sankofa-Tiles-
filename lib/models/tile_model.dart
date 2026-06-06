@@ -31,15 +31,16 @@ class TileModel {
     bool? isSelected,
     bool? isHinted,
     bool? isMismatched,
-  }) => TileModel(
-    uid: uid,
-    def: def,
-    row: row,
-    col: col,
-    layer: layer,
-    isMatched: isMatched ?? this.isMatched,
-    isSelected: isSelected ?? this.isSelected,
-    isHinted: isHinted ?? this.isHinted,
-    isMismatched: isMismatched ?? this.isMismatched,
-  );
+  }) =>
+      TileModel(
+        uid: uid,
+        def: def,
+        row: row,
+        col: col,
+        layer: layer,
+        isMatched: isMatched ?? this.isMatched,
+        isSelected: isSelected ?? this.isSelected,
+        isHinted: isHinted ?? this.isHinted,
+        isMismatched: isMismatched ?? this.isMismatched,
+      );
 }

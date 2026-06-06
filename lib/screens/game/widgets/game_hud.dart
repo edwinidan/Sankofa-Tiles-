@@ -56,9 +56,8 @@ class GameHud extends ConsumerWidget {
             _HudChip(
               label: 'TIME',
               value: _formatTime(gameState.secondsElapsed),
-              valueColor: gameState.secondsElapsed >= 240
-                  ? AppColors.errorRed
-                  : null,
+              valueColor:
+                  gameState.secondsElapsed >= 240 ? AppColors.errorRed : null,
             ),
             const SizedBox(width: 12),
           ],

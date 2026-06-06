@@ -3,27 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/level_data.dart';
 import '../../core/router/navigation_helpers.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/sankofa_game_theme.dart';
 import '../../models/game_state.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
+import '../../widgets/sankofa_background.dart';
 
 class LevelSelectScreen extends ConsumerWidget {
-  final bool useTileV2;
-
-  const LevelSelectScreen({
-    super.key,
-    this.useTileV2 = false,
-  });
+  const LevelSelectScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final settings = ref.watch(settingsProvider);
-    final levels = useTileV2 ? kTileV2Levels : kLevels;
 
     return PopScope(
       canPop: false,
@@ -31,56 +26,52 @@ class LevelSelectScreen extends ConsumerWidget {
         if (!didPop) safeBack(context);
       },
       child: Scaffold(
-        backgroundColor: AppColors.navyDeep,
+        backgroundColor: SankofaGameTheme.backgroundTop,
         appBar: AppBar(
+          backgroundColor: SankofaGameTheme.backgroundTop,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: SankofaGameTheme.parchmentLight,
           title: Text(
-            useTileV2 ? 'Tile V2 Levels' : 'Choose Your Level',
-            style: AppTextStyles.displaySmall,
+            'Choose Your Level',
+            style: AppTextStyles.displaySmall.copyWith(
+              color: SankofaGameTheme.antiqueGold,
+            ),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios),
             onPressed: () => safeBack(context),
           ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _TileSetSwitcher(useTileV2: useTileV2),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: levels.length,
-                  itemBuilder: (context, i) {
-                    final level = levels[i];
-                    final unlocked = progress.isLevelUnlocked(level.id);
-                    final stars = progress.getStars(level.id);
+        body: SankofaBackground(
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.08,
+            ),
+            itemCount: kLevels.length,
+            itemBuilder: (context, i) {
+              final level = kLevels[i];
+              final unlocked = progress.isLevelUnlocked(level.id);
+              final stars = progress.getStars(level.id);
 
-                    return _LevelCard(
-                      level: level,
-                      badgeLabel: '${i + 1}',
-                      unlocked: unlocked,
-                      stars: stars,
-                      defaultDifficulty: settings.defaultDifficulty,
-                      onTap: unlocked
-                          ? () => _showDifficultySheet(
-                                context,
-                                level.id,
-                                settings.defaultDifficulty,
-                                useTileV2: useTileV2,
-                              )
-                          : null,
-                    );
-                  },
-                ),
-              ),
-            ],
+              return _LevelCard(
+                level: level,
+                badgeLabel: '${i + 1}',
+                unlocked: unlocked,
+                stars: stars,
+                defaultDifficulty: settings.defaultDifficulty,
+                onTap: unlocked
+                    ? () => _showDifficultySheet(
+                          context,
+                          level.id,
+                          settings.defaultDifficulty,
+                        )
+                    : null,
+              );
+            },
           ),
         ),
       ),
@@ -88,90 +79,23 @@ class LevelSelectScreen extends ConsumerWidget {
   }
 
   void _showDifficultySheet(
-      BuildContext context, int levelId, DifficultyMode defaultDifficulty,
-      {required bool useTileV2}) {
+    BuildContext context,
+    int levelId,
+    DifficultyMode defaultDifficulty,
+  ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.navyMid,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: AppColors.kenteGoldDim, width: 1),
+      backgroundColor: SankofaGameTheme.boardSurface,
+      barrierColor: Colors.black.withValues(alpha: 0.58),
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(
+          color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.52),
+        ),
       ),
       builder: (_) => _DifficultySheet(
         levelId: levelId,
         defaultDifficulty: defaultDifficulty,
-        useTileV2: useTileV2,
-      ),
-    );
-  }
-}
-
-class _TileSetSwitcher extends StatelessWidget {
-  final bool useTileV2;
-
-  const _TileSetSwitcher({required this.useTileV2});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.navyMid,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.navyLight),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _TileSetOption(
-              label: 'Classic',
-              selected: !useTileV2,
-              onTap: () => context.go('/level-select'),
-            ),
-          ),
-          Expanded(
-            child: _TileSetOption(
-              label: 'Tile V2',
-              selected: useTileV2,
-              onTap: () => context.go('/level-select?tileSet=v2'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TileSetOption extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _TileSetOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: selected ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.kenteGold : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.labelSmall.copyWith(
-            color: selected ? AppColors.navyDeep : AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
       ),
     );
   }
@@ -200,22 +124,9 @@ class _LevelCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: unlocked ? AppColors.navyMid : AppColors.navyDeep,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: unlocked ? AppColors.kenteGold : AppColors.navyLight,
-            width: 1.5,
-          ),
-          boxShadow: unlocked
-              ? [
-                  BoxShadow(
-                    color: AppColors.kenteGold.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
+        decoration: SankofaGameTheme.darkPanelDecoration(
+          emphasized: unlocked,
+          disabled: !unlocked,
         ),
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -229,14 +140,17 @@ class _LevelCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: unlocked ? AppColors.kenteGold : AppColors.navyLight,
-                    borderRadius: BorderRadius.circular(6),
+                    color: unlocked
+                        ? SankofaGameTheme.antiqueGold
+                        : SankofaGameTheme.mutedText.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
                     badgeLabel,
                     style: AppTextStyles.labelSmall.copyWith(
-                      color:
-                          unlocked ? AppColors.navyDeep : AppColors.textMuted,
+                      color: unlocked
+                          ? SankofaGameTheme.darkText
+                          : SankofaGameTheme.mutedLightText,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -244,7 +158,11 @@ class _LevelCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (!unlocked)
-                  const Icon(Icons.lock, color: AppColors.textMuted, size: 18)
+                  const Icon(
+                    Icons.lock_outline,
+                    color: SankofaGameTheme.mutedLightText,
+                    size: 18,
+                  )
                 else
                   _StarRow(stars: stars),
               ],
@@ -253,13 +171,19 @@ class _LevelCard extends StatelessWidget {
             Text(
               level.name,
               style: AppTextStyles.titleMedium.copyWith(
-                color: unlocked ? AppColors.textPrimary : AppColors.textMuted,
+                color: unlocked
+                    ? SankofaGameTheme.parchmentLight
+                    : SankofaGameTheme.mutedLightText,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '${level.tileCount ~/ 2} pairs · ${level.boardRows}×${level.boardCols}',
-              style: AppTextStyles.bodySmall,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: unlocked
+                    ? SankofaGameTheme.mutedLightText
+                    : SankofaGameTheme.mutedLightText.withValues(alpha: 0.58),
+              ),
             ),
           ],
         ),
@@ -279,7 +203,9 @@ class _StarRow extends StatelessWidget {
       children: List.generate(3, (i) {
         return Icon(
           i < stars ? Icons.star : Icons.star_border,
-          color: i < stars ? AppColors.kenteGold : AppColors.textMuted,
+          color: i < stars
+              ? SankofaGameTheme.antiqueGold
+              : SankofaGameTheme.mutedLightText.withValues(alpha: 0.48),
           size: 16,
         );
       }),
@@ -290,12 +216,10 @@ class _StarRow extends StatelessWidget {
 class _DifficultySheet extends StatefulWidget {
   final int levelId;
   final DifficultyMode defaultDifficulty;
-  final bool useTileV2;
 
   const _DifficultySheet({
     required this.levelId,
     required this.defaultDifficulty,
-    required this.useTileV2,
   });
 
   @override
@@ -319,82 +243,99 @@ class _DifficultySheetState extends State<_DifficultySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Select Difficulty', style: AppTextStyles.displaySmall),
-          const SizedBox(height: 4),
-          const AdinkraDivider(),
-          const SizedBox(height: 16),
-          ...DifficultyMode.values.map((mode) {
-            final label = mode.name[0].toUpperCase() + mode.name.substring(1);
-            final desc = _descriptions[mode] ?? '';
-            final isSelected = _selected == mode;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Select Difficulty',
+              style: AppTextStyles.displaySmall.copyWith(
+                color: SankofaGameTheme.antiqueGold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const AdinkraDivider(),
+            const SizedBox(height: 16),
+            ...DifficultyMode.values.map((mode) {
+              final label = mode.name[0].toUpperCase() + mode.name.substring(1);
+              final desc = _descriptions[mode] ?? '';
+              final isSelected = _selected == mode;
 
-            return GestureDetector(
-              onTap: () => setState(() => _selected = mode),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.kenteGold.withValues(alpha: 0.15)
-                      : AppColors.navyDeep,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color:
-                        isSelected ? AppColors.kenteGold : AppColors.navyLight,
-                    width: 1.5,
+              return GestureDetector(
+                onTap: () => setState(() => _selected = mode),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.12)
+                        : SankofaGameTheme.boardEdge,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? SankofaGameTheme.antiqueGold
+                          : SankofaGameTheme.mutedLightText
+                              .withValues(alpha: 0.18),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected
+                            ? SankofaGameTheme.antiqueGold
+                            : SankofaGameTheme.mutedLightText,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              style: AppTextStyles.titleMedium.copyWith(
+                                color: SankofaGameTheme.parchmentLight,
+                              ),
+                            ),
+                            Text(
+                              desc,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: SankofaGameTheme.mutedLightText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isSelected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: isSelected
-                          ? AppColors.kenteGold
-                          : AppColors.textMuted,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(label, style: AppTextStyles.titleMedium),
-                        Text(desc, style: AppTextStyles.bodySmall),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-          KenteButton(
-            label: 'BEGIN',
-            icon: Icons.play_arrow_rounded,
-            width: double.infinity,
-            onTap: () {
-              Navigator.pop(context);
-              context.push(
-                widget.useTileV2
-                    ? '/game/${widget.levelId}?tileSet=v2'
-                    : '/game/${widget.levelId}',
-                extra: _selected,
               );
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
+            }),
+            const SizedBox(height: 8),
+            KenteButton(
+              label: 'BEGIN',
+              icon: Icons.play_arrow_rounded,
+              width: double.infinity,
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/game/${widget.levelId}', extra: _selected);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

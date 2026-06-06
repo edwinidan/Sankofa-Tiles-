@@ -25,637 +25,169 @@ class LevelDefinition {
   });
 }
 
-// Helper: wisdom tile ids
-const _wisdomIds = [
-  'nyansapo',
-  'nkyinkyim',
-  'mate_masie',
-  'hwehwemudua',
-  'nea_onnim',
-  'ese_tekrema',
-  'nteasee',
-  'sankofa',
-];
+List<String> _tileIdsForPairs(int pairCount) =>
+    kTileIds.take(pairCount).toList(growable: false);
 
-const _earthIds = [
-  'denkyem',
-  'abe_dua',
-  'nyame_dua',
-];
-
-const _royaltyIds = [
-  'adinkrahene',
-  'akofena',
-  'aban',
-  'fawohodie',
-  'funtumfunefu',
-  'mpuannum',
-  'nyame_nwu',
-];
-
-const _honorIds = [
-  'gye_nyame',
-  'dwennimmen',
-  'mpatapo',
-  'hye_wo_nhye',
-  'akoben',
-  'nsoromma',
-  'adwo',
-  'abusua_pa',
-  'agyindawuru',
-  'abode_santann',
-  'odo_nnyew_fie_kwan',
-];
-
-const _newIds = [
-  'nsaa',
-  'nyame_nti',
-  'nyame_biribi_wo_soro',
-  'nkyemu',
-  'nkotimsefo_mpua',
-  'nkrabea',
-  'mmeranmubere',
-  'nea_ope_se_obedi_hene',
-  'mmere_dane',
-  'mako',
-];
-
-const _extendedIds = [
-  'fafanto',
-  'fihankra',
-  'fofo',
-  'kete_pa',
-  'kokuromotie',
-  'kramo_bone',
-  'krapa_musuyidee',
-  'kwatakye_atiko',
-  'kyemfere',
-  'mekyea_wo',
-  'menso_wo_kenten',
-  'mmeremutene',
-  'nea_oretwa_sa',
-  'nserewa',
-  'nyame_baatanpa',
-];
-
-const kTileV2TestLevelId = 0;
-const kTileV2FirstLevelId = 101;
-
-final tileV2TestLevel = LevelDefinition(
-  id: kTileV2TestLevelId,
-  name: 'Tile V2 Full Test',
-  boardRows: 6,
-  boardCols: 7,
-  tileCount: 68,
-  tileIds: kTileV2TileIds,
-  unlockRequirement: 0,
-  starThresholds: const [0, 0, 0],
-  layout: level13Layout,
-);
-
-List<String> _tileV2IdsForPairs(int pairCount) =>
-    kTileV2TileIds.take(pairCount).toList(growable: false);
-
-final List<LevelDefinition> kTileV2Levels = [
+final List<LevelDefinition> kLevels = [
   LevelDefinition(
-    id: 101,
-    name: 'V2 First Look',
+    id: 1,
+    name: 'First Look',
     boardRows: 4,
     boardCols: 6,
     tileCount: 28,
-    tileIds: _tileV2IdsForPairs(14),
+    tileIds: _tileIdsForPairs(14),
     unlockRequirement: 0,
     starThresholds: const [700, 1100, 1400],
     layout: level4Layout,
   ),
   LevelDefinition(
-    id: 102,
-    name: 'V2 New Roots',
+    id: 2,
+    name: 'New Roots',
     boardRows: 5,
     boardCols: 6,
     tileCount: 36,
-    tileIds: _tileV2IdsForPairs(18),
-    unlockRequirement: 101,
+    tileIds: _tileIdsForPairs(18),
+    unlockRequirement: 1,
     starThresholds: const [900, 1400, 1800],
     layout: level5Layout,
   ),
   LevelDefinition(
-    id: 103,
-    name: 'V2 Council',
-    boardRows: 5,
-    boardCols: 7,
-    tileCount: 44,
-    tileIds: _tileV2IdsForPairs(22),
-    unlockRequirement: 102,
-    starThresholds: const [1100, 1750, 2200],
-    layout: level7Layout,
-  ),
-  LevelDefinition(
-    id: 104,
-    name: 'V2 Heritage',
-    boardRows: 5,
-    boardCols: 7,
-    tileCount: 52,
-    tileIds: _tileV2IdsForPairs(26),
-    unlockRequirement: 103,
-    starThresholds: const [1300, 2100, 2600],
-    layout: level9Layout,
-  ),
-  LevelDefinition(
-    id: 105,
-    name: 'V2 Legacy',
-    boardRows: 5,
-    boardCols: 8,
-    tileCount: 60,
-    tileIds: _tileV2IdsForPairs(30),
-    unlockRequirement: 104,
-    starThresholds: const [1600, 2600, 3200],
-    layout: level11Layout,
-  ),
-  LevelDefinition(
-    id: 106,
-    name: 'V2 Complete Set',
-    boardRows: 6,
-    boardCols: 7,
-    tileCount: 68,
-    tileIds: kTileV2TileIds,
-    unlockRequirement: 105,
-    starThresholds: const [2000, 3200, 4000],
-    layout: level13Layout,
-  ),
-];
-
-bool isTileV2LevelId(int id) =>
-    id == kTileV2TestLevelId || kTileV2Levels.any((level) => level.id == id);
-
-final List<LevelDefinition> kLevels = [
-  // Level 1 — 16 tiles, 2 layers (4×3 base + 2×2 cap)
-  LevelDefinition(
-    id: 1,
-    name: 'Awakening',
-    boardRows: 4,
-    boardCols: 3,
-    tileCount: 16,
-    tileIds: [
-      'nyansapo',
-      'nkyinkyim',
-      'mate_masie',
-      'hwehwemudua',
-      'nea_onnim',
-      'ese_tekrema',
-      'nteasee',
-      'gye_nyame'
-    ],
-    unlockRequirement: 0,
-    starThresholds: [400, 650, 800],
-    layout: level1Layout,
-  ),
-
-  // Level 2 — 20 tiles, 2 layers (4×4 base + 2×2 cap)
-  LevelDefinition(
-    id: 2,
-    name: 'Roots',
-    boardRows: 4,
-    boardCols: 4,
-    tileCount: 20,
-    tileIds: [..._wisdomIds, 'gye_nyame'],
-    unlockRequirement: 1,
-    starThresholds: [500, 800, 1000],
-    layout: level2Layout,
-  ),
-
-  // Level 3 — 24 tiles, 2 layers (4×5 base + 2×2 cap)
-  LevelDefinition(
     id: 3,
-    name: 'Harvest',
-    boardRows: 4,
-    boardCols: 5,
-    tileCount: 24,
-    tileIds: [..._wisdomIds, 'denkyem', 'gye_nyame'],
-    unlockRequirement: 2,
-    starThresholds: [600, 950, 1200],
-    layout: level3Layout,
-  ),
-
-  // Level 4 — 28 tiles, 3 layers (4×6 base + column tower)
-  LevelDefinition(
-    id: 4,
-    name: 'River',
-    boardRows: 4,
-    boardCols: 6,
-    tileCount: 28,
-    tileIds: [..._wisdomIds, ..._earthIds, 'gye_nyame'],
-    unlockRequirement: 3,
-    starThresholds: [700, 1100, 1400],
-    layout: level4Layout,
-  ),
-
-  // Level 5 — 36 tiles, 3 layers (5×6 base + 2×2 + 1×2 peak)
-  LevelDefinition(
-    id: 5,
-    name: 'Confluence',
-    boardRows: 5,
-    boardCols: 6,
-    tileCount: 36,
-    tileIds: [..._wisdomIds, ..._earthIds, 'gye_nyame'],
-    unlockRequirement: 4,
-    starThresholds: [900, 1400, 1800],
-    layout: level5Layout,
-  ),
-
-  // Level 6 — 40 tiles, 3 layers (5×6 base + 3×2 + 2×2 peak)
-  LevelDefinition(
-    id: 6,
-    name: 'Kingdom',
-    boardRows: 5,
-    boardCols: 6,
-    tileCount: 40,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      'adinkrahene',
-      'akofena',
-      'gye_nyame'
-    ],
-    unlockRequirement: 5,
-    starThresholds: [1000, 1600, 2000],
-    layout: level6Layout,
-  ),
-
-  // Level 7 — 44 tiles, 3 layers (5×7 base + 4×2 + 1 peak)
-  LevelDefinition(
-    id: 7,
     name: 'Council',
     boardRows: 5,
     boardCols: 7,
     tileCount: 44,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      'adinkrahene',
-      'akofena',
-      'aban',
-      'fawohodie',
-      'funtumfunefu',
-      'gye_nyame'
-    ],
-    unlockRequirement: 6,
-    starThresholds: [1100, 1750, 2200],
+    tileIds: _tileIdsForPairs(22),
+    unlockRequirement: 2,
+    starThresholds: const [1100, 1750, 2200],
     layout: level7Layout,
   ),
-
-  // Level 8 — 48 tiles, 4 layers (5×6 base + 3×4 + 2×2 + 2 peak)
   LevelDefinition(
-    id: 8,
+    id: 4,
     name: 'Heritage',
-    boardRows: 5,
-    boardCols: 6,
-    tileCount: 48,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      'gye_nyame',
-      'dwennimmen',
-      'mpatapo',
-      'hye_wo_nhye'
-    ],
-    unlockRequirement: 7,
-    starThresholds: [1200, 1900, 2400],
-    layout: level8Layout,
-  ),
-
-  // Level 9 — 52 tiles, 4 layers (5×7 base + 3×4 + 2×2 + 1 peak)
-  LevelDefinition(
-    id: 9,
-    name: 'Ancestors',
     boardRows: 5,
     boardCols: 7,
     tileCount: 52,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      'nyansapo',
-      'gye_nyame',
-      'adinkrahene'
-    ],
-    unlockRequirement: 8,
-    starThresholds: [1300, 2100, 2600],
+    tileIds: _tileIdsForPairs(26),
+    unlockRequirement: 3,
+    starThresholds: const [1300, 2100, 2600],
     layout: level9Layout,
   ),
-
-  // Level 10 — 56 tiles, 4 layers (5×7 base + 3×4 + 3×2 + 3 peak)
   LevelDefinition(
-    id: 10,
-    name: 'Sankofa',
-    boardRows: 5,
-    boardCols: 7,
-    tileCount: 56,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      'nyansapo',
-      'sankofa',
-      'gye_nyame',
-      'adinkrahene',
-      'fawohodie',
-      'nteasee',
-      'nyame_dua'
-    ],
-    unlockRequirement: 9,
-    starThresholds: [1400, 2300, 2800],
-    layout: level10Layout,
-  ),
-
-  // Level 11 — 60 tiles, 5×8 base + 3 layers above
-  LevelDefinition(
-    id: 11,
+    id: 5,
     name: 'Legacy',
     boardRows: 5,
     boardCols: 8,
     tileCount: 60,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      'fafanto',
-      'fihankra',
-      'fofo',
-      'kete_pa',
-      'kokuromotie',
-      'nyansapo',
-      'gye_nyame'
-    ],
-    unlockRequirement: 10,
-    starThresholds: [1600, 2600, 3200],
+    tileIds: _tileIdsForPairs(30),
+    unlockRequirement: 4,
+    starThresholds: const [1600, 2600, 3200],
     layout: level11Layout,
   ),
-
-  // Level 12 — 64 tiles, 6×7 base + 3 layers above
   LevelDefinition(
-    id: 12,
-    name: 'Covenant',
-    boardRows: 6,
-    boardCols: 7,
-    tileCount: 64,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      'fafanto',
-      'fihankra',
-      'fofo',
-      'kete_pa',
-      'kokuromotie',
-      'kramo_bone',
-      'krapa_musuyidee',
-      'kwatakye_atiko',
-      'nyansapo',
-      'adinkrahene'
-    ],
-    unlockRequirement: 11,
-    starThresholds: [1800, 2900, 3600],
-    layout: level12Layout,
-  ),
-
-  // Level 13 — 68 tiles, 6×7 base + 3 layers above
-  LevelDefinition(
-    id: 13,
-    name: 'Shrine',
+    id: 6,
+    name: 'Complete Set',
     boardRows: 6,
     boardCols: 7,
     tileCount: 68,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      'fafanto',
-      'fihankra',
-      'fofo',
-      'kete_pa',
-      'kokuromotie',
-      'kramo_bone',
-      'krapa_musuyidee',
-      'kwatakye_atiko',
-      'kyemfere',
-      'mekyea_wo',
-      'nyansapo',
-      'gye_nyame',
-      'adinkrahene'
-    ],
-    unlockRequirement: 12,
-    starThresholds: [2000, 3200, 4000],
+    tileIds: _tileIdsForPairs(34),
+    unlockRequirement: 5,
+    starThresholds: const [2000, 3200, 4000],
     layout: level13Layout,
   ),
-
-  // Level 14 — 72 tiles, 6×7 base + 4 layers above
   LevelDefinition(
-    id: 14,
-    name: 'Elders',
+    id: 7,
+    name: 'New Symbols',
     boardRows: 6,
-    boardCols: 7,
+    boardCols: 8,
     tileCount: 72,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      'fafanto',
-      'fihankra',
-      'fofo',
-      'kete_pa',
-      'kokuromotie',
-      'kramo_bone',
-      'krapa_musuyidee',
-      'kwatakye_atiko',
-      'kyemfere',
-      'mekyea_wo',
-      'menso_wo_kenten',
-      'mmeremutene',
-      'nyansapo',
-      'gye_nyame',
-      'adinkrahene'
-    ],
-    unlockRequirement: 13,
-    starThresholds: [2200, 3500, 4400],
+    tileIds: _tileIdsForPairs(36),
+    unlockRequirement: 6,
+    starThresholds: const [2200, 3500, 4300],
     layout: level14Layout,
   ),
-
-  // Level 15 — 76 tiles, 6×8 base + 4 layers above
   LevelDefinition(
-    id: 15,
-    name: 'Oracle',
+    id: 8,
+    name: 'Gathering',
     boardRows: 6,
     boardCols: 8,
     tileCount: 76,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      ..._extendedIds,
-      'nyansapo',
-      'gye_nyame'
-    ],
-    unlockRequirement: 14,
-    starThresholds: [2400, 3900, 4800],
+    tileIds: _tileIdsForPairs(38),
+    unlockRequirement: 7,
+    starThresholds: const [2400, 3800, 4600],
     layout: level15Layout,
   ),
-
-  // Level 16 — 80 tiles, 6×8 base + 4 layers above
   LevelDefinition(
-    id: 16,
-    name: 'Throne',
+    id: 9,
+    name: 'Deep Roots',
     boardRows: 6,
     boardCols: 8,
     tileCount: 80,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      ..._extendedIds,
-      'nyansapo',
-      'sankofa',
-      'gye_nyame',
-      'adinkrahene'
-    ],
-    unlockRequirement: 15,
-    starThresholds: [2600, 4200, 5200],
+    tileIds: _tileIdsForPairs(40),
+    unlockRequirement: 8,
+    starThresholds: const [2600, 4100, 5000],
     layout: level16Layout,
   ),
-
-  // Level 17 — 84 tiles, 6×8 base + 4 layers above (tall center)
   LevelDefinition(
-    id: 17,
-    name: 'Genesis',
+    id: 10,
+    name: 'Living Archive',
     boardRows: 6,
-    boardCols: 8,
+    boardCols: 9,
     tileCount: 84,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      ..._extendedIds,
-      'nyansapo',
-      'sankofa',
-      'gye_nyame',
-      'adinkrahene',
-      'fawohodie',
-      'nteasee'
-    ],
-    unlockRequirement: 16,
-    starThresholds: [2800, 4600, 5600],
+    tileIds: _tileIdsForPairs(42),
+    unlockRequirement: 9,
+    starThresholds: const [2800, 4400, 5400],
     layout: level17Layout,
   ),
-
-  // Level 18 — 88 tiles, 6×9 base + 4 layers above
   LevelDefinition(
-    id: 18,
-    name: 'Cosmos',
-    boardRows: 6,
+    id: 11,
+    name: 'Ancestral Map',
+    boardRows: 7,
     boardCols: 9,
     tileCount: 88,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      ..._extendedIds,
-      'nyansapo',
-      'sankofa',
-      'gye_nyame',
-      'adinkrahene',
-      'fawohodie',
-      'nteasee',
-      'nyame_dua'
-    ],
-    unlockRequirement: 17,
-    starThresholds: [3000, 5000, 6000],
+    tileIds: _tileIdsForPairs(44),
+    unlockRequirement: 10,
+    starThresholds: const [3000, 4700, 5800],
     layout: level18Layout,
   ),
-
-  // Level 19 — 92 tiles, 6×9 base + 4 layers above (tall center)
   LevelDefinition(
-    id: 19,
-    name: 'Triumph',
-    boardRows: 6,
+    id: 12,
+    name: 'Many Voices',
+    boardRows: 7,
     boardCols: 9,
     tileCount: 92,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      ..._extendedIds,
-      'nyansapo',
-      'sankofa',
-      'gye_nyame',
-      'adinkrahene',
-      'fawohodie',
-      'nteasee',
-      'nyame_dua',
-      'nkyinkyim'
-    ],
-    unlockRequirement: 18,
-    starThresholds: [3200, 5400, 6600],
+    tileIds: _tileIdsForPairs(46),
+    unlockRequirement: 11,
+    starThresholds: const [3200, 5000, 6200],
     layout: level19Layout,
   ),
-
-  // Level 20 — 96 tiles, 6×9 base + 5 layers above (ultimate)
   LevelDefinition(
-    id: 20,
-    name: 'Eternal',
-    boardRows: 6,
-    boardCols: 9,
+    id: 13,
+    name: 'Long Memory',
+    boardRows: 7,
+    boardCols: 10,
     tileCount: 96,
-    tileIds: [
-      ..._wisdomIds,
-      ..._earthIds,
-      ..._royaltyIds,
-      ..._honorIds,
-      ..._newIds,
-      ..._extendedIds,
-      'nyansapo',
-      'sankofa',
-      'gye_nyame',
-      'adinkrahene',
-      'fawohodie',
-      'nteasee',
-      'nyame_dua',
-      'nkyinkyim',
-      'mate_masie'
-    ],
-    unlockRequirement: 19,
-    starThresholds: [3500, 5800, 7200],
+    tileIds: _tileIdsForPairs(48),
+    unlockRequirement: 12,
+    starThresholds: const [3400, 5300, 6600],
     layout: level20Layout,
+  ),
+  LevelDefinition(
+    id: 14,
+    name: 'Full Archive',
+    boardRows: 7,
+    boardCols: 10,
+    tileCount: 102,
+    tileIds: kTileIds,
+    unlockRequirement: 13,
+    starThresholds: const [3600, 5600, 7000],
+    layout: level21Layout,
   ),
 ];
 
 LevelDefinition? getLevelById(int id) {
-  if (id == kTileV2TestLevelId) return tileV2TestLevel;
-
   try {
-    return [...kLevels, ...kTileV2Levels].firstWhere((l) => l.id == id);
+    return kLevels.firstWhere((l) => l.id == id);
   } catch (_) {
     return null;
   }

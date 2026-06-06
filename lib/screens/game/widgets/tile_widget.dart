@@ -6,17 +6,14 @@ import '../../../core/constants/tile_data.dart';
 import '../../../core/utils/haptic_service.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/settings_provider.dart';
-import '../../../providers/tile_theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/tile_theme_resolver.dart';
-import '../../../core/theme/tile_theme_type.dart';
+import '../../../core/theme/sankofa_game_theme.dart';
 
 const _kDefaultTileW = 64.0;
 const _kDefaultTileH = 85.0;
 const _kEdgeH = 5.0;
 const _kEdgeW = 14.0;
 const _kCornerRadius = 4.0;
-const _kPaddedTileAssetScale = 1.634;
 const _kFullTileAssetScale = 1.0;
 
 class TileWidget extends ConsumerStatefulWidget {
@@ -26,7 +23,6 @@ class TileWidget extends ConsumerStatefulWidget {
   final bool showSuitCode;
   final bool forceHideName;
   final bool isAvailable;
-  final TileThemeType? tileThemeOverride;
 
   const TileWidget({
     super.key,
@@ -36,7 +32,6 @@ class TileWidget extends ConsumerStatefulWidget {
     this.showSuitCode = true,
     this.forceHideName = false,
     this.isAvailable = false,
-    this.tileThemeOverride,
   });
 
   @override
@@ -46,7 +41,6 @@ class TileWidget extends ConsumerStatefulWidget {
 class _TileWidgetState extends ConsumerState<TileWidget>
     with TickerProviderStateMixin {
   late AnimationController _hintController;
-  late Animation<double> _hintOpacity;
   late Animation<double> _glowOpacity;
 
   late AnimationController _shakeController;
@@ -62,9 +56,6 @@ class _TileWidgetState extends ConsumerState<TileWidget>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _hintOpacity = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _hintController, curve: Curves.easeInOut),
-    );
     _glowOpacity = Tween<double>(begin: 0.0, end: 0.55).animate(
       CurvedAnimation(parent: _hintController, curve: Curves.easeInOut),
     );
@@ -129,15 +120,8 @@ class _TileWidgetState extends ConsumerState<TileWidget>
   Widget build(BuildContext context) {
     final showNames = ref.watch(settingsProvider).showTileNames;
     final tile = widget.tile;
-    final resolver = widget.tileThemeOverride == null
-        ? ref.watch(tileThemeResolverProvider)
-        : TileThemeResolver(widget.tileThemeOverride!);
-    final assetPath =
-        tile.def.assetPath != null ? resolver.getAssetPath(tile.def) : null;
-    final isTileV2Theme = resolver.theme == TileThemeType.tileV2Png;
-    final assetScale = resolver.theme == TileThemeType.tileV2Png
-        ? _kFullTileAssetScale
-        : _kPaddedTileAssetScale;
+    final assetPath = tile.def.assetPath;
+    const assetScale = _kFullTileAssetScale;
     final tileW = _resolvedWidth(context);
     final tileH = _resolvedHeight(context);
 
@@ -173,24 +157,24 @@ class _TileWidgetState extends ConsumerState<TileWidget>
           .fade(end: 0, duration: 210.ms);
     }
 
-    // Hinted: green border + pulsing whole-tile opacity
+    // Hinted: stronger antique-gold pulse without dimming the tile artwork.
     else if (tile.isHinted) {
       body = AnimatedBuilder(
-        animation: _hintOpacity,
-        builder: (_, __) => Opacity(
-          opacity: _hintOpacity.value,
-          child: _buildPhysicalTile(
-            tile: tile,
-            assetPath: assetPath,
-            assetScale: assetScale,
-            showNames: showNames,
-            tileW: tileW,
-            tileH: tileH,
-            showSuitCode: widget.showSuitCode,
-            forceHideName: widget.forceHideName,
-            borderColor: AppColors.matchGreen,
-            borderWidth: 2.5,
+        animation: _glowOpacity,
+        builder: (_, __) => _buildPhysicalTile(
+          tile: tile,
+          assetPath: assetPath,
+          assetScale: assetScale,
+          showNames: showNames,
+          tileW: tileW,
+          tileH: tileH,
+          showSuitCode: widget.showSuitCode,
+          forceHideName: widget.forceHideName,
+          borderColor: SankofaGameTheme.antiqueGold.withValues(
+            alpha: 0.72 + (_glowOpacity.value * 0.28),
           ),
+          borderWidth: 2.8,
+          glowStrength: 0.34 + (_glowOpacity.value * 0.36),
         ),
       );
     }
@@ -208,39 +192,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         forceHideName: widget.forceHideName,
         bgColor: tile.isSelected ? AppColors.tileSelected : AppColors.tileFace,
         borderColor:
-            tile.isSelected ? AppColors.kenteGold : AppColors.tileBorder,
-        borderWidth: tile.isSelected ? 2.5 : 1.5,
+            tile.isSelected ? SankofaGameTheme.antiqueGold : Colors.transparent,
+        borderWidth: tile.isSelected ? 2.5 : 0,
+        glowStrength: tile.isSelected ? 0.32 : 0,
       );
-
-      // Available glow — gold border pulse on unselected, non-mismatched playable tiles
-      if (!isTileV2Theme &&
-          widget.isAvailable &&
-          !tile.isSelected &&
-          !tile.isMismatched) {
-        physicalTile = AnimatedBuilder(
-          animation: _glowOpacity,
-          builder: (_, child) => Stack(
-            children: [
-              child!,
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(_kCornerRadius),
-                      border: Border.all(
-                        color: AppColors.kenteGold
-                            .withValues(alpha: _glowOpacity.value),
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          child: physicalTile,
-        );
-      }
 
       body = GestureDetector(
         onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
@@ -283,16 +238,20 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     bool showSuitCode = true,
     bool forceHideName = false,
     Color bgColor = AppColors.tileFace,
-    Color borderColor = AppColors.tileBorder,
-    double borderWidth = 1.5,
+    Color borderColor = Colors.transparent,
+    double borderWidth = 0,
+    double glowStrength = 0,
   }) {
+    late final Widget tileBody;
+
     // Tiles with an image asset: scale up slightly so the PNG's built-in
     // padding is pushed outside the clip boundary, filling the slot fully.
     if (assetPath != null) {
-      return SizedBox(
+      tileBody = SizedBox(
         width: tileW,
         height: tileH,
-        child: ClipRect(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(SankofaGameTheme.tileRadius),
           child: Transform.scale(
             scale: assetScale,
             child: Image.asset(
@@ -302,46 +261,82 @@ class _TileWidgetState extends ConsumerState<TileWidget>
           ),
         ),
       );
+    } else {
+      // The allocated height includes the 3D bottom edge.
+      // The face occupies (tileH - _kEdgeH); the dark-gold slab shows at the bottom.
+      tileBody = SizedBox(
+        width: tileW,
+        height: tileH,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.tileEdge,
+                  borderRadius: BorderRadius.circular(_kCornerRadius),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: _kEdgeW,
+              height: tileH - _kEdgeH,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(_kCornerRadius),
+                ),
+                child: _buildTileContent(
+                  tile: tile,
+                  assetPath: assetPath,
+                  showNames: showNames,
+                  faceH: tileH - _kEdgeH,
+                  showSuitCode: showSuitCode,
+                  forceHideName: forceHideName,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    // The allocated height includes the 3D bottom edge.
-    // The face occupies (tileH - _kEdgeH); the dark-gold slab shows at the bottom.
-    return SizedBox(
-      width: tileW,
-      height: tileH,
+    final isBlocked = !widget.isAvailable && !tile.isMatched;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(SankofaGameTheme.tileRadius),
+        border: Border.all(color: borderColor, width: borderWidth),
+        boxShadow: [
+          ...SankofaGameTheme.tileShadowsForLayer(tile.layer),
+          if (glowStrength > 0)
+            BoxShadow(
+              color: SankofaGameTheme.antiqueGold.withValues(
+                alpha: glowStrength,
+              ),
+              blurRadius: 9,
+              spreadRadius: 1.2,
+            ),
+        ],
+      ),
       child: Stack(
+        fit: StackFit.passthrough,
         children: [
-          // Bottom edge — full-height dark-gold slab gives a 3D raised look
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.tileEdge,
-                borderRadius: BorderRadius.circular(_kCornerRadius),
+          tileBody,
+          if (isBlocked)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: SankofaGameTheme.backgroundTop.withValues(
+                      alpha: 0.11,
+                    ),
+                    borderRadius:
+                        BorderRadius.circular(SankofaGameTheme.tileRadius),
+                  ),
+                ),
               ),
             ),
-          ),
-          // Tile face — sits on top, leaving _kEdgeH visible below and _kEdgeW visible on right
-          Positioned(
-            top: 0,
-            left: 0,
-            right: _kEdgeW,
-            height: tileH - _kEdgeH,
-            child: Container(
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(_kCornerRadius),
-                border: Border.all(color: borderColor, width: borderWidth),
-              ),
-              child: _buildTileContent(
-                tile: tile,
-                assetPath: assetPath,
-                showNames: showNames,
-                faceH: tileH - _kEdgeH,
-                showSuitCode: showSuitCode,
-                forceHideName: forceHideName,
-              ),
-            ),
-          ),
         ],
       ),
     );

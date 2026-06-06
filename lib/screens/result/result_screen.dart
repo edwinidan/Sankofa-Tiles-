@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/level_data.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/sankofa_game_theme.dart';
 import '../../models/game_state.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
+import '../../widgets/sankofa_background.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final GameState gameState;
@@ -46,8 +47,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   }
 
   void _saveResult() {
-    if (widget.gameState.levelId == kTileV2TestLevelId) return;
-
     final level = getLevelById(widget.gameState.levelId);
     if (level == null) return;
 
@@ -70,27 +69,42 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   @override
   Widget build(BuildContext context) {
     final isWin = widget.gameState.status == GameStatus.won;
-    final levelSelectRoute = _levelSelectRouteFor(widget.gameState.levelId);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go(levelSelectRoute);
+        if (!didPop) context.go('/level-select');
       },
       child: Scaffold(
-        backgroundColor: AppColors.navyDeep,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnim,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: isWin
-                  ? _WinContent(
-                      gameState: widget.gameState,
-                      stars: _stars,
-                      scaleAnim: _scaleAnim,
-                    )
-                  : _LoseContent(gameState: widget.gameState),
+        backgroundColor: SankofaGameTheme.backgroundTop,
+        body: SankofaBackground(
+          child: SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 48,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: isWin
+                              ? _WinContent(
+                                  gameState: widget.gameState,
+                                  stars: _stars,
+                                  scaleAnim: _scaleAnim,
+                                )
+                              : _LoseContent(gameState: widget.gameState),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -113,112 +127,108 @@ class _WinContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = getLevelById(gameState.levelId);
-    final isV2Level = _isTileV2ProgressLevel(gameState.levelId);
-    final levelSelectRoute = _levelSelectRouteFor(gameState.levelId);
     final matchScore = gameState.moves * 100;
     final timeBonus = gameState.difficulty == DifficultyMode.normal
         ? (300 - gameState.secondsElapsed).clamp(0, 300) * 2
         : 0;
 
-    return Column(
-      children: [
-        const Spacer(),
-
-        // Starburst animation
-        ScaleTransition(
-          scale: scaleAnim,
-          child: const Text(
-            '✦',
-            style: TextStyle(fontSize: 64, color: AppColors.kenteGold),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        Text('Level Complete!', style: AppTextStyles.displayLarge),
-        const SizedBox(height: 8),
-        Text(
-          level?.name ?? '',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.kenteGoldDim,
-          ),
-        ),
-
-        const SizedBox(height: 24),
-        const AdinkraDivider(),
-        const SizedBox(height: 24),
-
-        // Star rating
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(3, (i) {
-            return ScaleTransition(
-              scale: scaleAnim,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Icon(
-                  i < stars ? Icons.star : Icons.star_border,
-                  color: i < stars ? AppColors.kenteGold : AppColors.textMuted,
-                  size: 44,
-                ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+      decoration: SankofaGameTheme.parchmentPanelDecoration,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ScaleTransition(
+            scale: scaleAnim,
+            child: const Text(
+              '✦',
+              style: TextStyle(
+                fontSize: 58,
+                color: SankofaGameTheme.antiqueGold,
               ),
-            );
-          }),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Score breakdown
-        _ScoreRow(
-          label: 'Matches',
-          value: '${gameState.moves} × 100',
-          score: matchScore,
-        ),
-        if (gameState.difficulty == DifficultyMode.normal)
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Level Complete!',
+            style: AppTextStyles.archiveDisplayLarge.copyWith(
+              color: SankofaGameTheme.darkText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            level?.name ?? '',
+            style: AppTextStyles.archiveBodyMedium.copyWith(
+              color: SankofaGameTheme.mutedGold,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const AdinkraDivider(),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (i) {
+              return ScaleTransition(
+                scale: scaleAnim,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(
+                    i < stars ? Icons.star : Icons.star_border,
+                    color: i < stars
+                        ? SankofaGameTheme.antiqueGold
+                        : SankofaGameTheme.mutedText.withValues(alpha: 0.55),
+                    size: 42,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 20),
           _ScoreRow(
-            label: 'Time Bonus',
-            value: '${300 - gameState.secondsElapsed.clamp(0, 300)}s × 2',
-            score: timeBonus,
+            label: 'Matches',
+            value: '${gameState.moves} × 100',
+            score: matchScore,
           ),
-        const Divider(color: AppColors.kenteGoldDim),
-        _ScoreRow(
-          label: 'TOTAL',
-          value: '',
-          score: gameState.score,
-          bold: true,
-        ),
-
-        const Spacer(),
-
-        Row(
-          children: [
-            Expanded(
-              child: KenteButton(
-                label: gameState.levelId == kTileV2TestLevelId
-                    ? 'TILE PREVIEW'
-                    : 'LEVELS',
-                icon: Icons.list,
-                onTap: () => context.go(
-                  gameState.levelId == kTileV2TestLevelId
-                      ? '/tile-preview'
-                      : levelSelectRoute,
+          if (gameState.difficulty == DifficultyMode.normal)
+            _ScoreRow(
+              label: 'Time Bonus',
+              value: '${300 - gameState.secondsElapsed.clamp(0, 300)}s × 2',
+              score: timeBonus,
+            ),
+          Divider(
+            color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.42),
+          ),
+          _ScoreRow(
+            label: 'TOTAL',
+            value: '',
+            score: gameState.score,
+            bold: true,
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: KenteButton(
+                  label: 'LEVELS',
+                  icon: Icons.list,
+                  onTap: () => context.go('/level-select'),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: KenteButton(
-                label: 'NEXT',
-                icon: Icons.arrow_forward,
-                onTap: _hasNextLevel(gameState.levelId, isV2Level)
-                    ? () => context.go(levelSelectRoute)
-                    : null,
+              const SizedBox(width: 12),
+              Expanded(
+                child: KenteButton(
+                  label: 'NEXT',
+                  icon: Icons.arrow_forward,
+                  onTap: gameState.levelId < kLevels.length
+                      ? () => context.go('/level-select')
+                      : null,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -230,87 +240,81 @@ class _LoseContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final levelSelectRoute = _levelSelectRouteFor(gameState.levelId);
-    final retryRoute = _gameRouteFor(gameState.levelId);
-
-    return Column(
-      children: [
-        const Spacer(),
-        const Text(
-          '◌',
-          style: TextStyle(fontSize: 64, color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 16),
-        Text('No More Moves', style: AppTextStyles.displayMedium),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            '"Se wo were firi na wosan kofa a, yenkyiri"\n\nGo back and try again!',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.kenteGoldDim,
-              fontStyle: FontStyle.italic,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+      decoration: SankofaGameTheme.parchmentPanelDecoration,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            '◌',
+            style: TextStyle(
+              fontSize: 58,
+              color: SankofaGameTheme.mutedGold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No More Moves',
+            style: AppTextStyles.archiveDisplayMedium.copyWith(
+              color: SankofaGameTheme.darkText,
             ),
             textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 24),
-        const AdinkraDivider(),
-        const SizedBox(height: 24),
-        _ScoreRow(label: 'Score reached', value: '', score: gameState.score),
-        _ScoreRow(label: 'Pairs matched', value: '', score: gameState.moves),
-        const Spacer(),
-        Row(
-          children: [
-            Expanded(
-              child: KenteButton(
-                label: gameState.levelId == kTileV2TestLevelId
-                    ? 'TILE PREVIEW'
-                    : 'LEVELS',
-                icon: Icons.list,
-                onTap: () => context.go(
-                  gameState.levelId == kTileV2TestLevelId
-                      ? '/tile-preview'
-                      : levelSelectRoute,
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              '"Se wo were firi na wosan kofa a, yenkyiri"\n\n'
+              'Go back and try again!',
+              style: AppTextStyles.archiveBodyMedium.copyWith(
+                color: SankofaGameTheme.mutedGold,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const AdinkraDivider(),
+          const SizedBox(height: 18),
+          _ScoreRow(
+            label: 'Score reached',
+            value: '',
+            score: gameState.score,
+          ),
+          _ScoreRow(
+            label: 'Pairs matched',
+            value: '',
+            score: gameState.moves,
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: KenteButton(
+                  label: 'LEVELS',
+                  icon: Icons.list,
+                  onTap: () => context.go('/level-select'),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: KenteButton(
-                label: 'RETRY',
-                icon: Icons.refresh,
-                onTap: () => context.go(
-                  gameState.levelId == kTileV2TestLevelId
-                      ? '/tile-v2-test-level'
-                      : retryRoute,
-                  extra: gameState.difficulty,
+              const SizedBox(width: 12),
+              Expanded(
+                child: KenteButton(
+                  label: 'RETRY',
+                  icon: Icons.refresh,
+                  onTap: () => context.go(
+                    '/game/${gameState.levelId}',
+                    extra: gameState.difficulty,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
-
-bool _isTileV2ProgressLevel(int levelId) =>
-    kTileV2Levels.any((level) => level.id == levelId);
-
-bool _hasNextLevel(int levelId, bool isV2Level) {
-  if (isV2Level) return levelId < kTileV2Levels.last.id;
-  return levelId > kTileV2TestLevelId && levelId < kLevels.length;
-}
-
-String _levelSelectRouteFor(int levelId) => _isTileV2ProgressLevel(levelId)
-    ? '/level-select?tileSet=v2'
-    : '/level-select';
-
-String _gameRouteFor(int levelId) => _isTileV2ProgressLevel(levelId)
-    ? '/game/$levelId?tileSet=v2'
-    : '/game/$levelId';
 
 class _ScoreRow extends StatelessWidget {
   final String label;
@@ -328,8 +332,12 @@ class _ScoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = bold
-        ? AppTextStyles.titleLarge.copyWith(color: AppColors.kenteGold)
-        : AppTextStyles.bodyMedium;
+        ? AppTextStyles.archiveTitleLarge.copyWith(
+            color: SankofaGameTheme.mutedGold,
+          )
+        : AppTextStyles.archiveBodyMedium.copyWith(
+            color: SankofaGameTheme.darkText,
+          );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -337,7 +345,12 @@ class _ScoreRow extends StatelessWidget {
           Text(label, style: style),
           if (value.isNotEmpty) ...[
             const SizedBox(width: 4),
-            Text(value, style: AppTextStyles.bodySmall),
+            Text(
+              value,
+              style: AppTextStyles.archiveBodySmall.copyWith(
+                color: SankofaGameTheme.mutedText,
+              ),
+            ),
           ],
           const Spacer(),
           Text(score.toString(), style: style),

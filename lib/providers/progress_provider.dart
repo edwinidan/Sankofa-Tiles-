@@ -13,10 +13,7 @@ class ProgressService {
 
   ProgressService(this._storage);
 
-  bool isLevelUnlocked(int levelId) {
-    if (levelId == kTileV2FirstLevelId) return true;
-    return _storage.isLevelUnlocked(levelId);
-  }
+  bool isLevelUnlocked(int levelId) => _storage.isLevelUnlocked(levelId);
 
   LevelResult? getLevelResult(int levelId) => _storage.getLevelResult(levelId);
 
