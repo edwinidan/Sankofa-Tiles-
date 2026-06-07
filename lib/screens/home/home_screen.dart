@@ -109,42 +109,12 @@ class _LogoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text(
-          '◎',
-          style: TextStyle(
-            color: SankofaGameTheme.antiqueGold,
-            fontSize: 48,
-          ),
-        ),
-        const SizedBox(height: 8),
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            style: AppTextStyles.displayLarge.copyWith(
-              color: SankofaGameTheme.antiqueGold,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-                Shadow(
-                  color: SankofaGameTheme.mutedGold.withValues(alpha: 0.24),
-                  blurRadius: 2,
-                ),
-              ],
-            ),
-            children: const [
-              TextSpan(text: 'ADINKRA'),
-              TextSpan(
-                text: '  ⟳  ',
-                style: TextStyle(
-                  color: SankofaGameTheme.appParchmentLight,
-                  fontSize: 24,
-                ),
-              ),
-              TextSpan(text: 'TILES'),
-            ],
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 462),
+          child: Image.asset(
+            'assets/adinkra_tiles_homescreen_show-removebg-preview.png',
+            width: double.infinity,
+            fit: BoxFit.contain,
           ),
         ),
         const SizedBox(height: 8),
