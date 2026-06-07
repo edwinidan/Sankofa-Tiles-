@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/tile_data.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/sankofa_game_theme.dart';
+import '../../core/utils/analytics_service.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
+import '../../widgets/sankofa_background.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -39,75 +41,72 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.navyDeep,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _finish,
-                child: Text(
-                  'Skip',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textMuted,
+      backgroundColor: SankofaGameTheme.backgroundTop,
+      body: SankofaBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: TextButton(
+                  onPressed: _finish,
+                  child: Text(
+                    'Skip',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: SankofaGameTheme.mutedLightText,
+                    ),
                   ),
                 ),
               ),
-            ),
-
-            // Pages
-            Expanded(
-              child: PageView(
-                controller: _controller,
-                onPageChanged: (i) => setState(() => _currentPage = i),
-                children: _pages,
+              Expanded(
+                child: PageView(
+                  controller: _controller,
+                  onPageChanged: (i) => setState(() => _currentPage = i),
+                  children: _pages,
+                ),
               ),
-            ),
-
-            // Dots + navigation
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  // Dots
-                  Row(
-                    children: List.generate(_pages.length, (i) {
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: i == _currentPage ? 20 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: i == _currentPage
-                              ? AppColors.kenteGold
-                              : AppColors.navyLight,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      );
-                    }),
-                  ),
-
-                  const Spacer(),
-
-                  // Next / Finish
-                  _currentPage < _pages.length - 1
-                      ? KenteButton(
-                          label: 'NEXT',
-                          icon: Icons.arrow_forward,
-                          small: true,
-                          onTap: _next,
-                        )
-                      : KenteButton(
-                          label: 'START PLAYING',
-                          icon: Icons.play_arrow_rounded,
-                          onTap: _finish,
-                        ),
-                ],
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Row(
+                      children: List.generate(_pages.length, (i) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: i == _currentPage ? 20 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: i == _currentPage
+                                ? SankofaGameTheme.antiqueGold
+                                : SankofaGameTheme.mutedLightText
+                                    .withValues(alpha: 0.28),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        );
+                      }),
+                    ),
+                    const Spacer(),
+                    _currentPage < _pages.length - 1
+                        ? KenteButton(
+                            label: 'NEXT',
+                            icon: Icons.arrow_forward,
+                            small: true,
+                            onTap: _next,
+                          )
+                        : Flexible(
+                            child: KenteButton(
+                              label: 'START PLAYING',
+                              icon: Icons.play_arrow_rounded,
+                              onTap: _finish,
+                            ),
+                          ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -116,6 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _finish() async {
     final storage = ref.read(storageServiceProvider);
     await storage.setOnboardingComplete();
+    AnalyticsService.logOnboardingCompleted();
     if (mounted) context.go('/');
   }
 }
@@ -126,8 +126,8 @@ class _Page1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const _OnboardingPage(
-      symbol: '⟳',
-      title: 'Welcome to\nSankofa Tiles',
+      icon: Icons.history_rounded,
+      title: 'Welcome to\nAdinkra Tiles',
       body:
           'Sankofa is an Akan word meaning "go back and get it" — the wisdom of learning from the past.\n\n'
           'This game celebrates the rich visual language of Adinkra symbols from the Akan people of Ghana and Côte d\'Ivoire, '
@@ -142,7 +142,7 @@ class _Page2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _OnboardingPage(
-      symbol: '◈',
+      icon: Icons.touch_app_outlined,
       title: 'How to Play',
       body: '',
       child: Column(
@@ -168,8 +168,8 @@ class _Page2 extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Use hints to highlight a matching pair.\nShuffle to rearrange remaining tiles.',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.kenteGoldDim,
+            style: AppTextStyles.archiveBodyMedium.copyWith(
+              color: SankofaGameTheme.mutedGold,
               fontStyle: FontStyle.italic,
             ),
             textAlign: TextAlign.center,
@@ -197,7 +197,7 @@ class _Page3 extends StatelessWidget {
     final tiles = kAllTiles.where((t) => _exampleTiles.contains(t.id)).toList();
 
     return _OnboardingPage(
-      symbol: '✦',
+      icon: Icons.auto_awesome_outlined,
       title: 'The Symbols',
       body: 'Each tile carries an Adinkra symbol with deep meaning:',
       child: GridView.count(
@@ -219,24 +219,24 @@ class _Page4 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const _OnboardingPage(
-      symbol: '☀',
+      icon: Icons.wb_sunny_outlined,
       title: 'Ready?',
       body:
           'Gye Nyame — "Except God" — the most important Adinkra symbol, representing the supremacy of the Almighty.\n\n'
-          'May your journey through Sankofa Tiles be filled with wisdom and joy.',
+          'May your journey through Adinkra Tiles be filled with wisdom and joy.',
     );
   }
 }
 
 // Shared layout
 class _OnboardingPage extends StatelessWidget {
-  final String symbol;
+  final IconData icon;
   final String title;
   final String body;
   final Widget? child;
 
   const _OnboardingPage({
-    required this.symbol,
+    required this.icon,
     required this.title,
     required this.body,
     this.child,
@@ -245,30 +245,40 @@ class _OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
-      child: Column(
-        children: [
-          Text(
-            symbol,
-            style: const TextStyle(color: AppColors.kenteGold, fontSize: 64),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: AppTextStyles.displayMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          if (body.isNotEmpty) ...[
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+        decoration: SankofaGameTheme.appParchmentPanelDecoration,
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: SankofaGameTheme.antiqueGold,
+              size: 54,
+            ),
+            const SizedBox(height: 12),
             Text(
-              body,
-              style: AppTextStyles.bodyMedium,
+              title,
+              style: AppTextStyles.archiveDisplayMedium.copyWith(
+                color: SankofaGameTheme.darkText,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            if (body.isNotEmpty) ...[
+              Text(
+                body,
+                style: AppTextStyles.archiveBodyMedium.copyWith(
+                  color: SankofaGameTheme.darkText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+            ],
+            if (child != null) child!,
           ],
-          if (child != null) child!,
-        ],
+        ),
       ),
     );
   }
@@ -289,21 +299,28 @@ class _StepRow extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: AppColors.kenteGold,
+            color: SankofaGameTheme.antiqueGold,
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
           child: Text(
             number,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.navyDeep,
+            style: AppTextStyles.archiveLabelSmall.copyWith(
+              color: SankofaGameTheme.darkText,
               fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Text(text, style: AppTextStyles.bodyMedium)),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.archiveBodyMedium.copyWith(
+              color: SankofaGameTheme.darkText,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -318,13 +335,16 @@ class _TilePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.tileFace,
+        gradient: SankofaGameTheme.appPanelGradient,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.tileBorder, width: 1.5),
-        boxShadow: const [
+        border: Border.all(
+          color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.tileEdge,
-            offset: Offset(0, 3),
+            color: Colors.black.withValues(alpha: 0.18),
+            offset: const Offset(0, 3),
             blurRadius: 0,
           ),
         ],

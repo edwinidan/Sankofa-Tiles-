@@ -16,6 +16,14 @@ class SankofaGameTheme {
   static const parchment = Color(0xFFF1E6CF);
   static const parchmentLight = Color(0xFFF8F0DE);
   static const parchmentDark = Color(0xFFE2D2AD);
+  static const appParchment = Color(0xFFEDE0C4);
+  static const appParchmentLight = Color(0xFFF1E6CF);
+  static const appParchmentDark = Color(0xFFE8D8B7);
+
+  static const levelCardTop = Color(0xFF203329);
+  static const levelCardBottom = Color(0xFF1A2D25);
+  static const levelCardDisabledTop = Color(0xFF192720);
+  static const levelCardDisabledBottom = Color(0xFF142019);
 
   static const antiqueGold = Color(0xFFB88A3A);
   static const mutedGold = Color(0xFF8B6A35);
@@ -48,6 +56,13 @@ class SankofaGameTheme {
     colors: [parchmentLight, parchment],
   );
 
+  static const appPanelGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [appParchmentLight, appParchment, appParchmentDark],
+    stops: [0.0, 0.62, 1.0],
+  );
+
   static List<BoxShadow> get panelShadow => [
         BoxShadow(
           color: tileShadow.withValues(alpha: 0.24),
@@ -63,6 +78,41 @@ class SankofaGameTheme {
           color: antiqueGold.withValues(alpha: 0.52),
         ),
         boxShadow: panelShadow,
+      );
+
+  static BoxDecoration get appParchmentPanelDecoration => BoxDecoration(
+        gradient: appPanelGradient,
+        borderRadius: BorderRadius.circular(panelRadius),
+        border: Border.all(
+          color: antiqueGold.withValues(alpha: 0.5),
+        ),
+        boxShadow: panelShadow,
+      );
+
+  static BoxDecoration levelCardDecoration({
+    required bool unlocked,
+  }) =>
+      BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: unlocked
+              ? const [levelCardTop, levelCardBottom]
+              : const [levelCardDisabledTop, levelCardDisabledBottom],
+        ),
+        borderRadius: BorderRadius.circular(panelRadius),
+        border: Border.all(
+          color: unlocked
+              ? antiqueGold.withValues(alpha: 0.46)
+              : mutedLightText.withValues(alpha: 0.16),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: tileShadow.withValues(alpha: unlocked ? 0.3 : 0.2),
+            blurRadius: unlocked ? 14 : 10,
+            offset: const Offset(0, 7),
+          ),
+        ],
       );
 
   static BoxDecoration darkPanelDecoration({

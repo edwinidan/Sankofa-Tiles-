@@ -7,8 +7,10 @@ import '../models/tile_model.dart';
 import '../core/constants/layout_data.dart';
 import '../core/constants/tile_data.dart';
 import '../core/constants/level_data.dart';
+import '../core/utils/analytics_service.dart';
 import '../core/utils/audio_service.dart';
 import '../core/utils/board_solver.dart';
+import '../core/utils/crash_reporting_service.dart';
 import '../core/utils/haptic_service.dart';
 import 'settings_provider.dart';
 
@@ -173,6 +175,7 @@ class GameNotifier extends StateNotifier<GameState> {
         secondsElapsed: 0,
         levelId: levelId,
       );
+      AnalyticsService.logLevelStarted(levelId, difficulty.name);
       stateStopwatch.stop();
       debugPrint(
         '[LEVEL_LOAD] level=$levelId state update took '
@@ -191,6 +194,11 @@ class GameNotifier extends StateNotifier<GameState> {
       );
     } catch (error, stackTrace) {
       debugPrint('[LEVEL_LOAD] level=$levelId failed: $error\n$stackTrace');
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Unexpected level startup exception',
+      );
       _handleLevelLoadFailure(levelId, difficulty, totalStopwatch);
     }
   }
@@ -205,6 +213,17 @@ class GameNotifier extends StateNotifier<GameState> {
     debugPrint(
       '[LEVEL_LOAD] level=$levelId failed safely after '
       '${totalStopwatch.elapsedMilliseconds} ms',
+    );
+    AnalyticsService.logLevelFailed(
+      levelId,
+      difficulty.name,
+      0,
+      'board_load_failed',
+    );
+    CrashReportingService.recordNonFatal(
+      StateError('Board generation failed for level $levelId'),
+      StackTrace.current,
+      reason: 'Board generation load failure',
     );
     state = GameState(
       tiles: const [],
@@ -323,6 +342,12 @@ class GameNotifier extends StateNotifier<GameState> {
         state.secondsElapsed >= 300) {
       _timer?.cancel();
       state = state.copyWith(status: GameStatus.lost);
+      AnalyticsService.logLevelFailed(
+        state.levelId,
+        state.difficulty.name,
+        state.score,
+        'timer_expired',
+      );
       _audio.playLose();
       _audio.stopBackgroundMusic();
     }
@@ -530,6 +555,7 @@ class GameNotifier extends StateNotifier<GameState> {
       tiles: hintedTiles,
       hintsUsed: state.hintsUsed + 1,
     );
+    AnalyticsService.logHintUsed(state.levelId, state.difficulty.name);
 
     // Clear hint after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
@@ -591,12 +617,14 @@ class GameNotifier extends StateNotifier<GameState> {
       score: (state.score - 50).clamp(0, 999999),
       clearSelectedTile: true,
     );
+    AnalyticsService.logShuffleUsed(state.levelId, state.difficulty.name);
   }
 
   void pauseGame() {
     if (state.status != GameStatus.playing) return;
     _timer?.cancel();
     state = state.copyWith(status: GameStatus.paused);
+    AnalyticsService.logPauseUsed(state.levelId, state.difficulty.name);
   }
 
   void leaveGame() {
@@ -638,6 +666,12 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.isStuck) {
       _timer?.cancel();
       state = state.copyWith(status: GameStatus.lost);
+      AnalyticsService.logLevelFailed(
+        state.levelId,
+        state.difficulty.name,
+        state.score,
+        'no_moves',
+      );
       _audio.playLose();
       _audio.stopBackgroundMusic();
     }

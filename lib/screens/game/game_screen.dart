@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/game_state.dart';
 import '../../core/utils/haptic_service.dart';
 import '../../core/utils/audio_service.dart';
+import '../../core/utils/analytics_service.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -64,6 +65,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   Future<void> _openGameSettings() async {
+    AnalyticsService.logSettingsOpened('game');
     final wasPlaying = ref.read(gameProvider).status == GameStatus.playing;
     if (wasPlaying) {
       ref.read(gameProvider.notifier).pauseGame();

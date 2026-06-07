@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/level_data.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
+import '../../core/utils/analytics_service.dart';
+import '../../core/utils/audio_service.dart';
 import '../../models/game_state.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/progress_provider.dart';
@@ -27,11 +29,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   late AnimationController _controller;
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
+  late final AudioService _audioService;
   int _stars = 0;
+  bool _resultHandled = false;
 
   @override
   void initState() {
     super.initState();
+    _audioService = ref.read(audioServiceProvider);
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -47,10 +52,20 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   }
 
   void _saveResult() {
+    if (_resultHandled) return;
+
     final level = getLevelById(widget.gameState.levelId);
     if (level == null) return;
+    _resultHandled = true;
 
     _stars = computeStars(widget.gameState.score, level.starThresholds);
+    AnalyticsService.logLevelCompleted(
+      widget.gameState.levelId,
+      widget.gameState.difficulty.name,
+      widget.gameState.score,
+      _stars,
+      widget.gameState.secondsElapsed,
+    );
 
     ref.read(progressProvider).saveLevelResult(
           widget.gameState.levelId,
@@ -61,7 +76,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
   @override
   void dispose() {
-    unawaited(ref.read(audioServiceProvider).stopSfx());
+    unawaited(_audioService.stopSfx());
     _controller.dispose();
     super.dispose();
   }
@@ -134,7 +149,7 @@ class _WinContent extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-      decoration: SankofaGameTheme.parchmentPanelDecoration,
+      decoration: SankofaGameTheme.appParchmentPanelDecoration,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -242,7 +257,7 @@ class _LoseContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-      decoration: SankofaGameTheme.parchmentPanelDecoration,
+      decoration: SankofaGameTheme.appParchmentPanelDecoration,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

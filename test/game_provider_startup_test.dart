@@ -31,7 +31,7 @@ void main() {
 
     final notifier = container.read(gameProvider.notifier);
 
-    for (final levelId in [1, 3, 6, 14]) {
+    for (final levelId in [1, 3, 6, 14, 22]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
       stopwatch.stop();
@@ -76,7 +76,7 @@ void main() {
     expect(state.hasWon, isFalse);
   });
 
-  test('main progression reaches the full 51 pair tile set', () {
+  test('main progression reaches the full 84 pair tile set', () {
     final container = ProviderContainer(
       overrides: [
         audioServiceProvider.overrideWithValue(
@@ -98,7 +98,7 @@ void main() {
       expect(BoardSolver.isSolvable(state.tiles), isTrue);
     }
 
-    expect(kLevels.last.tileCount, 102);
-    expect(kLevels.last.tileIds, hasLength(51));
+    expect(kLevels.last.tileCount, 168);
+    expect(kLevels.last.tileIds, hasLength(84));
   });
 }

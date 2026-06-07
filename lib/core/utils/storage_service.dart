@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/game_state.dart';
 import '../../models/level_model.dart';
+import 'crash_reporting_service.dart';
 import 'haptic_service.dart';
 
 class StorageService {
@@ -17,18 +18,36 @@ class StorageService {
   late SharedPreferences _prefs;
 
   Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+    } catch (error, stackTrace) {
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'SharedPreferences initialization failed',
+      );
+      rethrow;
+    }
   }
 
   // Level results
   Future<void> saveLevelResult(int levelId, int score, int stars) async {
-    final currentBest = getBestScore(levelId);
-    if (score > currentBest) {
-      await _prefs.setInt('$_prefixBestScore$levelId', score);
-    }
-    final currentStars = getStars(levelId);
-    if (stars > currentStars) {
-      await _prefs.setInt('$_prefixStars$levelId', stars);
+    try {
+      final currentBest = getBestScore(levelId);
+      if (score > currentBest) {
+        await _prefs.setInt('$_prefixBestScore$levelId', score);
+      }
+      final currentStars = getStars(levelId);
+      if (stars > currentStars) {
+        await _prefs.setInt('$_prefixStars$levelId', stars);
+      }
+    } catch (error, stackTrace) {
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Level result persistence failed',
+      );
+      rethrow;
     }
   }
 
@@ -101,13 +120,22 @@ class StorageService {
 
   // Reset
   Future<void> resetAllProgress() async {
-    final keys = _prefs
-        .getKeys()
-        .where(
-            (k) => k.startsWith(_prefixBestScore) || k.startsWith(_prefixStars))
-        .toList();
-    for (final k in keys) {
-      await _prefs.remove(k);
+    try {
+      final keys = _prefs
+          .getKeys()
+          .where((k) =>
+              k.startsWith(_prefixBestScore) || k.startsWith(_prefixStars))
+          .toList();
+      for (final k in keys) {
+        await _prefs.remove(k);
+      }
+    } catch (error, stackTrace) {
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Progress reset persistence failed',
+      );
+      rethrow;
     }
   }
 }

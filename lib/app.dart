@@ -13,7 +13,7 @@ class SankofaTilesApp extends ConsumerWidget {
     final router = createAppRouter(storage);
 
     return MaterialApp.router(
-      title: 'Sankofa Tiles',
+      title: 'Adinkra Tiles',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       routerConfig: router,

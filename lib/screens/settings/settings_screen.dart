@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/sankofa_game_theme.dart';
+import '../../core/utils/analytics_service.dart';
 import '../../core/utils/haptic_service.dart';
 import '../../models/game_state.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
+import '../../widgets/sankofa_background.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static final Uri _privacyPolicyUri = Uri.parse(
+    'https://adinkra-tiles-privacy-policy.vercel.app/',
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,63 +30,101 @@ class SettingsScreen extends ConsumerWidget {
         if (!didPop) safeBack(context);
       },
       child: Scaffold(
-        backgroundColor: AppColors.navyDeep,
+        backgroundColor: SankofaGameTheme.backgroundTop,
         appBar: AppBar(
-          title: Text('Settings', style: AppTextStyles.displaySmall),
+          backgroundColor: SankofaGameTheme.backgroundTop,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: SankofaGameTheme.parchmentLight,
+          title: Text(
+            'Settings',
+            style: AppTextStyles.displaySmall.copyWith(
+              color: SankofaGameTheme.antiqueGold,
+            ),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios),
             onPressed: () => safeBack(context),
           ),
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const _SectionHeader(title: 'Audio'),
-            _ToggleTile(
-              icon: Icons.volume_up_outlined,
-              label: 'Sound Effects',
-              value: settings.soundEnabled,
-              onChanged: notifier.setSoundEnabled,
-            ),
-            _ToggleTile(
-              icon: Icons.music_note_outlined,
-              label: 'Background Music',
-              value: settings.musicEnabled,
-              onChanged: notifier.setMusicEnabled,
-            ),
-            _MusicVolumeTile(
-              value: settings.musicVolume,
-              enabled: settings.musicEnabled,
-              onChanged: notifier.setMusicVolume,
-            ),
-            const SizedBox(height: 8),
-            _HapticTile(
-              selected: settings.hapticIntensity,
-              onChanged: notifier.setHapticIntensity,
-            ),
-            const SizedBox(height: 16),
-            const AdinkraDivider(),
-            const SizedBox(height: 16),
-            const _SectionHeader(title: 'Gameplay'),
-            _ToggleTile(
-              icon: Icons.text_fields,
-              label: 'Show Tile Names',
-              description: 'Display Adinkra symbol names on tiles',
-              value: settings.showTileNames,
-              onChanged: notifier.setShowTileNames,
-            ),
-            const SizedBox(height: 8),
-            _DifficultyTile(
-              selected: settings.defaultDifficulty,
-              onChanged: notifier.setDefaultDifficulty,
-            ),
-            const SizedBox(height: 16),
-            const AdinkraDivider(),
-            const SizedBox(height: 16),
-            const _SectionHeader(title: 'Data'),
-            _ResetTile(onReset: () => _confirmReset(context, ref)),
-          ],
+        body: SankofaBackground(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+            children: [
+              const _SectionHeader(title: 'Audio'),
+              _ToggleTile(
+                icon: Icons.volume_up_outlined,
+                label: 'Sound Effects',
+                value: settings.soundEnabled,
+                onChanged: notifier.setSoundEnabled,
+              ),
+              _ToggleTile(
+                icon: Icons.music_note_outlined,
+                label: 'Background Music',
+                value: settings.musicEnabled,
+                onChanged: notifier.setMusicEnabled,
+              ),
+              _MusicVolumeTile(
+                value: settings.musicVolume,
+                enabled: settings.musicEnabled,
+                onChanged: notifier.setMusicVolume,
+              ),
+              const SizedBox(height: 8),
+              _HapticTile(
+                selected: settings.hapticIntensity,
+                onChanged: notifier.setHapticIntensity,
+              ),
+              const SizedBox(height: 16),
+              const AdinkraDivider(),
+              const SizedBox(height: 16),
+              const _SectionHeader(title: 'Gameplay'),
+              _ToggleTile(
+                icon: Icons.text_fields,
+                label: 'Show Tile Names',
+                description: 'Display Adinkra symbol names on tiles',
+                value: settings.showTileNames,
+                onChanged: notifier.setShowTileNames,
+              ),
+              const SizedBox(height: 8),
+              _DifficultyTile(
+                selected: settings.defaultDifficulty,
+                onChanged: notifier.setDefaultDifficulty,
+              ),
+              const SizedBox(height: 16),
+              const AdinkraDivider(),
+              const SizedBox(height: 16),
+              const _SectionHeader(title: 'Data'),
+              _ResetTile(onReset: () => _confirmReset(context, ref)),
+              const SizedBox(height: 16),
+              const AdinkraDivider(),
+              const SizedBox(height: 16),
+              const _SectionHeader(title: 'Legal'),
+              _LinkTile(
+                icon: Icons.privacy_tip_outlined,
+                label: 'Privacy Policy',
+                description: 'Learn how your data is collected and used',
+                onTap: () => _openPrivacyPolicy(context),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    try {
+      final opened = await launchUrl(
+        _privacyPolicyUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (opened || !context.mounted) return;
+    } catch (_) {
+      if (!context.mounted) return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Unable to open the privacy policy. Please try again.'),
       ),
     );
   }
@@ -87,29 +133,37 @@ class SettingsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.navyMid,
+        backgroundColor: SankofaGameTheme.appParchment,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.errorRed, width: 1.5),
         ),
-        title: Text('Reset Progress?', style: AppTextStyles.headlineMedium),
+        title: Text(
+          'Reset Progress?',
+          style: AppTextStyles.archiveHeadlineMedium,
+        ),
         content: Text(
           'All level scores and stars will be deleted. This cannot be undone.',
-          style: AppTextStyles.bodyMedium,
+          style: AppTextStyles.archiveBodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: SankofaGameTheme.mutedGold),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.errorRed,
               foregroundColor: AppColors.textPrimary,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ref.read(settingsProvider.notifier).resetProgress();
+              await ref.read(settingsProvider.notifier).resetProgress();
+              AnalyticsService.logResetProgress();
+              if (!context.mounted) return;
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('Progress reset.')));
@@ -134,7 +188,7 @@ class _SectionHeader extends StatelessWidget {
         title.toUpperCase(),
         style: AppTextStyles.labelSmall.copyWith(
           letterSpacing: 2,
-          color: AppColors.kenteGold,
+          color: SankofaGameTheme.antiqueGold,
         ),
       ),
     );
@@ -160,16 +214,27 @@ class _ToggleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.navyMid,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.navyLight, width: 1),
-      ),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
       child: SwitchListTile(
-        secondary: Icon(icon, color: AppColors.kenteGold),
-        title: Text(label, style: AppTextStyles.bodyLarge),
+        activeThumbColor: SankofaGameTheme.darkText,
+        activeTrackColor: SankofaGameTheme.antiqueGold,
+        inactiveThumbColor: SankofaGameTheme.mutedLightText,
+        inactiveTrackColor:
+            SankofaGameTheme.mutedLightText.withValues(alpha: 0.22),
+        secondary: Icon(icon, color: SankofaGameTheme.antiqueGold),
+        title: Text(
+          label,
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: SankofaGameTheme.parchmentLight,
+          ),
+        ),
         subtitle: description != null
-            ? Text(description!, style: AppTextStyles.bodySmall)
+            ? Text(
+                description!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: SankofaGameTheme.mutedLightText,
+                ),
+              )
             : null,
         value: value,
         onChanged: onChanged,
@@ -195,11 +260,7 @@ class _MusicVolumeTile extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.navyMid,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.navyLight, width: 1),
-      ),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         children: [
@@ -207,22 +268,27 @@ class _MusicVolumeTile extends StatelessWidget {
             children: [
               Icon(
                 Icons.volume_down_outlined,
-                color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+                color: enabled
+                    ? SankofaGameTheme.antiqueGold
+                    : SankofaGameTheme.mutedLightText,
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   'Music Volume',
                   style: AppTextStyles.bodyLarge.copyWith(
-                    color:
-                        enabled ? AppColors.textPrimary : AppColors.textMuted,
+                    color: enabled
+                        ? SankofaGameTheme.parchmentLight
+                        : SankofaGameTheme.mutedLightText,
                   ),
                 ),
               ),
               Text(
                 '$percent%',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: enabled ? AppColors.kenteGold : AppColors.textMuted,
+                  color: enabled
+                      ? SankofaGameTheme.antiqueGold
+                      : SankofaGameTheme.mutedLightText,
                 ),
               ),
             ],
@@ -232,8 +298,9 @@ class _MusicVolumeTile extends StatelessWidget {
             min: 0,
             max: 1,
             divisions: 10,
-            activeColor: AppColors.kenteGold,
-            inactiveColor: AppColors.navyLight,
+            activeColor: SankofaGameTheme.antiqueGold,
+            inactiveColor:
+                SankofaGameTheme.mutedLightText.withValues(alpha: 0.24),
             onChanged: enabled ? (val) => onChanged(val) : null,
           ),
         ],
@@ -252,20 +319,24 @@ class _DifficultyTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.navyMid,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.navyLight, width: 1),
-      ),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.tune, color: AppColors.kenteGold),
+              const Icon(
+                Icons.tune,
+                color: SankofaGameTheme.antiqueGold,
+              ),
               const SizedBox(width: 16),
-              Text('Default Difficulty', style: AppTextStyles.bodyLarge),
+              Text(
+                'Default Difficulty',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -281,13 +352,14 @@ class _DifficultyTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.kenteGold.withValues(alpha: 0.2)
-                          : AppColors.navyDeep,
+                          ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.16)
+                          : SankofaGameTheme.boardEdge,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isSelected
-                            ? AppColors.kenteGold
-                            : AppColors.navyLight,
+                            ? SankofaGameTheme.antiqueGold
+                            : SankofaGameTheme.mutedLightText
+                                .withValues(alpha: 0.2),
                         width: 1.5,
                       ),
                     ),
@@ -295,8 +367,8 @@ class _DifficultyTile extends StatelessWidget {
                       label,
                       style: AppTextStyles.labelSmall.copyWith(
                         color: isSelected
-                            ? AppColors.kenteGold
-                            : AppColors.textMuted,
+                            ? SankofaGameTheme.antiqueGold
+                            : SankofaGameTheme.mutedLightText,
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -329,20 +401,24 @@ class _HapticTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.navyMid,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.navyLight, width: 1),
-      ),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.vibration, color: AppColors.kenteGold),
+              const Icon(
+                Icons.vibration,
+                color: SankofaGameTheme.antiqueGold,
+              ),
               const SizedBox(width: 16),
-              Text('Haptic Feedback', style: AppTextStyles.bodyLarge),
+              Text(
+                'Haptic Feedback',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -357,13 +433,14 @@ class _HapticTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.kenteGold.withValues(alpha: 0.2)
-                          : AppColors.navyDeep,
+                          ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.16)
+                          : SankofaGameTheme.boardEdge,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isSelected
-                            ? AppColors.kenteGold
-                            : AppColors.navyLight,
+                            ? SankofaGameTheme.antiqueGold
+                            : SankofaGameTheme.mutedLightText
+                                .withValues(alpha: 0.2),
                         width: 1.5,
                       ),
                     ),
@@ -371,8 +448,8 @@ class _HapticTile extends StatelessWidget {
                       _labels[level]!,
                       style: AppTextStyles.labelSmall.copyWith(
                         color: isSelected
-                            ? AppColors.kenteGold
-                            : AppColors.textMuted,
+                            ? SankofaGameTheme.antiqueGold
+                            : SankofaGameTheme.mutedLightText,
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -397,14 +474,7 @@ class _ResetTile extends StatelessWidget {
     return GestureDetector(
       onTap: onReset,
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.navyMid,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.errorRed.withValues(alpha: 0.5),
-            width: 1,
-          ),
-        ),
+        decoration: SankofaGameTheme.darkPanelDecoration(),
         child: ListTile(
           leading: const Icon(Icons.delete_outline, color: AppColors.errorRed),
           title: Text(
@@ -413,10 +483,53 @@ class _ResetTile extends StatelessWidget {
           ),
           subtitle: Text(
             'Clears all scores and unlocked levels',
-            style: AppTextStyles.bodySmall,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: SankofaGameTheme.mutedLightText,
+            ),
           ),
           trailing: const Icon(Icons.chevron_right, color: AppColors.errorRed),
         ),
+      ),
+    );
+  }
+}
+
+class _LinkTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String description;
+  final Future<void> Function() onTap;
+
+  const _LinkTile({
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: SankofaGameTheme.darkPanelDecoration(),
+      child: ListTile(
+        leading: Icon(icon, color: SankofaGameTheme.antiqueGold),
+        title: Text(
+          label,
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: SankofaGameTheme.parchmentLight,
+          ),
+        ),
+        subtitle: Text(
+          description,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: SankofaGameTheme.mutedLightText,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.open_in_new,
+          color: SankofaGameTheme.antiqueGold,
+        ),
+        onTap: onTap,
       ),
     );
   }

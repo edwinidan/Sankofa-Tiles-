@@ -194,3 +194,25 @@ final level21Layout = _mahjongLayout([
   [2, 4, 4],
   [2],
 ]);
+
+List<TilePosition> _archiveGridLayout(int tileCount) {
+  const columns = 12;
+  final fullRows = tileCount ~/ columns;
+  final remainder = tileCount % columns;
+  final rows = <int>[
+    for (var row = 0; row < fullRows; row++) columns,
+    if (remainder > 0) remainder,
+  ];
+  return _mahjongLayout([rows]);
+}
+
+// Expanded archive levels use broad, single-layer displays so the complete
+// symbol collection remains readable and every pair is immediately playable.
+final level22Layout = _archiveGridLayout(110);
+final level23Layout = _archiveGridLayout(118);
+final level24Layout = _archiveGridLayout(126);
+final level25Layout = _archiveGridLayout(134);
+final level26Layout = _archiveGridLayout(142);
+final level27Layout = _archiveGridLayout(150);
+final level28Layout = _archiveGridLayout(158);
+final level29Layout = _archiveGridLayout(168);

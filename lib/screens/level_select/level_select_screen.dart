@@ -26,10 +26,25 @@ class LevelSelectScreen extends ConsumerWidget {
         if (!didPop) safeBack(context);
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         backgroundColor: SankofaGameTheme.backgroundTop,
         appBar: AppBar(
-          backgroundColor: SankofaGameTheme.backgroundTop,
+          backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          flexibleSpace: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  SankofaGameTheme.backgroundTop.withValues(alpha: 0.9),
+                  SankofaGameTheme.backgroundTop.withValues(alpha: 0.34),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
           foregroundColor: SankofaGameTheme.parchmentLight,
           title: Text(
             'Choose Your Level',
@@ -44,12 +59,17 @@ class LevelSelectScreen extends ConsumerWidget {
         ),
         body: SankofaBackground(
           child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 14,
+              16,
+              24,
+            ),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.08,
+              childAspectRatio: 1.14,
             ),
             itemCount: kLevels.length,
             itemBuilder: (context, i) {
@@ -85,6 +105,7 @@ class LevelSelectScreen extends ConsumerWidget {
   ) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: SankofaGameTheme.boardSurface,
       barrierColor: Colors.black.withValues(alpha: 0.58),
       shape: RoundedRectangleBorder(
@@ -124,11 +145,8 @@ class _LevelCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        decoration: SankofaGameTheme.darkPanelDecoration(
-          emphasized: unlocked,
-          disabled: !unlocked,
-        ),
-        padding: const EdgeInsets.all(12),
+        decoration: SankofaGameTheme.levelCardDecoration(unlocked: unlocked),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -245,96 +263,102 @@ class _DifficultySheetState extends State<_DifficultySheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Select Difficulty',
-              style: AppTextStyles.displaySmall.copyWith(
-                color: SankofaGameTheme.antiqueGold,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select Difficulty',
+                style: AppTextStyles.displaySmall.copyWith(
+                  color: SankofaGameTheme.antiqueGold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            const AdinkraDivider(),
-            const SizedBox(height: 16),
-            ...DifficultyMode.values.map((mode) {
-              final label = mode.name[0].toUpperCase() + mode.name.substring(1);
-              final desc = _descriptions[mode] ?? '';
-              final isSelected = _selected == mode;
+              const SizedBox(height: 4),
+              const AdinkraDivider(),
+              const SizedBox(height: 16),
+              ...DifficultyMode.values.map((mode) {
+                final label =
+                    mode.name[0].toUpperCase() + mode.name.substring(1);
+                final desc = _descriptions[mode] ?? '';
+                final isSelected = _selected == mode;
 
-              return GestureDetector(
-                onTap: () => setState(() => _selected = mode),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.12)
-                        : SankofaGameTheme.boardEdge,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected
-                          ? SankofaGameTheme.antiqueGold
-                          : SankofaGameTheme.mutedLightText
-                              .withValues(alpha: 0.18),
-                      width: 1.5,
+                return GestureDetector(
+                  onTap: () => setState(() => _selected = mode),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isSelected
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.12)
+                          : SankofaGameTheme.boardEdge,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
                         color: isSelected
                             ? SankofaGameTheme.antiqueGold
-                            : SankofaGameTheme.mutedLightText,
-                        size: 20,
+                            : SankofaGameTheme.mutedLightText
+                                .withValues(alpha: 0.18),
+                        width: 1.5,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              label,
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: SankofaGameTheme.parchmentLight,
-                              ),
-                            ),
-                            Text(
-                              desc,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: SankofaGameTheme.mutedLightText,
-                              ),
-                            ),
-                          ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelected
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          color: isSelected
+                              ? SankofaGameTheme.antiqueGold
+                              : SankofaGameTheme.mutedLightText,
+                          size: 20,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  color: SankofaGameTheme.parchmentLight,
+                                ),
+                              ),
+                              Text(
+                                desc,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: SankofaGameTheme.mutedLightText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }),
-            const SizedBox(height: 8),
-            KenteButton(
-              label: 'BEGIN',
-              icon: Icons.play_arrow_rounded,
-              width: double.infinity,
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/game/${widget.levelId}', extra: _selected);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+                );
+              }),
+              const SizedBox(height: 8),
+              KenteButton(
+                label: 'BEGIN',
+                icon: Icons.play_arrow_rounded,
+                width: double.infinity,
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/game/${widget.levelId}', extra: _selected);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

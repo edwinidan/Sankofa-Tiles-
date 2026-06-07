@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
+import 'crash_reporting_service.dart';
+
 class AudioService {
   static final AudioContext _sfxAudioContext = AudioContext(
     android: const AudioContextAndroid(
@@ -87,8 +89,13 @@ class AudioService {
         volume: volume.clamp(0.0, 1.0),
         ctx: _sfxAudioContext,
       );
-    } catch (e) {
-      debugPrint('[AudioService] $fileName: $e');
+    } catch (error, stackTrace) {
+      debugPrint('[AudioService] $fileName: $error');
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Audio SFX playback failed: $fileName',
+      );
     }
   }
 
@@ -124,8 +131,13 @@ class AudioService {
         ctx: _musicAudioContext,
       );
       _backgroundMusicPlaying = true;
-    } catch (e) {
-      debugPrint('[AudioService] Music: $e');
+    } catch (error, stackTrace) {
+      debugPrint('[AudioService] Music: $error');
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Background music playback failed',
+      );
     }
   }
 
@@ -140,16 +152,26 @@ class AudioService {
     try {
       await _musicPlayer.stop();
       _backgroundMusicPlaying = false;
-    } catch (e) {
-      debugPrint('[AudioService] Stop music: $e');
+    } catch (error, stackTrace) {
+      debugPrint('[AudioService] Stop music: $error');
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Background music stop failed',
+      );
     }
   }
 
   Future<void> stopSfx() async {
     try {
       await Future.wait(_sfxPlayers.map((player) => player.stop()));
-    } catch (e) {
-      debugPrint('[AudioService] Stop SFX: $e');
+    } catch (error, stackTrace) {
+      debugPrint('[AudioService] Stop SFX: $error');
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Audio SFX stop failed',
+      );
     }
   }
 
@@ -163,8 +185,13 @@ class AudioService {
   Future<void> _applyMusicVolume() async {
     try {
       await _musicPlayer.setVolume(_musicVolume);
-    } catch (e) {
-      debugPrint('[AudioService] Music volume: $e');
+    } catch (error, stackTrace) {
+      debugPrint('[AudioService] Music volume: $error');
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Background music volume update failed',
+      );
     }
   }
 

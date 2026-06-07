@@ -36,6 +36,10 @@ dependencies:
   # Utils
   uuid: ^4.4.0
   collection: ^1.18.0
+  url_launcher: ^6.3.2
+  firebase_core: ^4.10.0
+  firebase_analytics: ^12.4.2
+  firebase_crashlytics: ^5.2.3
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +57,7 @@ flutter:
     - assets/Tile V2 png/
     - assets/Tile V2 png.2/
     - assets/Tile v.3 png/
+    - assets/Tile v.4 png/
     - assets/audio/
     - assets/lottie/
     - assets/images/

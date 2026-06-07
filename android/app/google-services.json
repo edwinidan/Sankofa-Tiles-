@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1015163967198",
+    "project_id": "adinkra-tiles",
+    "storage_bucket": "adinkra-tiles.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015163967198:android:a3310b4a54b5851ac0d44f",
+        "android_client_info": {
+          "package_name": "com.sankofatiles.sankofa_tiles"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDm_zfEI93RCQfutfC4EmEVXOieDyS8QDQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

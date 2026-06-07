@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
+import '../../core/utils/analytics_service.dart';
 import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/adinkra_divider.dart';
@@ -38,7 +39,8 @@ class HomeScreen extends StatelessWidget {
                         constraints: const BoxConstraints(maxWidth: 340),
                         child: Container(
                           padding: const EdgeInsets.all(18),
-                          decoration: SankofaGameTheme.parchmentPanelDecoration,
+                          decoration:
+                              SankofaGameTheme.appParchmentPanelDecoration,
                           child: Column(
                             children: [
                               KenteButton(
@@ -52,7 +54,10 @@ class HomeScreen extends StatelessWidget {
                                 label: 'SETTINGS',
                                 icon: Icons.settings_outlined,
                                 width: double.infinity,
-                                onTap: () => context.push('/settings'),
+                                onTap: () {
+                                  AnalyticsService.logSettingsOpened('home');
+                                  context.push('/settings');
+                                },
                               ),
                               const SizedBox(height: 12),
                               KenteButton(
@@ -66,7 +71,10 @@ class HomeScreen extends StatelessWidget {
                                 label: 'TILE PREVIEW',
                                 icon: Icons.grid_view_outlined,
                                 width: double.infinity,
-                                onTap: () => context.push('/tile-preview'),
+                                onTap: () {
+                                  AnalyticsService.logTilePreviewOpened();
+                                  context.push('/tile-preview');
+                                },
                               ),
                             ],
                           ),
@@ -113,14 +121,25 @@ class _LogoSection extends StatelessWidget {
           textAlign: TextAlign.center,
           text: TextSpan(
             style: AppTextStyles.displayLarge.copyWith(
-              color: SankofaGameTheme.parchmentLight,
+              color: SankofaGameTheme.antiqueGold,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+                Shadow(
+                  color: SankofaGameTheme.mutedGold.withValues(alpha: 0.24),
+                  blurRadius: 2,
+                ),
+              ],
             ),
             children: const [
-              TextSpan(text: 'SANKOFA'),
+              TextSpan(text: 'ADINKRA'),
               TextSpan(
                 text: '  ⟳  ',
                 style: TextStyle(
-                  color: SankofaGameTheme.antiqueGold,
+                  color: SankofaGameTheme.appParchmentLight,
                   fontSize: 24,
                 ),
               ),

@@ -25,10 +25,10 @@ class KenteButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: SankofaGameTheme.parchment,
+          backgroundColor: SankofaGameTheme.appParchment,
           foregroundColor: SankofaGameTheme.darkText,
           disabledBackgroundColor:
-              SankofaGameTheme.parchmentDark.withValues(alpha: 0.55),
+              SankofaGameTheme.appParchmentDark.withValues(alpha: 0.62),
           disabledForegroundColor: SankofaGameTheme.mutedText,
           side: BorderSide(
             color: onTap != null
