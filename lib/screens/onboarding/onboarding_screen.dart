@@ -206,7 +206,7 @@ class _Page3 extends StatelessWidget {
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.9,
+        childAspectRatio: 0.72,
         children: tiles.map((def) => _TilePreview(def: def)).toList(),
       ),
     );
@@ -333,6 +333,8 @@ class _TilePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assetPath = def.assetPath;
+
     return Container(
       decoration: BoxDecoration(
         gradient: SankofaGameTheme.appPanelGradient,
@@ -353,9 +355,14 @@ class _TilePreview extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            def.symbol,
-            style: AppTextStyles.tileSymbol.copyWith(fontSize: 22),
+          Expanded(
+            child: assetPath != null
+                ? Image.asset(
+                    assetPath,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => _SymbolFallback(def: def),
+                  )
+                : _SymbolFallback(def: def),
           ),
           const SizedBox(height: 4),
           Text(
@@ -373,6 +380,22 @@ class _TilePreview extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SymbolFallback extends StatelessWidget {
+  final TileDefinition def;
+
+  const _SymbolFallback({required this.def});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        def.symbol,
+        style: AppTextStyles.tileSymbol.copyWith(fontSize: 22),
       ),
     );
   }
