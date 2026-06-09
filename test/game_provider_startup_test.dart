@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sankofa_tiles/core/constants/level_data.dart';
+import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
 import 'package:sankofa_tiles/core/utils/board_solver.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
@@ -31,7 +32,7 @@ void main() {
 
     final notifier = container.read(gameProvider.notifier);
 
-    for (final levelId in [1, 3, 6, 14, 22]) {
+    for (final levelId in [1, 3, 6, 14, 22, 25]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
       stopwatch.stop();
@@ -76,7 +77,7 @@ void main() {
     expect(state.hasWon, isFalse);
   });
 
-  test('main progression reaches the full 84 pair tile set', () {
+  test('main progression reaches the full 97 pair tile catalog', () {
     final container = ProviderContainer(
       overrides: [
         audioServiceProvider.overrideWithValue(
@@ -98,7 +99,9 @@ void main() {
       expect(BoardSolver.isSolvable(state.tiles), isTrue);
     }
 
-    expect(kLevels.last.tileCount, 168);
-    expect(kLevels.last.tileIds, hasLength(84));
+    expect(kLevels, hasLength(25));
+    expect(kLevels.last.tileCount, 194);
+    expect(kLevels.last.tileIds, hasLength(kAllTiles.length));
+    expect(kLevels.last.tileIds, containsAll(kTileIds.skip(84)));
   });
 }

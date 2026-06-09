@@ -92,10 +92,14 @@ class GameNotifier extends StateNotifier<GameState> {
     // Ensure we have exactly enough pairs
     final int numPairs = levelDef.tileCount ~/ 2;
     final List<TileDefinition> selectedPairs = [];
+    final availableTileDefs = [...tileDefs];
+    if (availableTileDefs.length > numPairs) {
+      availableTileDefs.shuffle();
+    }
 
     // Cycle through available tile definitions to gather the required number of pairs
     for (int i = 0; i < numPairs; i++) {
-      selectedPairs.add(tileDefs[i % tileDefs.length]);
+      selectedPairs.add(availableTileDefs[i % availableTileDefs.length]);
     }
     debugPrint(
       '[LEVEL_LOAD] level=$levelId prepareTileDefinitions took '

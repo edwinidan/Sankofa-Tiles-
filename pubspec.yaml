@@ -1,7 +1,7 @@
 name: sankofa_tiles
 description: A Ghanaian Adinkra Mahjong solitaire tile-matching game.
 publish_to: none
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -58,6 +58,7 @@ flutter:
     - assets/Tile V2 png.2/
     - assets/Tile v.3 png/
     - assets/Tile v.4 png/
+    - assets/Tile v.5 png/
     - assets/audio/
     - assets/lottie/
     - assets/images/
