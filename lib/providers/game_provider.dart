@@ -75,31 +75,12 @@ class GameNotifier extends StateNotifier<GameState> {
     final levelDef = getLevelById(levelId);
     if (levelDef == null) return;
 
-    // Build tile pairs
+    // Build the configured symbol multiset for this level.
     final tileModelStopwatch = Stopwatch()..start();
-    final tileDefs = levelDef.tileIds
-        .map((id) {
-          try {
-            return kAllTiles.firstWhere((t) => t.id == id);
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<TileDefinition>()
-        .toList();
-    if (tileDefs.isEmpty) return;
-
-    // Ensure we have exactly enough pairs
-    final int numPairs = levelDef.tileCount ~/ 2;
-    final List<TileDefinition> selectedPairs = [];
-    final availableTileDefs = [...tileDefs];
-    if (availableTileDefs.length > numPairs) {
-      availableTileDefs.shuffle();
-    }
-
-    // Cycle through available tile definitions to gather the required number of pairs
-    for (int i = 0; i < numPairs; i++) {
-      selectedPairs.add(availableTileDefs[i % availableTileDefs.length]);
+    final symbolDeck = _buildSymbolDeck(levelDef);
+    if (symbolDeck.isEmpty || symbolDeck.length != levelDef.tileCount) {
+      _handleLevelLoadFailure(levelId, difficulty, totalStopwatch);
+      return;
     }
     debugPrint(
       '[LEVEL_LOAD] level=$levelId prepareTileDefinitions took '
@@ -117,11 +98,11 @@ class GameNotifier extends StateNotifier<GameState> {
     try {
       if (levelDef.tileCount >= _reverseSolvedTileThreshold) {
         generationStrategy = 'reverseSolved';
-        tiles = _buildReverseSolvedBoard(selectedPairs, levelDef.layout);
+        tiles = _buildReverseSolvedBoard(symbolDeck, levelDef.layout);
       } else {
         for (var attempt = 1; attempt <= _maxGenerationAttempts; attempt++) {
           attemptsUsed = attempt;
-          final candidate = _buildRandomBoard(selectedPairs, levelDef.layout);
+          final candidate = _buildRandomBoard(symbolDeck, levelDef.layout);
           final profile = BoardSolver.profileSolvability(
             candidate,
             maxSearchNodes: _generationSearchNodes,
@@ -137,7 +118,7 @@ class GameNotifier extends StateNotifier<GameState> {
         if (tiles == null) {
           usedFallback = true;
           generationStrategy = 'reverseSolved';
-          tiles = _buildReverseSolvedBoard(selectedPairs, levelDef.layout);
+          tiles = _buildReverseSolvedBoard(symbolDeck, levelDef.layout);
         }
       }
 
@@ -242,11 +223,25 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
+  List<TileDefinition> _buildSymbolDeck(LevelDefinition levelDef) {
+    final copyCounts = levelDef.symbolCopyCounts;
+    final ids = levelDef.tileIds;
+    final defsById = {for (final def in kAllTiles) def.id: def};
+    final deck = <TileDefinition>[];
+    for (var i = 0; i < ids.length; i++) {
+      final def = defsById[ids[i]];
+      if (def == null) continue;
+      deck.addAll(List.filled(copyCounts[i], def));
+    }
+    deck.shuffle();
+    return deck;
+  }
+
   List<TileModel> _buildRandomBoard(
-    List<TileDefinition> selectedPairs,
+    List<TileDefinition> symbolDeck,
     List<TilePosition> layout,
   ) {
-    final finalDefs = [...selectedPairs, ...selectedPairs]..shuffle();
+    final finalDefs = [...symbolDeck]..shuffle();
     final safeLength = layout.length.clamp(0, finalDefs.length);
 
     return List.generate(
@@ -261,11 +256,12 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   List<TileModel>? _buildReverseSolvedBoard(
-    List<TileDefinition> selectedPairs,
+    List<TileDefinition> symbolDeck,
     List<TilePosition> layout,
   ) {
-    final seedDef = selectedPairs.first;
+    final seedDef = symbolDeck.first;
     final rng = Random();
+    final pairDefs = _pairDefinitionsFromDeck(symbolDeck);
 
     for (var attempt = 1; attempt <= _reverseSolvedAttempts; attempt++) {
       var remaining = [
@@ -296,7 +292,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
       if (remaining.isNotEmpty) continue;
 
-      final shuffledPairs = [...selectedPairs]..shuffle(rng);
+      final shuffledPairs = [...pairDefs]..shuffle(rng);
       final tiles = <TileModel>[];
       for (var i = 0; i < shuffledPairs.length; i++) {
         final def = shuffledPairs[i];
@@ -331,6 +327,26 @@ class GameNotifier extends StateNotifier<GameState> {
       'Reverse-solved generation exhausted $_reverseSolvedAttempts attempt(s).',
     );
     return null;
+  }
+
+  List<TileDefinition> _pairDefinitionsFromDeck(List<TileDefinition> deck) {
+    final counts = <String, ({TileDefinition def, int count})>{};
+    for (final def in deck) {
+      final current = counts[def.id];
+      counts[def.id] = (
+        def: def,
+        count: (current?.count ?? 0) + 1,
+      );
+    }
+
+    final pairs = <TileDefinition>[];
+    for (final entry in counts.values) {
+      if (entry.count.isOdd) {
+        throw StateError('Symbol ${entry.def.id} has odd count ${entry.count}');
+      }
+      pairs.addAll(List.filled(entry.count ~/ 2, entry.def));
+    }
+    return pairs;
   }
 
   void _startTimer() {

@@ -14,12 +14,16 @@ class StorageService {
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyShowTileNames = 'show_tile_names';
   static const _keyHapticIntensity = 'haptic_intensity';
+  static const _keyCampaignProgressSchemaVersion =
+      'campaign_progress_schema_version';
+  static const _campaignProgressSchemaVersion = 2;
 
   late SharedPreferences _prefs;
 
   Future<void> init() async {
     try {
       _prefs = await SharedPreferences.getInstance();
+      await _migrateCampaignProgressIfNeeded();
     } catch (error, stackTrace) {
       CrashReportingService.recordNonFatal(
         error,
@@ -28,6 +32,19 @@ class StorageService {
       );
       rethrow;
     }
+  }
+
+  Future<void> _migrateCampaignProgressIfNeeded() async {
+    final currentVersion =
+        _prefs.getInt(_keyCampaignProgressSchemaVersion) ?? 1;
+    if (currentVersion >= _campaignProgressSchemaVersion) return;
+
+    // Progress is keyed by stable numeric level IDs, so expanding the campaign
+    // from 25 to 50 does not require rewriting existing score/star entries.
+    await _prefs.setInt(
+      _keyCampaignProgressSchemaVersion,
+      _campaignProgressSchemaVersion,
+    );
   }
 
   // Level results

@@ -1,314 +1,284 @@
 import 'layout_data.dart';
 import 'tile_data.dart';
 
+class SymbolCopyPlan {
+  final int symbolPoolSize;
+  final int preferredCopies;
+
+  const SymbolCopyPlan({
+    required this.symbolPoolSize,
+    this.preferredCopies = 4,
+  });
+
+  List<int> copyCountsForTileCount(int tileCount) {
+    if (tileCount.isOdd) {
+      throw ArgumentError.value(tileCount, 'tileCount', 'Must be even');
+    }
+    if (symbolPoolSize <= 0) {
+      throw ArgumentError.value(symbolPoolSize, 'symbolPoolSize');
+    }
+    final effectivePoolSize = symbolPoolSize.clamp(1, tileCount ~/ 2);
+
+    var remaining = tileCount;
+    final counts = <int>[];
+    for (var i = 0; i < effectivePoolSize; i++) {
+      final remainingSymbols = effectivePoolSize - i;
+      final minForLater = (remainingSymbols - 1) * 2;
+      var copies = remaining - minForLater;
+      if (copies > preferredCopies) copies = preferredCopies;
+      if (copies.isOdd) copies--;
+      if (copies < 2) copies = 2;
+      counts.add(copies);
+      remaining -= copies;
+    }
+    if (remaining != 0) {
+      throw StateError('Invalid symbol copy distribution remainder $remaining');
+    }
+    return List.unmodifiable(counts);
+  }
+
+  String describeForTileCount(int tileCount) {
+    final grouped = <int, int>{};
+    for (final count in copyCountsForTileCount(tileCount)) {
+      grouped[count] = (grouped[count] ?? 0) + 1;
+    }
+    final parts = grouped.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+    return parts.map((entry) => '${entry.value}x${entry.key}').join(' + ');
+  }
+}
+
 class LevelDefinition {
   final int id;
   final String name;
-  final int boardRows;
-  final int boardCols;
-  final int tileCount; // must equal layout.length
-  final List<String> tileIds;
+  final String chapter;
+  final NamedLayout namedLayout;
   final int unlockRequirement;
-  final List<int> starThresholds;
-  final List<TilePosition> layout;
+  final SymbolCopyPlan symbolPlan;
+  final String difficultyCategory;
+  final int symbolStartIndex;
 
   const LevelDefinition({
     required this.id,
     required this.name,
-    required this.boardRows,
-    required this.boardCols,
-    required this.tileCount,
-    required this.tileIds,
+    required this.chapter,
+    required this.namedLayout,
     required this.unlockRequirement,
-    required this.starThresholds,
-    required this.layout,
+    required this.symbolPlan,
+    required this.difficultyCategory,
+    this.symbolStartIndex = 0,
   });
+
+  List<TilePosition> get layout => namedLayout.positions;
+  String get layoutName => namedLayout.id;
+  LayoutStats get stats => namedLayout.stats;
+  int get tileCount => stats.tileCount;
+  int get pairCount => stats.pairCount;
+  int get layerCount => stats.layerCount;
+  int get boardRows => stats.boardHeight;
+  int get boardCols => stats.boardWidth;
+  int get symbolPoolSize => symbolPlan.symbolPoolSize.clamp(1, pairCount);
+
+  List<int> get symbolCopyCounts =>
+      symbolPlan.copyCountsForTileCount(tileCount);
+
+  String get symbolDistributionLabel =>
+      symbolPlan.describeForTileCount(tileCount);
+
+  List<String> get tileIds {
+    return _progressiveTileIds(
+      symbolPoolSize,
+      startIndex: symbolStartIndex,
+    );
+  }
+
+  List<int> get starThresholds {
+    final coveredTiles = tileCount - stats.startingFreeTileCount;
+    final complexity = tileCount * 36 +
+        layerCount * 180 +
+        coveredTiles * 9 +
+        symbolPoolSize * 22 +
+        stats.maxLayer * 120;
+    final oneStar = ((complexity * 0.72) / 50).round() * 50;
+    final twoStar = ((complexity * 1.02) / 50).round() * 50;
+    final threeStar = ((complexity * 1.28) / 50).round() * 50;
+    return [oneStar, twoStar, threeStar];
+  }
 }
 
-List<String> _tileIdsForPairs(int pairCount) =>
-    kTileIds.take(pairCount).toList(growable: false);
+List<String> _progressiveTileIds(
+  int count, {
+  required int startIndex,
+}) {
+  final ids = <String>[];
+  final anchorCount = count >= 20 ? 10 : count ~/ 2;
+  ids.addAll(kTileIds.take(anchorCount));
+
+  var cursor = startIndex.clamp(0, kTileIds.length - 1);
+  while (ids.length < count) {
+    final id = kTileIds[cursor % kTileIds.length];
+    if (!ids.contains(id)) ids.add(id);
+    cursor++;
+  }
+  return List.unmodifiable(ids);
+}
+
+LevelDefinition _level(
+  int id,
+  String name,
+  String chapter,
+  NamedLayout layout,
+  int symbols,
+  String difficulty, {
+  int preferredCopies = 4,
+  int symbolStart = 0,
+}) {
+  return LevelDefinition(
+    id: id,
+    name: name,
+    chapter: chapter,
+    namedLayout: layout,
+    unlockRequirement: id - 1,
+    symbolPlan: SymbolCopyPlan(
+      symbolPoolSize: symbols,
+      preferredCopies: preferredCopies,
+    ),
+    difficultyCategory: difficulty,
+    symbolStartIndex: symbolStart,
+  );
+}
 
 final List<LevelDefinition> kLevels = [
-  LevelDefinition(
-    id: 1,
-    name: 'First Look',
-    boardRows: 4,
-    boardCols: 6,
-    tileCount: 28,
-    tileIds: _tileIdsForPairs(14),
-    unlockRequirement: 0,
-    starThresholds: const [700, 1100, 1400],
-    layout: level4Layout,
-  ),
-  LevelDefinition(
-    id: 2,
-    name: 'New Roots',
-    boardRows: 5,
-    boardCols: 6,
-    tileCount: 36,
-    tileIds: _tileIdsForPairs(18),
-    unlockRequirement: 1,
-    starThresholds: const [900, 1400, 1800],
-    layout: level5Layout,
-  ),
-  LevelDefinition(
-    id: 3,
-    name: 'Council',
-    boardRows: 5,
-    boardCols: 7,
-    tileCount: 44,
-    tileIds: _tileIdsForPairs(22),
-    unlockRequirement: 2,
-    starThresholds: const [1100, 1750, 2200],
-    layout: level7Layout,
-  ),
-  LevelDefinition(
-    id: 4,
-    name: 'Heritage',
-    boardRows: 5,
-    boardCols: 7,
-    tileCount: 52,
-    tileIds: _tileIdsForPairs(26),
-    unlockRequirement: 3,
-    starThresholds: const [1300, 2100, 2600],
-    layout: level9Layout,
-  ),
-  LevelDefinition(
-    id: 5,
-    name: 'Legacy',
-    boardRows: 5,
-    boardCols: 8,
-    tileCount: 60,
-    tileIds: _tileIdsForPairs(30),
-    unlockRequirement: 4,
-    starThresholds: const [1600, 2600, 3200],
-    layout: level11Layout,
-  ),
-  LevelDefinition(
-    id: 6,
-    name: 'Complete Set',
-    boardRows: 6,
-    boardCols: 7,
-    tileCount: 68,
-    tileIds: _tileIdsForPairs(34),
-    unlockRequirement: 5,
-    starThresholds: const [2000, 3200, 4000],
-    layout: level13Layout,
-  ),
-  LevelDefinition(
-    id: 7,
-    name: 'New Symbols',
-    boardRows: 6,
-    boardCols: 8,
-    tileCount: 72,
-    tileIds: _tileIdsForPairs(36),
-    unlockRequirement: 6,
-    starThresholds: const [2200, 3500, 4300],
-    layout: level14Layout,
-  ),
-  LevelDefinition(
-    id: 8,
-    name: 'Gathering',
-    boardRows: 6,
-    boardCols: 8,
-    tileCount: 76,
-    tileIds: _tileIdsForPairs(38),
-    unlockRequirement: 7,
-    starThresholds: const [2400, 3800, 4600],
-    layout: level15Layout,
-  ),
-  LevelDefinition(
-    id: 9,
-    name: 'Deep Roots',
-    boardRows: 6,
-    boardCols: 8,
-    tileCount: 80,
-    tileIds: _tileIdsForPairs(40),
-    unlockRequirement: 8,
-    starThresholds: const [2600, 4100, 5000],
-    layout: level16Layout,
-  ),
-  LevelDefinition(
-    id: 10,
-    name: 'Living Archive',
-    boardRows: 6,
-    boardCols: 9,
-    tileCount: 84,
-    tileIds: _tileIdsForPairs(42),
-    unlockRequirement: 9,
-    starThresholds: const [2800, 4400, 5400],
-    layout: level17Layout,
-  ),
-  LevelDefinition(
-    id: 11,
-    name: 'Ancestral Map',
-    boardRows: 7,
-    boardCols: 9,
-    tileCount: 88,
-    tileIds: _tileIdsForPairs(44),
-    unlockRequirement: 10,
-    starThresholds: const [3000, 4700, 5800],
-    layout: level18Layout,
-  ),
-  LevelDefinition(
-    id: 12,
-    name: 'Many Voices',
-    boardRows: 7,
-    boardCols: 9,
-    tileCount: 92,
-    tileIds: _tileIdsForPairs(46),
-    unlockRequirement: 11,
-    starThresholds: const [3200, 5000, 6200],
-    layout: level19Layout,
-  ),
-  LevelDefinition(
-    id: 13,
-    name: 'Long Memory',
-    boardRows: 7,
-    boardCols: 10,
-    tileCount: 96,
-    tileIds: _tileIdsForPairs(48),
-    unlockRequirement: 12,
-    starThresholds: const [3400, 5300, 6600],
-    layout: level20Layout,
-  ),
-  LevelDefinition(
-    id: 14,
-    name: 'Full Archive',
-    boardRows: 7,
-    boardCols: 10,
-    tileCount: 102,
-    tileIds: kTileIds,
-    unlockRequirement: 13,
-    starThresholds: const [3600, 5600, 7000],
-    layout: level21Layout,
-  ),
-  LevelDefinition(
-    id: 15,
-    name: 'Open Courtyard',
-    boardRows: 10,
-    boardCols: 12,
-    tileCount: 110,
-    tileIds: _tileIdsForPairs(55),
-    unlockRequirement: 14,
-    starThresholds: const [3900, 6000, 7500],
-    layout: level22Layout,
-  ),
-  LevelDefinition(
-    id: 16,
-    name: 'Wisdom House',
-    boardRows: 10,
-    boardCols: 12,
-    tileCount: 118,
-    tileIds: _tileIdsForPairs(59),
-    unlockRequirement: 15,
-    starThresholds: const [4200, 6400, 8000],
-    layout: level23Layout,
-  ),
-  LevelDefinition(
-    id: 17,
-    name: 'Golden Stool',
-    boardRows: 11,
-    boardCols: 12,
-    tileCount: 126,
-    tileIds: _tileIdsForPairs(63),
-    unlockRequirement: 16,
-    starThresholds: const [4500, 6800, 8500],
-    layout: level24Layout,
-  ),
-  LevelDefinition(
-    id: 18,
-    name: 'Shared Path',
-    boardRows: 12,
-    boardCols: 12,
-    tileCount: 134,
-    tileIds: _tileIdsForPairs(67),
-    unlockRequirement: 17,
-    starThresholds: const [4800, 7200, 9000],
-    layout: level25Layout,
-  ),
-  LevelDefinition(
-    id: 19,
-    name: 'Sacred Grove',
-    boardRows: 12,
-    boardCols: 12,
-    tileCount: 142,
-    tileIds: _tileIdsForPairs(71),
-    unlockRequirement: 18,
-    starThresholds: const [5100, 7600, 9500],
-    layout: level26Layout,
-  ),
-  LevelDefinition(
-    id: 20,
-    name: 'Elders Assembly',
-    boardRows: 13,
-    boardCols: 12,
-    tileCount: 150,
-    tileIds: _tileIdsForPairs(75),
-    unlockRequirement: 19,
-    starThresholds: const [5400, 8000, 10000],
-    layout: level27Layout,
-  ),
-  LevelDefinition(
-    id: 21,
-    name: 'Enduring Chain',
-    boardRows: 14,
-    boardCols: 12,
-    tileCount: 158,
-    tileIds: _tileIdsForPairs(79),
-    unlockRequirement: 20,
-    starThresholds: const [5700, 8400, 10500],
-    layout: level28Layout,
-  ),
-  LevelDefinition(
-    id: 22,
-    name: 'Complete Heritage',
-    boardRows: 14,
-    boardCols: 12,
-    tileCount: 168,
-    tileIds: kTileIds,
-    unlockRequirement: 21,
-    starThresholds: const [6000, 9000, 11200],
-    layout: level29Layout,
-  ),
-  LevelDefinition(
-    id: 23,
-    name: 'Steadfast Spirits',
-    boardRows: 15,
-    boardCols: 12,
-    tileCount: 176,
-    tileIds: _tileIdsForPairs(88),
-    unlockRequirement: 22,
-    starThresholds: const [6300, 9400, 11700],
-    layout: level30Layout,
-  ),
-  LevelDefinition(
-    id: 24,
-    name: 'Path of Renewal',
-    boardRows: 16,
-    boardCols: 12,
-    tileCount: 184,
-    tileIds: _tileIdsForPairs(92),
-    unlockRequirement: 23,
-    starThresholds: const [6600, 9800, 12200],
-    layout: level31Layout,
-  ),
-  LevelDefinition(
-    id: 25,
-    name: 'Ancestral Treasury',
-    boardRows: 17,
-    boardCols: 12,
-    tileCount: 194,
-    tileIds: kTileIds,
-    unlockRequirement: 24,
-    starThresholds: const [7000, 10300, 12800],
-    layout: level32Layout,
-  ),
+  _level(
+      1, 'First Symbols', 'First Symbols', compactDiamondLayout, 7, 'Novice'),
+  _level(2, 'New Roots', 'First Symbols', beginnerBridgeLayout, 8, 'Novice'),
+  _level(3, 'Side Paths', 'First Symbols', firstCrossLayout, 9, 'Novice'),
+  _level(4, 'Small Turtle', 'First Symbols', smallTurtleLayout, 10, 'Novice'),
+  _level(5, 'Shrine Steps', 'First Symbols', smallShrineLayout, 11, 'Novice'),
+  _level(
+      6, 'Open Courtyard', 'First Symbols', openCourtyardLayout, 12, 'Novice'),
+  _level(7, 'River Lesson', 'First Symbols', riverPathLayout, 12, 'Novice'),
+  _level(8, 'Wisdom House', 'First Symbols', wisdomHouseLayout, 13, 'Novice'),
+  _level(9, 'Gathering Wings', 'First Symbols', gatheringWingsLayout, 14,
+      'Novice'),
+  _level(10, 'Elder Bridge', 'First Symbols', elderBridgeLayout, 15, 'Novice'),
+  _level(11, 'Heritage Turtle', 'Paths of Wisdom', heritageTurtleLayout, 16,
+      'Apprentice',
+      symbolStart: 8),
+  _level(12, 'Butterfly Path', 'Paths of Wisdom', butterflyLayout, 17,
+      'Apprentice',
+      symbolStart: 10),
+  _level(13, 'Temple Steps', 'Paths of Wisdom', templeStepsLayout, 18,
+      'Apprentice',
+      symbolStart: 12),
+  _level(14, 'Wisdom Staircase', 'Paths of Wisdom', wisdomStaircaseLayout, 18,
+      'Apprentice',
+      symbolStart: 14),
+  _level(
+      15, 'Ancestral Crown', 'Paths of Wisdom', crownLayout, 19, 'Apprentice',
+      symbolStart: 16),
+  _level(16, 'Sacred Grove', 'Paths of Wisdom', sacredGroveLayout, 20,
+      'Apprentice',
+      symbolStart: 18),
+  _level(
+      17, 'Golden Stool', 'Paths of Wisdom', royalStoolLayout, 21, 'Apprentice',
+      symbolStart: 20),
+  _level(18, 'Ancestral Gate', 'Paths of Wisdom', ancestralGateLayout, 22,
+      'Apprentice',
+      symbolStart: 22),
+  _level(
+      19, 'Twin Houses', 'Paths of Wisdom', twinTowersLayout, 23, 'Apprentice',
+      symbolStart: 24),
+  _level(20, 'Raised Courtyard', 'Paths of Wisdom', raisedCourtyardLayout, 24,
+      'Apprentice',
+      symbolStart: 26),
+  _level(21, 'Split Islands', 'Heritage', splitIslandsLayout, 25, 'Strategic',
+      symbolStart: 28),
+  _level(22, 'Fortress Gate', 'Heritage', fortressLayout, 26, 'Strategic',
+      symbolStart: 30),
+  _level(23, 'Hidden Center', 'Heritage', hiddenCenterLayout, 27, 'Strategic',
+      symbolStart: 32),
+  _level(24, 'Festival Archive', 'Heritage', festivalArchiveLayout, 28,
+      'Strategic',
+      symbolStart: 34),
+  _level(25, 'Layered Courtyard', 'Heritage', layeredCourtyardLayout, 29,
+      'Strategic',
+      symbolStart: 36),
+  _level(26, 'Winding Path', 'Heritage', windingPathLayoutA, 24, 'Strategic',
+      symbolStart: 38),
+  _level(27, 'Grand Turtle', 'Heritage', grandTurtleLayout, 30, 'Strategic',
+      symbolStart: 40),
+  _level(28, 'Layered Shrine', 'Heritage', layeredShrineLayout, 31, 'Strategic',
+      symbolStart: 42),
+  _level(29, 'Many Peaks', 'Heritage', multiPeakLayout, 32, 'Strategic',
+      symbolStart: 44),
+  _level(30, 'Complex Fortress', 'Heritage', complexFortressLayout, 33,
+      'Strategic',
+      symbolStart: 46),
+  _level(31, 'Sacred Bridge', 'Ancestral Trials', sacredBridgeLayout, 34,
+      'Advanced',
+      symbolStart: 48),
+  _level(32, 'Crown Trial', 'Ancestral Trials', ancestralCrownLayout, 35,
+      'Advanced',
+      symbolStart: 50),
+  _level(33, 'Treasury Gate', 'Ancestral Trials', grandTreasuryLayout, 36,
+      'Advanced',
+      symbolStart: 52),
+  _level(34, 'Temple Complex', 'Ancestral Trials', templeComplexLayout, 37,
+      'Advanced',
+      symbolStart: 54),
+  _level(35, 'Living Archive', 'Ancestral Trials', finalArchiveLayout, 38,
+      'Advanced',
+      symbolStart: 56),
+  _level(36, 'Royal Crossing', 'Ancestral Trials', sacredBridgeLayout, 36,
+      'Advanced',
+      symbolStart: 58),
+  _level(37, 'Elders Assembly', 'Ancestral Trials', complexFortressLayout, 38,
+      'Advanced',
+      symbolStart: 60),
+  _level(38, 'Path of Renewal', 'Ancestral Trials', layeredShrineLayout, 38,
+      'Advanced',
+      symbolStart: 62),
+  _level(39, 'Steadfast Spirits', 'Ancestral Trials', multiPeakLayout, 39,
+      'Advanced',
+      symbolStart: 64),
+  _level(40, 'Ancestral Trial', 'Ancestral Trials', ancestralCrownLayout, 40,
+      'Advanced',
+      symbolStart: 66),
+  _level(
+      41, 'Grand Treasury', 'Grand Archive', grandTreasuryLayout, 42, 'Master',
+      symbolStart: 68),
+  _level(
+      42, 'Royal Courtyard', 'Grand Archive', templeComplexLayout, 43, 'Master',
+      symbolStart: 70),
+  _level(
+      43, 'Golden Archive', 'Grand Archive', finalArchiveLayout, 44, 'Master',
+      symbolStart: 72),
+  _level(
+      44, 'Ancestral Map', 'Grand Archive', complexFortressLayout, 42, 'Master',
+      symbolStart: 74),
+  _level(
+      45, 'Complete Heritage', 'Grand Archive', grandTurtleLayout, 40, 'Master',
+      symbolStart: 76),
+  _level(
+      46, 'Sacred Crown', 'Grand Archive', ancestralCrownLayout, 42, 'Master',
+      symbolStart: 78),
+  _level(47, 'Temple of Memory', 'Grand Archive', templeComplexLayout, 44,
+      'Master',
+      symbolStart: 80),
+  _level(48, 'Treasury Wings', 'Grand Archive', multiPeakLayout, 40, 'Master',
+      symbolStart: 82),
+  _level(
+      49, 'Grand Archive', 'Grand Archive', grandTreasuryLayout, 44, 'Master',
+      symbolStart: 84),
+  _level(50, 'Ancestral Treasury', 'Grand Archive', finalArchiveLayout, 46,
+      'Master',
+      symbolStart: 86),
 ];
 
 LevelDefinition? getLevelById(int id) {
   try {
-    return kLevels.firstWhere((l) => l.id == id);
+    return kLevels.firstWhere((level) => level.id == id);
   } catch (_) {
     return null;
   }
