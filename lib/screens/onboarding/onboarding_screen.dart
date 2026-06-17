@@ -183,31 +183,46 @@ class _Page2 extends StatelessWidget {
 class _Page3 extends StatelessWidget {
   const _Page3();
 
-  static const _exampleTiles = [
-    'nyansapo',
-    'sankofa',
+  static const _exampleTileIds = [
+    'adinkrahene',
     'gye_nyame',
     'akoma',
-    'adinkrahene',
     'aya',
+    'nyansapo',
+    'sankofa2',
   ];
 
   @override
   Widget build(BuildContext context) {
-    final tiles = kAllTiles.where((t) => _exampleTiles.contains(t.id)).toList();
+    final tiles = _exampleTileIds
+        .map((id) => kAllTiles.firstWhere((tile) => tile.id == id))
+        .toList();
 
     return _OnboardingPage(
       icon: Icons.auto_awesome_outlined,
       title: 'The Symbols',
       body: 'Each tile carries an Adinkra symbol with deep meaning:',
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
-        children: tiles.map((def) => _TilePreview(def: def)).toList(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const spacing = 14.0;
+          final tileSize =
+              ((constraints.maxWidth - spacing * 2) / 3).clamp(62.0, 82.0);
+
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: tiles.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: 16,
+              mainAxisExtent: tileSize + 24,
+            ),
+            itemBuilder: (context, index) {
+              return _TilePreview(def: tiles[index], tileSize: tileSize);
+            },
+          );
+        },
       ),
     );
   }
@@ -328,59 +343,39 @@ class _StepRow extends StatelessWidget {
 
 class _TilePreview extends StatelessWidget {
   final TileDefinition def;
+  final double tileSize;
 
-  const _TilePreview({required this.def});
+  const _TilePreview({required this.def, required this.tileSize});
 
   @override
   Widget build(BuildContext context) {
     final assetPath = def.assetPath;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: SankofaGameTheme.appPanelGradient,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.55),
-          width: 1.5,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox.square(
+          dimension: tileSize,
+          child: assetPath != null
+              ? Image.asset(
+                  assetPath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => _SymbolFallback(def: def),
+                )
+              : _SymbolFallback(def: def),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            offset: const Offset(0, 3),
-            blurRadius: 0,
+        const SizedBox(height: 6),
+        Text(
+          def.name,
+          style: AppTextStyles.tileName.copyWith(
+            color: SankofaGameTheme.darkText,
+            fontSize: 10.5,
           ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: assetPath != null
-                ? Image.asset(
-                    assetPath,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => _SymbolFallback(def: def),
-                  )
-                : _SymbolFallback(def: def),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            def.name,
-            style: AppTextStyles.tileName,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            def.meaning,
-            style: AppTextStyles.tileName.copyWith(fontSize: 7),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
