@@ -304,15 +304,26 @@ List<TilePosition> wingedLayout({
   required int wingRows,
   int centerCol = 20,
   int layerCount = 3,
+  bool compactWings = false,
 }) {
   final builder = TileLayoutBuilder()
     ..addCenteredRows(bodyRows, centerCol: centerCol);
+  final leftWingOffset = compactWings ? 10 : 15;
+  final rightWingOffset = compactWings ? 6 : 11;
 
   for (var row = 0; row < wingRows; row++) {
     final y = 2 + row * 2;
     builder
-      ..addRow(row: y, startCol: centerCol - 15 - row, count: 3)
-      ..addRow(row: y, startCol: centerCol + 11 + row, count: 3);
+      ..addRow(
+        row: y,
+        startCol: centerCol - leftWingOffset - row,
+        count: 3,
+      )
+      ..addRow(
+        row: y,
+        startCol: centerCol + rightWingOffset + row,
+        count: 3,
+      );
   }
 
   for (var layer = 1; layer < layerCount; layer++) {
@@ -502,7 +513,11 @@ final wisdomHouseLayout = namedLayout(
 final gatheringWingsLayout = namedLayout(
   'gatheringWings',
   'Gathering Wings',
-  wingedLayout(bodyRows: [2, 4, 6, 6, 4, 2], wingRows: 2),
+  wingedLayout(
+    bodyRows: [2, 4, 6, 6, 4, 2],
+    wingRows: 2,
+    compactWings: true,
+  ),
 );
 
 final elderBridgeLayout = namedLayout(
@@ -524,7 +539,11 @@ final heritageTurtleLayout = namedLayout(
 final butterflyLayout = namedLayout(
   'butterfly',
   'Butterfly',
-  wingedLayout(bodyRows: [2, 4, 6, 8, 6, 4, 2], wingRows: 3),
+  wingedLayout(
+    bodyRows: [2, 4, 6, 8, 6, 4, 2],
+    wingRows: 3,
+    compactWings: true,
+  ),
 );
 
 final templeStepsLayout = namedLayout(

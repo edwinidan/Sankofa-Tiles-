@@ -40,8 +40,10 @@ class BoardWidget extends ConsumerWidget {
         final tileH = tileW * _tileAspectRatio;
         final boardW = layoutBounds.widthInTileUnits * tileW;
         final boardH = layoutBounds.heightInTileUnits * tileW;
-        final boardLeft = (availableWidth - boardW) / 2;
-        final boardTop = (availableHeight - boardH) / 2;
+        final canvasW = max(availableWidth, boardW);
+        final canvasH = max(availableHeight, boardH);
+        final boardLeft = (canvasW - boardW) / 2;
+        final boardTop = (canvasH - boardH) / 2;
 
         Offset tileOffset(int row, int col, int layer) {
           final projected = layoutBounds.project(row, col, layer, tileW);
@@ -51,9 +53,9 @@ class BoardWidget extends ConsumerWidget {
           );
         }
 
-        Widget board = SizedBox(
-          width: constraints.maxWidth,
-          height: constraints.maxHeight,
+        Widget boardCanvas = SizedBox(
+          width: canvasW,
+          height: canvasH,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -150,6 +152,19 @@ class BoardWidget extends ConsumerWidget {
           ),
         );
 
+        Widget board = SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: InteractiveViewer(
+            constrained: false,
+            alignment: Alignment.center,
+            panEnabled: canvasW > availableWidth || canvasH > availableHeight,
+            scaleEnabled: false,
+            boundaryMargin: const EdgeInsets.all(20),
+            child: boardCanvas,
+          ),
+        );
+
         if (gameState.status == GameStatus.lost) {
           board = board
               .animate()
@@ -168,6 +183,8 @@ const _layoutStepY = _tileAspectRatio * 0.5;
 const _layerOffsetXInTileUnits = 0.14;
 const _layerOffsetYInTileUnits = _tileAspectRatio * 0.10;
 const _tileV2TestStepScale = 0.85;
+const _minimumPlayableTileWidth = 34.0;
+const _maximumPlayableTileWidth = 64.0;
 
 class _BoardLayoutMetrics {
   final double stepX;
@@ -253,13 +270,18 @@ class _BoardLayoutBounds {
     required double availableWidth,
     required double availableHeight,
   }) {
-    if (availableWidth <= 0 || availableHeight <= 0) return 30;
+    if (availableWidth <= 0 || availableHeight <= 0) {
+      return _minimumPlayableTileWidth;
+    }
 
     final fitW = availableWidth / widthInTileUnits;
     final fitH = availableHeight / heightInTileUnits;
     final fitted = min(fitW, fitH);
 
-    return min(fitted, 65.0).clamp(24.0, 65.0);
+    return fitted.clamp(
+      _minimumPlayableTileWidth,
+      _maximumPlayableTileWidth,
+    );
   }
 
   Offset project(int row, int col, int layer, double tileW) {
