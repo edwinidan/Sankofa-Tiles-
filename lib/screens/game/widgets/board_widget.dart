@@ -66,7 +66,6 @@ class BoardWidget extends ConsumerWidget {
                 final isAvail = availableUids.contains(tile.uid);
 
                 Widget child = TileWidget(
-                  key: ValueKey(tile.uid),
                   tile: tile,
                   width: tileW,
                   height: tileH,
@@ -87,6 +86,7 @@ class BoardWidget extends ConsumerWidget {
                     );
 
                 return Positioned(
+                  key: ValueKey(tile.uid),
                   left: offset.dx,
                   top: offset.dy,
                   width: tileW,
