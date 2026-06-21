@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,7 @@ const _kEdgeH = 5.0;
 const _kEdgeW = 14.0;
 const _kCornerRadius = 4.0;
 const _kFullTileAssetScale = 1.0;
+const _kTouchLiftDuration = Duration(milliseconds: 220);
 
 class TileWidget extends ConsumerStatefulWidget {
   final TileModel tile;
@@ -23,6 +26,7 @@ class TileWidget extends ConsumerStatefulWidget {
   final bool showSuitCode;
   final bool forceHideName;
   final bool isAvailable;
+  final ValueChanged<bool>? onPressChanged;
 
   const TileWidget({
     super.key,
@@ -32,6 +36,7 @@ class TileWidget extends ConsumerStatefulWidget {
     this.showSuitCode = true,
     this.forceHideName = false,
     this.isAvailable = false,
+    this.onPressChanged,
   });
 
   @override
@@ -197,18 +202,37 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         onTapDown: (_) {
           HapticService.tilePress(ref.read(settingsProvider).hapticIntensity);
           setState(() => _isPressed = true);
+          widget.onPressChanged?.call(true);
         },
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutBack,
-          scale: tile.isSelected
-              ? 1.08
-              : _isPressed
-                  ? 0.93
-                  : 1.0,
-          child: physicalTile,
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onPressChanged?.call(false);
+        },
+        onTapCancel: () {
+          setState(() => _isPressed = false);
+          widget.onPressChanged?.call(false);
+        },
+        child: AnimatedSlide(
+          duration: _kTouchLiftDuration,
+          curve: _isPressed ? Curves.easeOutCubic : Curves.easeOutBack,
+          offset: Offset(
+            0,
+            _isPressed
+                ? -min(10.0, tileH * 0.12) / tileH
+                : tile.isSelected
+                    ? -min(5.0, tileH * 0.06) / tileH
+                    : 0,
+          ),
+          child: AnimatedScale(
+            duration: _kTouchLiftDuration,
+            curve: Curves.easeOutCubic,
+            scale: _isPressed
+                ? 1.24
+                : tile.isSelected
+                    ? 1.20
+                    : 1.0,
+            child: physicalTile,
+          ),
         ),
       );
     }

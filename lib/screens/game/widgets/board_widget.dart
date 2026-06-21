@@ -3,16 +3,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/level_data.dart';
+import '../../../core/constants/layout_data.dart';
+import '../../../core/utils/board_layout_geometry.dart';
 import '../../../models/game_state.dart';
+import '../../../models/tile_model.dart';
 import '../../../providers/game_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import 'tile_widget.dart';
 
-class BoardWidget extends ConsumerWidget {
+class BoardWidget extends ConsumerStatefulWidget {
   const BoardWidget({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BoardWidget> createState() => _BoardWidgetState();
+}
+
+class _BoardWidgetState extends ConsumerState<BoardWidget> {
+  String? _pressedTileUid;
+
+  int _visualPriority(TileModel tile) {
+    if (tile.uid == _pressedTileUid) return 2;
+    if (tile.isSelected) return 1;
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final levelDef = getLevelById(gameState.levelId);
     if (levelDef == null || gameState.status == GameStatus.idle) {
@@ -20,44 +36,53 @@ class BoardWidget extends ConsumerWidget {
     }
 
     final availableUids = gameState.availableTileUids;
-    final sortedTiles = [...gameState.tiles]
-      ..sort((a, b) => a.layer.compareTo(b.layer));
+    final indexedTiles = gameState.tiles.indexed.toList()
+      ..sort((a, b) {
+        final layerComparison = a.$2.layer.compareTo(b.$2.layer);
+        if (layerComparison != 0) return layerComparison;
+        return a.$1.compareTo(b.$1);
+      });
+    final baseOrder = indexedTiles.map((entry) => entry.$2).toList();
+    final sortedTiles = [
+      ...baseOrder.where((tile) => _visualPriority(tile) == 0),
+      ...baseOrder.where((tile) => _visualPriority(tile) == 1),
+      ...baseOrder.where((tile) => _visualPriority(tile) == 2),
+    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = max(0.0, constraints.maxWidth - 16);
-        final availableHeight = max(0.0, constraints.maxHeight - 16);
-        final metrics = _BoardLayoutMetrics.forLevel(gameState.levelId);
-        final layoutBounds = _BoardLayoutBounds.fromTiles(
-          gameState.tiles,
-          metrics: metrics,
+        final positions = [
+          for (final tile in gameState.tiles)
+            TilePosition(tile.row, tile.col, tile.layer),
+        ];
+        final geometry = BoardLayoutGeometry.fromPositions(positions);
+        final fit = geometry.fit(
+          availableWidth: constraints.maxWidth,
+          availableHeight: constraints.maxHeight,
         );
-
-        final tileW = layoutBounds.tileWidthFor(
-          availableWidth: availableWidth,
-          availableHeight: availableHeight,
-        );
-        final tileH = tileW * _tileAspectRatio;
-        final boardW = layoutBounds.widthInTileUnits * tileW;
-        final boardH = layoutBounds.heightInTileUnits * tileW;
-        final canvasW = max(availableWidth, boardW);
-        final canvasH = max(availableHeight, boardH);
-        final boardLeft = (canvasW - boardW) / 2;
-        final boardTop = (canvasH - boardH) / 2;
+        final tileW = fit.tileWidth;
+        final tileH = fit.tileHeight;
+        final boardW = fit.boardWidth;
+        final boardH = fit.boardHeight;
+        final boardLeft = (constraints.maxWidth - boardW) / 2;
+        final boardTop = (constraints.maxHeight - boardH) / 2;
 
         Offset tileOffset(int row, int col, int layer) {
-          final projected = layoutBounds.project(row, col, layer, tileW);
+          final projected = geometry.project(
+            TilePosition(row, col, layer),
+            tileW,
+          );
           return Offset(
-            boardLeft + projected.dx - layoutBounds.minX * tileW,
-            boardTop + projected.dy - layoutBounds.minY * tileW,
+            boardLeft + projected.x - geometry.minX * tileW,
+            boardTop + projected.y - geometry.minY * tileW,
           );
         }
 
-        Widget boardCanvas = SizedBox(
-          width: canvasW,
-          height: canvasH,
+        Widget board = SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
           child: Stack(
-            clipBehavior: Clip.none,
+            clipBehavior: Clip.hardEdge,
             children: [
               ...sortedTiles.asMap().entries.map((entry) {
                 final index = entry.key;
@@ -70,6 +95,11 @@ class BoardWidget extends ConsumerWidget {
                   width: tileW,
                   height: tileH,
                   isAvailable: isAvail,
+                  onPressChanged: (isPressed) {
+                    setState(() {
+                      _pressedTileUid = isPressed ? tile.uid : null;
+                    });
+                  },
                 );
 
                 if (!tile.isMatched && !isAvail) {
@@ -152,19 +182,6 @@ class BoardWidget extends ConsumerWidget {
           ),
         );
 
-        Widget board = SizedBox(
-          width: constraints.maxWidth,
-          height: constraints.maxHeight,
-          child: InteractiveViewer(
-            constrained: false,
-            alignment: Alignment.center,
-            panEnabled: canvasW > availableWidth || canvasH > availableHeight,
-            scaleEnabled: false,
-            boundaryMargin: const EdgeInsets.all(20),
-            child: boardCanvas,
-          ),
-        );
-
         if (gameState.status == GameStatus.lost) {
           board = board
               .animate()
@@ -174,131 +191,6 @@ class BoardWidget extends ConsumerWidget {
         return board;
       },
     );
-  }
-}
-
-const _tileAspectRatio = 85 / 64;
-const _layoutStepX = 0.5;
-const _layoutStepY = _tileAspectRatio * 0.5;
-const _layerOffsetXInTileUnits = 0.14;
-const _layerOffsetYInTileUnits = _tileAspectRatio * 0.10;
-const _tileV2TestStepScale = 0.85;
-const _minimumPlayableTileWidth = 34.0;
-const _maximumPlayableTileWidth = 64.0;
-
-class _BoardLayoutMetrics {
-  final double stepX;
-  final double stepY;
-  final double layerOffsetX;
-  final double layerOffsetY;
-
-  const _BoardLayoutMetrics({
-    required this.stepX,
-    required this.stepY,
-    required this.layerOffsetX,
-    required this.layerOffsetY,
-  });
-
-  static const tileV2Test = _BoardLayoutMetrics(
-    stepX: _layoutStepX * _tileV2TestStepScale,
-    stepY: _layoutStepY * _tileV2TestStepScale,
-    layerOffsetX: _layerOffsetXInTileUnits,
-    layerOffsetY: _layerOffsetYInTileUnits,
-  );
-
-  static _BoardLayoutMetrics forLevel(int levelId) {
-    return tileV2Test;
-  }
-}
-
-class _BoardLayoutBounds {
-  final double minX;
-  final double maxX;
-  final double minY;
-  final double maxY;
-  final _BoardLayoutMetrics metrics;
-
-  const _BoardLayoutBounds({
-    required this.minX,
-    required this.maxX,
-    required this.minY,
-    required this.maxY,
-    required this.metrics,
-  });
-
-  double get widthInTileUnits => maxX - minX;
-  double get heightInTileUnits => maxY - minY;
-
-  static _BoardLayoutBounds fromTiles(
-    List tiles, {
-    required _BoardLayoutMetrics metrics,
-  }) {
-    if (tiles.isEmpty) {
-      return _BoardLayoutBounds(
-        minX: 0,
-        maxX: 1,
-        minY: 0,
-        maxY: 1,
-        metrics: metrics,
-      );
-    }
-
-    var minX = double.infinity;
-    var maxX = -double.infinity;
-    var minY = double.infinity;
-    var maxY = -double.infinity;
-
-    for (final tile in tiles) {
-      final left = metrics.projectX(tile.col, tile.layer);
-      final top = metrics.projectY(tile.row, tile.layer);
-      minX = min(minX, left);
-      maxX = max(maxX, left + 1);
-      minY = min(minY, top);
-      maxY = max(maxY, top + _tileAspectRatio);
-    }
-
-    return _BoardLayoutBounds(
-      minX: minX,
-      maxX: maxX,
-      minY: minY,
-      maxY: maxY,
-      metrics: metrics,
-    );
-  }
-
-  double tileWidthFor({
-    required double availableWidth,
-    required double availableHeight,
-  }) {
-    if (availableWidth <= 0 || availableHeight <= 0) {
-      return _minimumPlayableTileWidth;
-    }
-
-    final fitW = availableWidth / widthInTileUnits;
-    final fitH = availableHeight / heightInTileUnits;
-    final fitted = min(fitW, fitH);
-
-    return fitted.clamp(
-      _minimumPlayableTileWidth,
-      _maximumPlayableTileWidth,
-    );
-  }
-
-  Offset project(int row, int col, int layer, double tileW) {
-    return Offset(
-      metrics.projectX(col, layer) * tileW,
-      metrics.projectY(row, layer) * tileW,
-    );
-  }
-}
-
-extension on _BoardLayoutMetrics {
-  double projectX(int col, int layer) {
-    return col * stepX - layer * layerOffsetX;
-  }
-
-  double projectY(int row, int layer) {
-    return row * stepY - layer * layerOffsetY;
   }
 }
 

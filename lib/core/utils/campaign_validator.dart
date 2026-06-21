@@ -1,6 +1,7 @@
 import '../constants/level_data.dart';
 import '../constants/tile_data.dart';
 import 'board_solver.dart';
+import 'board_layout_geometry.dart';
 import '../../models/tile_model.dart';
 
 class CampaignValidationIssue {
@@ -109,6 +110,31 @@ List<CampaignValidationIssue> validateCampaignStructure() {
           levelId: level.id,
         ),
       );
+    }
+
+    final geometry = BoardLayoutGeometry.fromPositions(positions);
+    for (final viewport in kRequiredBoardViewports) {
+      final fit = geometry.fit(
+        availableWidth: viewport.width,
+        availableHeight: viewport.height,
+      );
+      if (!fit.fitsBounds) {
+        issues.add(
+          CampaignValidationIssue(
+            'Board exceeds the ${viewport.name} gameplay area',
+            levelId: level.id,
+          ),
+        );
+      }
+      if (!fit.meetsMinimumTileSize) {
+        issues.add(
+          CampaignValidationIssue(
+            'Tile width ${fit.tileWidth.toStringAsFixed(1)} is below '
+            '${kMinimumTileWidth.toStringAsFixed(0)} on ${viewport.name}',
+            levelId: level.id,
+          ),
+        );
+      }
     }
   }
 

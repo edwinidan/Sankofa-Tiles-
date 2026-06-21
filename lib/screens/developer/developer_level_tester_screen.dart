@@ -5,6 +5,7 @@ import '../../core/constants/level_data.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
+import '../../core/utils/board_layout_geometry.dart';
 import '../../models/game_launch_config.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/kente_button.dart';
@@ -92,18 +93,30 @@ class DeveloperLevelTesterScreen extends ConsumerWidget {
                         crossAxisCount: columns,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
-                        childAspectRatio: width < 420 ? 0.78 : 0.9,
+                        childAspectRatio: width < 420 ? 0.68 : 0.78,
                       ),
                       itemCount: kLevels.length,
                       itemBuilder: (context, index) {
                         final level = kLevels[index];
+                        final geometry =
+                            BoardLayoutGeometry.fromPositions(level.layout);
+                        final fitsAllViewports =
+                            kRequiredBoardViewports.every((viewport) {
+                          return geometry
+                              .fit(
+                                availableWidth: viewport.width,
+                                availableHeight: viewport.height,
+                              )
+                              .fitsSafely;
+                        });
                         final valid = level.tileCount.isEven &&
                             level.layout.length == level.tileCount &&
                             level.symbolCopyCounts.fold<int>(
                                   0,
                                   (sum, count) => sum + count,
                                 ) ==
-                                level.tileCount;
+                                level.tileCount &&
+                            fitsAllViewports;
                         return _DeveloperLevelCard(
                           level: level,
                           valid: valid,
@@ -190,6 +203,15 @@ class _DeveloperLevelCard extends StatelessWidget {
               _InfoLine(label: 'Tiles', value: '${level.tileCount}'),
               _InfoLine(label: 'Layers', value: '${level.layerCount}'),
               _InfoLine(
+                label: 'Compact tile',
+                value: '${_compactFit.tileWidth.toStringAsFixed(1)} × '
+                    '${_compactFit.tileHeight.toStringAsFixed(1)}',
+              ),
+              _InfoLine(
+                label: 'Board fit',
+                value: _fitsAllViewports ? 'SAFE' : 'UNSAFE',
+              ),
+              _InfoLine(
                 label: 'Difficulty',
                 value: level.difficultyCategory,
               ),
@@ -208,6 +230,25 @@ class _DeveloperLevelCard extends StatelessWidget {
       ),
     );
   }
+}
+
+extension on _DeveloperLevelCard {
+  BoardLayoutGeometry get _geometry =>
+      BoardLayoutGeometry.fromPositions(level.layout);
+
+  BoardFit get _compactFit => _geometry.fit(
+        availableWidth: kRequiredBoardViewports.first.width,
+        availableHeight: kRequiredBoardViewports.first.height,
+      );
+
+  bool get _fitsAllViewports => kRequiredBoardViewports.every((viewport) {
+        return _geometry
+            .fit(
+              availableWidth: viewport.width,
+              availableHeight: viewport.height,
+            )
+            .fitsSafely;
+      });
 }
 
 class _InfoLine extends StatelessWidget {

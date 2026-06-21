@@ -17,7 +17,6 @@ import '../../core/theme/sankofa_game_theme.dart';
 import 'widgets/board_widget.dart';
 import 'widgets/game_control_dock.dart';
 import 'widgets/game_header.dart';
-import 'widgets/game_stats_panel.dart';
 import 'widgets/parchment_background.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
@@ -207,29 +206,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               children: [
                 GameHeader(
                   levelId: widget.levelId,
+                  isDeveloperTest: widget.launchConfig.isDeveloperTest,
                   onBack: _confirmQuit,
                   onSettings: _openGameSettings,
                 ),
-                if (widget.launchConfig.isDeveloperTest)
-                  Container(
-                    key: const Key('developer-test-mode-label'),
-                    width: double.infinity,
-                    color: AppColors.errorRed.withValues(alpha: 0.88),
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Text(
-                      'TEST MODE · LEVEL ${widget.levelId}',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                const GameStatsPanel(),
                 Expanded(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
                     child: Stack(
                       children: [
                         if (gameState.status != GameStatus.loadFailed)
