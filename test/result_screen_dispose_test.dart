@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
+import 'package:sankofa_tiles/models/game_launch_config.dart';
 import 'package:sankofa_tiles/providers/game_provider.dart';
 import 'package:sankofa_tiles/providers/progress_provider.dart';
 import 'package:sankofa_tiles/screens/result/result_screen.dart';
@@ -49,7 +50,13 @@ void main() {
           progressProvider.overrideWithValue(ProgressService(storage)),
         ],
         child: const MaterialApp(
-          home: ResultScreen(gameState: gameState),
+          home: ResultScreen(
+            gameState: gameState,
+            launchConfig: GameLaunchConfig(
+              levelId: 1,
+              launchMode: GameLaunchMode.normalProgression,
+            ),
+          ),
         ),
       ),
     );

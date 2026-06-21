@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/constants/tile_data.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
-import '../../models/game_state.dart';
 import '../../models/tile_model.dart';
 import '../game/widgets/tile_widget.dart';
-import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
 class TilePreviewScreen extends ConsumerStatefulWidget {
@@ -154,16 +151,6 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                       ),
                     );
                   },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: KenteButton(
-                  label: 'OPEN FULL TILE SET LEVEL',
-                  icon: Icons.science_outlined,
-                  width: double.infinity,
-                  onTap: () =>
-                      context.push('/game/22', extra: DifficultyMode.relaxed),
                 ),
               ),
               const SizedBox(height: 16),

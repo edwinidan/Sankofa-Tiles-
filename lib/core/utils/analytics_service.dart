@@ -14,6 +14,17 @@ class AnalyticsService {
 
   static void logAppOpen() => _log((analytics) => analytics.logAppOpen());
 
+  static void logPlayPressed(int? levelId) => _event(
+        'play_pressed',
+        levelId == null ? null : {'level_id': levelId},
+      );
+
+  static void logNextGamePressed(int levelId) =>
+      _event('next_game_pressed', {'level_id': levelId});
+
+  static void logLevelRetried(int levelId) =>
+      _event('level_retried', {'level_id': levelId});
+
   static void logScreenView(String screenName) => _log(
         (analytics) => analytics.logScreenView(
           screenName: screenName,

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/utils/storage_service.dart';
 import '../core/utils/haptic_service.dart';
-import '../models/game_state.dart';
 
 final storageServiceProvider = Provider<StorageService>((ref) {
   throw UnimplementedError(
@@ -12,7 +11,6 @@ class SettingsState {
   final bool soundEnabled;
   final bool musicEnabled;
   final double musicVolume;
-  final DifficultyMode defaultDifficulty;
   final bool showTileNames;
   final HapticIntensity hapticIntensity;
 
@@ -20,7 +18,6 @@ class SettingsState {
     required this.soundEnabled,
     required this.musicEnabled,
     required this.musicVolume,
-    required this.defaultDifficulty,
     required this.showTileNames,
     required this.hapticIntensity,
   });
@@ -29,7 +26,6 @@ class SettingsState {
     bool? soundEnabled,
     bool? musicEnabled,
     double? musicVolume,
-    DifficultyMode? defaultDifficulty,
     bool? showTileNames,
     HapticIntensity? hapticIntensity,
   }) =>
@@ -37,7 +33,6 @@ class SettingsState {
         soundEnabled: soundEnabled ?? this.soundEnabled,
         musicEnabled: musicEnabled ?? this.musicEnabled,
         musicVolume: musicVolume ?? this.musicVolume,
-        defaultDifficulty: defaultDifficulty ?? this.defaultDifficulty,
         showTileNames: showTileNames ?? this.showTileNames,
         hapticIntensity: hapticIntensity ?? this.hapticIntensity,
       );
@@ -51,7 +46,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           soundEnabled: _storage.isSoundEnabled(),
           musicEnabled: _storage.isMusicEnabled(),
           musicVolume: _storage.getMusicVolume(),
-          defaultDifficulty: _storage.getDefaultDifficulty(),
           showTileNames: _storage.isShowTileNames(),
           hapticIntensity: _storage.getHapticIntensity(),
         ));
@@ -70,11 +64,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final volume = val.clamp(0.0, 1.0);
     await _storage.setMusicVolume(volume);
     state = state.copyWith(musicVolume: volume);
-  }
-
-  Future<void> setDefaultDifficulty(DifficultyMode mode) async {
-    await _storage.setDefaultDifficulty(mode);
-    state = state.copyWith(defaultDifficulty: mode);
   }
 
   Future<void> setShowTileNames(bool val) async {

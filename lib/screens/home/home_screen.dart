@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
+import '../../models/game_launch_config.dart';
+import '../../providers/progress_provider.dart';
 import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/adinkra_divider.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: SankofaGameTheme.backgroundTop,
       body: SankofaBackground(
@@ -47,7 +50,28 @@ class HomeScreen extends StatelessWidget {
                                 label: 'PLAY',
                                 icon: Icons.play_arrow_rounded,
                                 width: double.infinity,
-                                onTap: () => context.push('/level-select'),
+                                onTap: () {
+                                  final levelId = ref
+                                      .read(progressProvider)
+                                      .nextUnfinishedLevelId;
+                                  AnalyticsService.logPlayPressed(levelId);
+                                  if (levelId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('All Levels Completed'),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  context.push(
+                                    '/game/$levelId',
+                                    extra: GameLaunchConfig(
+                                      levelId: levelId,
+                                      launchMode:
+                                          GameLaunchMode.normalProgression,
+                                    ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 12),
                               KenteButton(

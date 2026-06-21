@@ -9,6 +9,7 @@ import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../core/utils/audio_service.dart';
 import '../../models/game_state.dart';
+import '../../models/game_launch_config.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/adinkra_divider.dart';
@@ -17,8 +18,13 @@ import '../../widgets/sankofa_background.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final GameState gameState;
+  final GameLaunchConfig launchConfig;
 
-  const ResultScreen({super.key, required this.gameState});
+  const ResultScreen({
+    super.key,
+    required this.gameState,
+    required this.launchConfig,
+  });
 
   @override
   ConsumerState<ResultScreen> createState() => _ResultScreenState();
@@ -59,6 +65,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     _resultHandled = true;
 
     _stars = computeStars(widget.gameState.score, level.starThresholds);
+    if (widget.launchConfig.isDeveloperTest) return;
+
     AnalyticsService.logLevelCompleted(
       widget.gameState.levelId,
       widget.gameState.difficulty.name,
@@ -84,11 +92,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   @override
   Widget build(BuildContext context) {
     final isWin = widget.gameState.status == GameStatus.won;
+    final backLocation =
+        widget.launchConfig.isDeveloperTest ? '/developer/levels' : '/';
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/level-select');
+        if (!didPop) context.go(backLocation);
       },
       child: Scaffold(
         backgroundColor: SankofaGameTheme.backgroundTop,
@@ -112,8 +122,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                                   gameState: widget.gameState,
                                   stars: _stars,
                                   scaleAnim: _scaleAnim,
+                                  launchConfig: widget.launchConfig,
                                 )
-                              : _LoseContent(gameState: widget.gameState),
+                              : _LoseContent(
+                                  gameState: widget.gameState,
+                                  launchConfig: widget.launchConfig,
+                                ),
                         ),
                       ),
                     ),
@@ -132,11 +146,13 @@ class _WinContent extends StatelessWidget {
   final GameState gameState;
   final int stars;
   final Animation<double> scaleAnim;
+  final GameLaunchConfig launchConfig;
 
   const _WinContent({
     required this.gameState,
     required this.stars,
     required this.scaleAnim,
+    required this.launchConfig,
   });
 
   @override
@@ -221,27 +237,44 @@ class _WinContent extends StatelessWidget {
             bold: true,
           ),
           const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: KenteButton(
-                  label: 'LEVELS',
-                  icon: Icons.list,
-                  onTap: () => context.go('/level-select'),
-                ),
+          if (launchConfig.isDeveloperTest)
+            _DeveloperResultActions(
+              levelId: gameState.levelId,
+              includeNext: gameState.levelId < kLevels.last.id,
+            )
+          else if (gameState.levelId < kLevels.last.id)
+            KenteButton(
+              label: 'NEXT GAME',
+              icon: Icons.arrow_forward,
+              width: double.infinity,
+              onTap: () {
+                final nextLevelId = gameState.levelId + 1;
+                AnalyticsService.logNextGamePressed(nextLevelId);
+                context.go(
+                  '/game/$nextLevelId',
+                  extra: GameLaunchConfig(
+                    levelId: nextLevelId,
+                    launchMode: GameLaunchMode.normalProgression,
+                  ),
+                );
+              },
+            )
+          else ...[
+            Text(
+              'All Levels Completed',
+              style: AppTextStyles.archiveTitleLarge.copyWith(
+                color: SankofaGameTheme.mutedGold,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: KenteButton(
-                  label: 'NEXT',
-                  icon: Icons.arrow_forward,
-                  onTap: gameState.levelId < kLevels.length
-                      ? () => context.go('/level-select')
-                      : null,
-                ),
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            KenteButton(
+              label: 'RETURN HOME',
+              icon: Icons.home_outlined,
+              width: double.infinity,
+              onTap: () => context.go('/'),
+            ),
+          ],
         ],
       ),
     );
@@ -250,8 +283,12 @@ class _WinContent extends StatelessWidget {
 
 class _LoseContent extends StatelessWidget {
   final GameState gameState;
+  final GameLaunchConfig launchConfig;
 
-  const _LoseContent({required this.gameState});
+  const _LoseContent({
+    required this.gameState,
+    required this.launchConfig,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -303,29 +340,91 @@ class _LoseContent extends StatelessWidget {
             score: gameState.moves,
           ),
           const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: KenteButton(
-                  label: 'LEVELS',
-                  icon: Icons.list,
-                  onTap: () => context.go('/level-select'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: KenteButton(
-                  label: 'RETRY',
-                  icon: Icons.refresh,
-                  onTap: () => context.go(
-                    '/game/${gameState.levelId}',
-                    extra: gameState.difficulty,
+          if (launchConfig.isDeveloperTest)
+            _DeveloperResultActions(
+              levelId: gameState.levelId,
+              includeNext: false,
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: KenteButton(
+                    label: 'HOME',
+                    icon: Icons.home_outlined,
+                    onTap: () => context.go('/'),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: KenteButton(
+                    label: 'RETRY',
+                    icon: Icons.refresh,
+                    onTap: () {
+                      AnalyticsService.logLevelRetried(gameState.levelId);
+                      context.go(
+                        '/game/${gameState.levelId}',
+                        extra: GameLaunchConfig(
+                          levelId: gameState.levelId,
+                          launchMode: GameLaunchMode.normalProgression,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _DeveloperResultActions extends StatelessWidget {
+  const _DeveloperResultActions({
+    required this.levelId,
+    required this.includeNext,
+  });
+
+  final int levelId;
+  final bool includeNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (includeNext) ...[
+          KenteButton(
+            label: 'NEXT TEST LEVEL',
+            icon: Icons.arrow_forward,
+            width: double.infinity,
+            onTap: () => _openTestLevel(context, levelId + 1),
+          ),
+          const SizedBox(height: 10),
+        ],
+        KenteButton(
+          label: 'RETRY TEST LEVEL',
+          icon: Icons.refresh,
+          width: double.infinity,
+          onTap: () => _openTestLevel(context, levelId),
+        ),
+        const SizedBox(height: 10),
+        KenteButton(
+          label: 'BACK TO LEVEL TESTER',
+          icon: Icons.grid_view_outlined,
+          width: double.infinity,
+          onTap: () => context.go('/developer/levels'),
+        ),
+      ],
+    );
+  }
+
+  void _openTestLevel(BuildContext context, int levelId) {
+    context.go(
+      '/game/$levelId',
+      extra: GameLaunchConfig(
+        levelId: levelId,
+        launchMode: GameLaunchMode.developerTest,
       ),
     );
   }

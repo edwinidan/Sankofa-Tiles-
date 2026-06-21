@@ -49,6 +49,7 @@ class GameNotifier extends StateNotifier<GameState> {
   final Ref _ref;
   final int _reverseSolvedAttempts;
   Timer? _timer;
+  bool _isDeveloperTest = false;
 
   GameNotifier(
     this._audio,
@@ -67,7 +68,12 @@ class GameNotifier extends StateNotifier<GameState> {
   static const _generationSearchNodes = 6000;
   static const _moveSearchNodes = 50000;
 
-  void startLevel(int levelId, DifficultyMode difficulty) {
+  void startLevel(
+    int levelId,
+    DifficultyMode difficulty, {
+    bool isDeveloperTest = false,
+  }) {
+    _isDeveloperTest = isDeveloperTest;
     final totalStopwatch = Stopwatch()..start();
     debugPrint('[LEVEL_LOAD] level=$levelId start');
     _timer?.cancel();
@@ -160,7 +166,9 @@ class GameNotifier extends StateNotifier<GameState> {
         secondsElapsed: 0,
         levelId: levelId,
       );
-      AnalyticsService.logLevelStarted(levelId, difficulty.name);
+      if (!_isDeveloperTest) {
+        AnalyticsService.logLevelStarted(levelId, difficulty.name);
+      }
       stateStopwatch.stop();
       debugPrint(
         '[LEVEL_LOAD] level=$levelId state update took '
@@ -199,12 +207,14 @@ class GameNotifier extends StateNotifier<GameState> {
       '[LEVEL_LOAD] level=$levelId failed safely after '
       '${totalStopwatch.elapsedMilliseconds} ms',
     );
-    AnalyticsService.logLevelFailed(
-      levelId,
-      difficulty.name,
-      0,
-      'board_load_failed',
-    );
+    if (!_isDeveloperTest) {
+      AnalyticsService.logLevelFailed(
+        levelId,
+        difficulty.name,
+        0,
+        'board_load_failed',
+      );
+    }
     CrashReportingService.recordNonFatal(
       StateError('Board generation failed for level $levelId'),
       StackTrace.current,
@@ -362,12 +372,14 @@ class GameNotifier extends StateNotifier<GameState> {
         state.secondsElapsed >= 300) {
       _timer?.cancel();
       state = state.copyWith(status: GameStatus.lost);
-      AnalyticsService.logLevelFailed(
-        state.levelId,
-        state.difficulty.name,
-        state.score,
-        'timer_expired',
-      );
+      if (!_isDeveloperTest) {
+        AnalyticsService.logLevelFailed(
+          state.levelId,
+          state.difficulty.name,
+          state.score,
+          'timer_expired',
+        );
+      }
       _audio.playLose();
       _audio.stopBackgroundMusic();
     }
@@ -575,7 +587,9 @@ class GameNotifier extends StateNotifier<GameState> {
       tiles: hintedTiles,
       hintsUsed: state.hintsUsed + 1,
     );
-    AnalyticsService.logHintUsed(state.levelId, state.difficulty.name);
+    if (!_isDeveloperTest) {
+      AnalyticsService.logHintUsed(state.levelId, state.difficulty.name);
+    }
 
     // Clear hint after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
@@ -637,20 +651,25 @@ class GameNotifier extends StateNotifier<GameState> {
       score: (state.score - 50).clamp(0, 999999),
       clearSelectedTile: true,
     );
-    AnalyticsService.logShuffleUsed(state.levelId, state.difficulty.name);
+    if (!_isDeveloperTest) {
+      AnalyticsService.logShuffleUsed(state.levelId, state.difficulty.name);
+    }
   }
 
   void pauseGame() {
     if (state.status != GameStatus.playing) return;
     _timer?.cancel();
     state = state.copyWith(status: GameStatus.paused);
-    AnalyticsService.logPauseUsed(state.levelId, state.difficulty.name);
+    if (!_isDeveloperTest) {
+      AnalyticsService.logPauseUsed(state.levelId, state.difficulty.name);
+    }
   }
 
   void leaveGame() {
     _timer?.cancel();
     unawaited(_audio.stopGameAudio());
     state = GameState.initial();
+    _isDeveloperTest = false;
   }
 
   void resumeGame() {
@@ -686,12 +705,14 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.isStuck) {
       _timer?.cancel();
       state = state.copyWith(status: GameStatus.lost);
-      AnalyticsService.logLevelFailed(
-        state.levelId,
-        state.difficulty.name,
-        state.score,
-        'no_moves',
-      );
+      if (!_isDeveloperTest) {
+        AnalyticsService.logLevelFailed(
+          state.levelId,
+          state.difficulty.name,
+          state.score,
+          'no_moves',
+        );
+      }
       _audio.playLose();
       _audio.stopBackgroundMusic();
     }

@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/game_state.dart';
+import '../../models/game_launch_config.dart';
 import '../../core/utils/haptic_service.dart';
 import '../../core/utils/audio_service.dart';
 import '../../core/utils/analytics_service.dart';
@@ -14,21 +15,20 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import 'widgets/board_widget.dart';
-import 'widgets/game_board_backdrop.dart';
 import 'widgets/game_control_dock.dart';
 import 'widgets/game_header.dart';
 import 'widgets/game_stats_panel.dart';
 import 'widgets/parchment_background.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
-  final int levelId;
-  final DifficultyMode difficulty;
+  final GameLaunchConfig launchConfig;
 
   const GameScreen({
     super.key,
-    required this.levelId,
-    required this.difficulty,
+    required this.launchConfig,
   });
+
+  int get levelId => launchConfig.levelId;
 
   @override
   ConsumerState<GameScreen> createState() => _GameScreenState();
@@ -42,9 +42,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   late final AudioService _audioService;
   bool _reportedReadyFrame = false;
 
-  void _returnToLevelSelect() {
+  void _leaveGame() {
     ref.read(gameProvider.notifier).leaveGame();
-    context.go('/level-select');
+    context.go(
+      widget.launchConfig.isDeveloperTest ? '/developer/levels' : '/',
+    );
   }
 
   Future<void> _confirmQuit() async {
@@ -58,7 +60,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         },
         onQuit: () {
           Navigator.pop(context);
-          _returnToLevelSelect();
+          _leaveGame();
         },
       ),
     );
@@ -133,9 +135,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         '[LEVEL_LOAD] level=${widget.levelId} first game screen frame took '
         '${_levelLoadStopwatch.elapsedMilliseconds} ms',
       );
-      ref
-          .read(gameProvider.notifier)
-          .startLevel(widget.levelId, widget.difficulty);
+      ref.read(gameProvider.notifier).startLevel(
+            widget.levelId,
+            DifficultyMode.normal,
+            isDeveloperTest: widget.launchConfig.isDeveloperTest,
+          );
     });
   }
 
@@ -166,7 +170,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         Future.delayed(const Duration(milliseconds: 600), () {
           if (!mounted) return;
           // ignore: use_build_context_synchronously
-          context.go('/result', extra: capturedNext);
+          context.go(
+            '/result',
+            extra: GameResultConfig(
+              gameState: capturedNext,
+              launchConfig: widget.launchConfig,
+            ),
+          );
         });
       }
 
@@ -222,6 +232,21 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                   onBack: _confirmQuit,
                   onSettings: _openGameSettings,
                 ),
+                if (widget.launchConfig.isDeveloperTest)
+                  Container(
+                    key: const Key('developer-test-mode-label'),
+                    width: double.infinity,
+                    color: AppColors.errorRed.withValues(alpha: 0.88),
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Text(
+                      'TEST MODE · LEVEL ${widget.levelId}',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
                 const GameStatsPanel(),
                 Expanded(
                   child: Padding(
@@ -229,11 +254,26 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Stack(
                       children: [
+                        if (gameState.status != GameStatus.loadFailed)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              ignoring: gameState.status == GameStatus.paused,
+                              child: Visibility(
+                                visible: gameState.status != GameStatus.paused,
+                                maintainState: true,
+                                maintainAnimation: true,
+                                maintainSize: true,
+                                child: BoardWidget(
+                                  key: ValueKey(widget.levelId),
+                                ),
+                              ),
+                            ),
+                          ),
                         if (gameState.status == GameStatus.paused)
                           _PausedOverlay(
                             onResume: () =>
                                 ref.read(gameProvider.notifier).resumeGame(),
-                            onQuit: _returnToLevelSelect,
+                            onQuit: _leaveGame,
                           )
                         else if (gameState.status == GameStatus.loadFailed)
                           _LoadFailedOverlay(
@@ -242,15 +282,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             onRetry: () =>
                                 ref.read(gameProvider.notifier).startLevel(
                                       widget.levelId,
-                                      widget.difficulty,
+                                      DifficultyMode.normal,
+                                      isDeveloperTest:
+                                          widget.launchConfig.isDeveloperTest,
                                     ),
-                            onBack: _returnToLevelSelect,
-                          )
-                        else
-                          GameBoardBackdrop(
-                            child: BoardWidget(
-                              key: ValueKey(widget.levelId),
-                            ),
+                            onBack: _leaveGame,
                           ),
                         if (_showCombo)
                           IgnorePointer(

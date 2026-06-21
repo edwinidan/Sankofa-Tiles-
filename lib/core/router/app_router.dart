@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../config/developer_tools_config.dart';
 import '../../models/game_state.dart';
+import '../../models/game_launch_config.dart';
+import '../constants/level_data.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
-import '../../screens/level_select/level_select_screen.dart';
+import '../../screens/developer/developer_level_tester_screen.dart';
 import '../../screens/game/game_screen.dart';
 import '../../screens/result/result_screen.dart';
 import '../../screens/settings/settings_screen.dart';
@@ -36,22 +39,27 @@ GoRouter createAppRouter(StorageService storage) {
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
-        name: 'level_select',
-        path: '/level-select',
-        builder: (context, state) => const LevelSelectScreen(),
-      ),
-      GoRoute(
         name: 'game',
         path: '/game/:levelId',
         builder: (context, state) {
-          final levelId =
-              int.tryParse(state.pathParameters['levelId'] ?? '1') ?? 1;
-          final difficulty = state.extra is DifficultyMode
-              ? state.extra as DifficultyMode
-              : DifficultyMode.normal;
+          final suppliedConfig = state.extra is GameLaunchConfig
+              ? state.extra as GameLaunchConfig
+              : null;
+          final nextIndex =
+              storage.getHighestCompletedLevel().clamp(0, kLevels.length);
+          final progressionLevelId = nextIndex < kLevels.length
+              ? kLevels[nextIndex].id
+              : kLevels.last.id;
+          final launchConfig = suppliedConfig ??
+              GameLaunchConfig(
+                levelId: progressionLevelId,
+                launchMode: GameLaunchMode.normalProgression,
+              );
+          if (launchConfig.isDeveloperTest && !developerToolsEnabled) {
+            return const HomeScreen();
+          }
           return GameScreen(
-            levelId: levelId,
-            difficulty: difficulty,
+            launchConfig: launchConfig,
           );
         },
       ),
@@ -59,8 +67,24 @@ GoRouter createAppRouter(StorageService storage) {
         name: 'result',
         path: '/result',
         builder: (context, state) {
-          final gameState = state.extra as GameState;
-          return ResultScreen(gameState: gameState);
+          final result = state.extra;
+          if (result is GameResultConfig) {
+            if (result.launchConfig.isDeveloperTest && !developerToolsEnabled) {
+              return const HomeScreen();
+            }
+            return ResultScreen(
+              gameState: result.gameState,
+              launchConfig: result.launchConfig,
+            );
+          }
+          final gameState = result as GameState;
+          return ResultScreen(
+            gameState: gameState,
+            launchConfig: GameLaunchConfig(
+              levelId: gameState.levelId,
+              launchMode: GameLaunchMode.normalProgression,
+            ),
+          );
         },
       ),
       GoRoute(
@@ -73,6 +97,12 @@ GoRouter createAppRouter(StorageService storage) {
         path: '/tile-preview',
         builder: (context, state) => const TilePreviewScreen(),
       ),
+      if (developerToolsEnabled)
+        GoRoute(
+          name: 'developer_level_tester',
+          path: '/developer/levels',
+          builder: (context, state) => const DeveloperLevelTesterScreen(),
+        ),
     ],
     errorBuilder: (context, state) => Scaffold(
       backgroundColor: SankofaGameTheme.backgroundTop,

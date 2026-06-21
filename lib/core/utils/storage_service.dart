@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/game_state.dart';
+import '../constants/level_data.dart';
 import '../../models/level_model.dart';
 import 'crash_reporting_service.dart';
 import 'haptic_service.dart';
@@ -7,7 +7,8 @@ import 'haptic_service.dart';
 class StorageService {
   static const _prefixBestScore = 'best_score_';
   static const _prefixStars = 'stars_';
-  static const _keyDefaultDifficulty = 'default_difficulty';
+  static const _prefixCompleted = 'completed_';
+  static const _keyHighestCompletedLevel = 'highest_completed_level';
   static const _keySoundEnabled = 'sound_enabled';
   static const _keyMusicEnabled = 'music_enabled';
   static const _keyMusicVolume = 'music_volume';
@@ -16,7 +17,7 @@ class StorageService {
   static const _keyHapticIntensity = 'haptic_intensity';
   static const _keyCampaignProgressSchemaVersion =
       'campaign_progress_schema_version';
-  static const _campaignProgressSchemaVersion = 2;
+  static const _campaignProgressSchemaVersion = 3;
 
   late SharedPreferences _prefs;
 
@@ -39,8 +40,43 @@ class StorageService {
         _prefs.getInt(_keyCampaignProgressSchemaVersion) ?? 1;
     if (currentVersion >= _campaignProgressSchemaVersion) return;
 
-    // Progress is keyed by stable numeric level IDs, so expanding the campaign
-    // from 25 to 50 does not require rewriting existing score/star entries.
+    if (currentVersion < 3) {
+      var migratedHighest = _prefs.getInt(_keyHighestCompletedLevel) ?? 0;
+
+      for (final key in _prefs.getKeys()) {
+        if (key.startsWith(_prefixStars) && (_prefs.getInt(key) ?? 0) > 0) {
+          final levelId = int.tryParse(key.substring(_prefixStars.length));
+          if (levelId != null && levelId > migratedHighest) {
+            migratedHighest = levelId;
+          }
+        }
+      }
+
+      for (final legacyKey in const [
+        'highest_completed_level',
+        'highest_unlocked_level',
+        'current_level',
+      ]) {
+        final value = _prefs.getInt(legacyKey);
+        if (value == null) continue;
+        final completedValue = legacyKey == 'highest_unlocked_level' ||
+                legacyKey == 'current_level'
+            ? value - 1
+            : value;
+        if (completedValue > migratedHighest) {
+          migratedHighest = completedValue;
+        }
+      }
+
+      migratedHighest = migratedHighest.clamp(0, kLevels.length);
+      if (migratedHighest > 0) {
+        await _prefs.setInt(_keyHighestCompletedLevel, migratedHighest);
+        for (var levelId = 1; levelId <= migratedHighest; levelId++) {
+          await _prefs.setBool('$_prefixCompleted$levelId', true);
+        }
+      }
+    }
+
     await _prefs.setInt(
       _keyCampaignProgressSchemaVersion,
       _campaignProgressSchemaVersion,
@@ -57,6 +93,11 @@ class StorageService {
       final currentStars = getStars(levelId);
       if (stars > currentStars) {
         await _prefs.setInt('$_prefixStars$levelId', stars);
+      }
+      await _prefs.setBool('$_prefixCompleted$levelId', true);
+      final highestCompleted = getHighestCompletedLevel();
+      if (levelId > highestCompleted) {
+        await _prefs.setInt(_keyHighestCompletedLevel, levelId);
       }
     } catch (error, stackTrace) {
       CrashReportingService.recordNonFatal(
@@ -82,21 +123,29 @@ class StorageService {
 
   bool isLevelUnlocked(int levelId) {
     if (levelId == 1) return true;
-    // Unlocked if previous level has been completed (has stars)
-    return getStars(levelId - 1) > 0;
+    return isLevelCompleted(levelId - 1);
   }
 
-  // Difficulty
-  DifficultyMode getDefaultDifficulty() {
-    final val = _prefs.getString(_keyDefaultDifficulty);
-    return DifficultyMode.values.firstWhere(
-      (d) => d.name == val,
-      orElse: () => DifficultyMode.normal,
-    );
-  }
+  bool isLevelCompleted(int levelId) =>
+      _prefs.getBool('$_prefixCompleted$levelId') == true ||
+      getStars(levelId) > 0;
 
-  Future<void> setDefaultDifficulty(DifficultyMode mode) async {
-    await _prefs.setString(_keyDefaultDifficulty, mode.name);
+  int getHighestCompletedLevel() {
+    final stored = _prefs.getInt(_keyHighestCompletedLevel) ?? 0;
+    if (stored > 0) return stored;
+
+    var highest = 0;
+    for (final key in _prefs.getKeys()) {
+      if (key.startsWith(_prefixCompleted) && _prefs.getBool(key) == true) {
+        final levelId = int.tryParse(key.substring(_prefixCompleted.length));
+        if (levelId != null && levelId > highest) highest = levelId;
+      } else if (key.startsWith(_prefixStars) &&
+          (_prefs.getInt(key) ?? 0) > 0) {
+        final levelId = int.tryParse(key.substring(_prefixStars.length));
+        if (levelId != null && levelId > highest) highest = levelId;
+      }
+    }
+    return highest;
   }
 
   // Sound
@@ -141,7 +190,10 @@ class StorageService {
       final keys = _prefs
           .getKeys()
           .where((k) =>
-              k.startsWith(_prefixBestScore) || k.startsWith(_prefixStars))
+              k.startsWith(_prefixBestScore) ||
+              k.startsWith(_prefixStars) ||
+              k.startsWith(_prefixCompleted) ||
+              k == _keyHighestCompletedLevel)
           .toList();
       for (final k in keys) {
         await _prefs.remove(k);

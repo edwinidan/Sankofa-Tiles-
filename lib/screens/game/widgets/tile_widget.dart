@@ -190,11 +190,6 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         tileH: tileH,
         showSuitCode: widget.showSuitCode,
         forceHideName: widget.forceHideName,
-        bgColor: tile.isSelected ? AppColors.tileSelected : AppColors.tileFace,
-        borderColor:
-            tile.isSelected ? SankofaGameTheme.antiqueGold : Colors.transparent,
-        borderWidth: tile.isSelected ? 2.5 : 0,
-        glowStrength: tile.isSelected ? 0.32 : 0,
       );
 
       body = GestureDetector(
@@ -205,13 +200,14 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         },
         onTapUp: (_) => setState(() => _isPressed = false),
         onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedContainer(
+        child: AnimatedScale(
           duration: const Duration(milliseconds: 150),
-          transform: tile.isSelected
-              ? Matrix4.translationValues(0.0, -10.0, 0.0)
+          curve: Curves.easeOutBack,
+          scale: tile.isSelected
+              ? 1.08
               : _isPressed
-                  ? Matrix4.diagonal3Values(0.93, 0.93, 1.0)
-                  : Matrix4.identity(),
+                  ? 0.93
+                  : 1.0,
           child: physicalTile,
         ),
       );

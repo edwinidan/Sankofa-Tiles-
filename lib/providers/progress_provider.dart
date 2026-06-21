@@ -19,6 +19,21 @@ class ProgressService {
 
   int getStars(int levelId) => _storage.getStars(levelId);
 
+  bool isLevelCompleted(int levelId) => _storage.isLevelCompleted(levelId);
+
+  int get highestCompletedLevel {
+    final highest = _storage.getHighestCompletedLevel() as int;
+    return highest.clamp(0, kLevels.length);
+  }
+
+  int? get nextUnfinishedLevelId {
+    if (kLevels.isEmpty || highestCompletedLevel >= kLevels.length) return null;
+    return kLevels[highestCompletedLevel].id;
+  }
+
+  bool get hasCompletedAllLevels =>
+      kLevels.isNotEmpty && highestCompletedLevel >= kLevels.length;
+
   List<bool> get unlockedLevels =>
       kLevels.map((l) => isLevelUnlocked(l.id)).toList();
 
