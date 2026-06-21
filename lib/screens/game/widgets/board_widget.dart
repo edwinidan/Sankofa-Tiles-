@@ -21,7 +21,14 @@ class BoardWidget extends ConsumerStatefulWidget {
 class _BoardWidgetState extends ConsumerState<BoardWidget> {
   String? _pressedTileUid;
 
-  int _visualPriority(TileModel tile) {
+  int _visualPriority(
+    TileModel tile,
+    PendingMatchAnimation? matchAnimation,
+  ) {
+    if (tile.uid == matchAnimation?.firstTileUid ||
+        tile.uid == matchAnimation?.secondTileUid) {
+      return 3;
+    }
     if (tile.uid == _pressedTileUid) return 2;
     if (tile.isSelected) return 1;
     return 0;
@@ -36,6 +43,7 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
     }
 
     final availableUids = gameState.availableTileUids;
+    final matchAnimation = gameState.pendingMatchAnimation;
     final indexedTiles = gameState.tiles.indexed.toList()
       ..sort((a, b) {
         final layerComparison = a.$2.layer.compareTo(b.$2.layer);
@@ -44,9 +52,10 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
       });
     final baseOrder = indexedTiles.map((entry) => entry.$2).toList();
     final sortedTiles = [
-      ...baseOrder.where((tile) => _visualPriority(tile) == 0),
-      ...baseOrder.where((tile) => _visualPriority(tile) == 1),
-      ...baseOrder.where((tile) => _visualPriority(tile) == 2),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 0),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 1),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 2),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 3),
     ];
 
     return LayoutBuilder(
@@ -78,6 +87,40 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
           );
         }
 
+        final firstMatchTile = matchAnimation == null
+            ? null
+            : gameState.tiles.firstWhere(
+                (tile) => tile.uid == matchAnimation.firstTileUid,
+              );
+        final secondMatchTile = matchAnimation == null
+            ? null
+            : gameState.tiles.firstWhere(
+                (tile) => tile.uid == matchAnimation.secondTileUid,
+              );
+        final firstMatchOffset = firstMatchTile == null
+            ? null
+            : tileOffset(
+                firstMatchTile.row,
+                firstMatchTile.col,
+                firstMatchTile.layer,
+              );
+        final secondMatchOffset = secondMatchTile == null
+            ? null
+            : tileOffset(
+                secondMatchTile.row,
+                secondMatchTile.col,
+                secondMatchTile.layer,
+              );
+        final collisionOffset =
+            firstMatchOffset == null || secondMatchOffset == null
+                ? null
+                : matchAnimation!.style == MatchAnimationStyle.secondHitsFirst
+                    ? firstMatchOffset
+                    : Offset(
+                        (firstMatchOffset.dx + secondMatchOffset.dx) / 2,
+                        (firstMatchOffset.dy + secondMatchOffset.dy) / 2,
+                      );
+
         Widget board = SizedBox(
           width: constraints.maxWidth,
           height: constraints.maxHeight,
@@ -89,12 +132,19 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                 final tile = entry.value;
                 final offset = tileOffset(tile.row, tile.col, tile.layer);
                 final isAvail = availableUids.contains(tile.uid);
+                final isFirstMatchTile =
+                    tile.uid == matchAnimation?.firstTileUid;
+                final isSecondMatchTile =
+                    tile.uid == matchAnimation?.secondTileUid;
+                final isCoordinatedMatch =
+                    isFirstMatchTile || isSecondMatchTile;
 
                 Widget child = TileWidget(
                   tile: tile,
                   width: tileW,
                   height: tileH,
                   isAvailable: isAvail,
+                  isCoordinatedMatch: isCoordinatedMatch,
                   onPressChanged: (isPressed) {
                     setState(() {
                       _pressedTileUid = isPressed ? tile.uid : null;
@@ -106,14 +156,52 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   child = IgnorePointer(child: child);
                 }
 
-                child = child
-                    .animate(delay: (index * 25).ms)
-                    .fadeIn(duration: 300.ms)
-                    .slideY(
-                      begin: 0.4,
-                      duration: 300.ms,
-                      curve: Curves.easeOut,
-                    );
+                if (isCoordinatedMatch && collisionOffset != null) {
+                  var target = collisionOffset;
+                  if (matchAnimation!.style ==
+                      MatchAnimationStyle.directCollision) {
+                    final direction = secondMatchOffset! - firstMatchOffset!;
+                    final distance = direction.distance;
+                    final unit = distance == 0
+                        ? const Offset(1, 0)
+                        : direction / distance;
+                    final separation = unit * (tileW * 0.12);
+                    target = isFirstMatchTile
+                        ? collisionOffset - separation
+                        : collisionOffset + separation;
+                  }
+                  final travel = target - offset;
+                  final rotation = (isFirstMatchTile ? 1.0 : -1.0) * pi / 28;
+                  child = TweenAnimationBuilder<double>(
+                    key: ValueKey(
+                      'match_${matchAnimation.id}_${tile.uid}',
+                    ),
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInCubic,
+                    builder: (context, progress, animatedChild) {
+                      return Transform.translate(
+                        offset: travel * progress,
+                        child: Transform.rotate(
+                          angle: sin(progress * pi) * rotation,
+                          child: animatedChild,
+                        ),
+                      );
+                    },
+                    child: child,
+                  );
+                }
+
+                if (!isCoordinatedMatch) {
+                  child = child
+                      .animate(delay: (index * 25).ms)
+                      .fadeIn(duration: 300.ms)
+                      .slideY(
+                        begin: 0.4,
+                        duration: 300.ms,
+                        curve: Curves.easeOut,
+                      );
+                }
 
                 return Positioned(
                   key: ValueKey(tile.uid),
@@ -124,26 +212,24 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   child: child,
                 );
               }),
-              ...gameState.pendingScorePops.map((pop) {
-                final offset = tileOffset(pop.row, pop.col, pop.layer);
-                return _MatchBurstOverlay(
-                  key: ValueKey('burst_${pop.row}_${pop.col}_${pop.layer}'),
-                  x: offset.dx,
-                  y: offset.dy,
+              if (collisionOffset != null)
+                _MatchBurstOverlay(
+                  key: ValueKey('burst_${matchAnimation!.id}'),
+                  x: collisionOffset.dx,
+                  y: collisionOffset.dy,
                   tileW: tileW,
                   tileH: tileH,
-                );
-              }),
-              ...gameState.pendingScorePops.map((pop) {
-                final offset = tileOffset(pop.row, pop.col, pop.layer);
-                return _ScorePopOverlay(
-                  key: ValueKey('pop_${pop.row}_${pop.col}_${pop.layer}'),
-                  x: offset.dx,
-                  y: offset.dy,
+                  startDelay: const Duration(milliseconds: 285),
+                ),
+              if (collisionOffset != null)
+                _ScorePopOverlay(
+                  key: ValueKey('pop_${matchAnimation!.id}'),
+                  x: collisionOffset.dx,
+                  y: collisionOffset.dy,
                   tileW: tileW,
                   tileH: tileH,
-                );
-              }),
+                  startDelay: const Duration(milliseconds: 315),
+                ),
               if (gameState.status == GameStatus.won)
                 Positioned(
                   left: boardLeft,
@@ -356,6 +442,7 @@ class _MatchBurstOverlay extends StatefulWidget {
   final double y;
   final double tileW;
   final double tileH;
+  final Duration startDelay;
 
   const _MatchBurstOverlay({
     super.key,
@@ -363,6 +450,7 @@ class _MatchBurstOverlay extends StatefulWidget {
     required this.y,
     required this.tileW,
     required this.tileH,
+    this.startDelay = Duration.zero,
   });
 
   @override
@@ -374,6 +462,7 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
   late AnimationController _ctrl;
   late List<_BurstParticle> _particles;
   late _BurstVariant _variant;
+  bool _started = false;
 
   @override
   void initState() {
@@ -389,13 +478,19 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
     _ctrl = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: ms),
-    )..forward();
+    );
 
     _particles = switch (_variant) {
       _BurstVariant.inferno => _buildInferno(rng),
       _BurstVariant.confetti => _buildConfetti(rng),
       _BurstVariant.nova => _buildNova(rng),
     };
+
+    Future.delayed(widget.startDelay, () {
+      if (!mounted) return;
+      setState(() => _started = true);
+      _ctrl.forward();
+    });
   }
 
   List<_BurstParticle> _buildInferno(Random rng) {
@@ -488,13 +583,16 @@ class _MatchBurstOverlayState extends State<_MatchBurstOverlay>
       width: paintSize,
       height: paintSize,
       child: IgnorePointer(
-        child: AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) => CustomPaint(
-            painter: _BurstPainter(
-              progress: _ctrl.value,
-              particles: _particles,
-              variant: _variant,
+        child: Visibility(
+          visible: _started,
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) => CustomPaint(
+              painter: _BurstPainter(
+                progress: _ctrl.value,
+                particles: _particles,
+                variant: _variant,
+              ),
             ),
           ),
         ),
@@ -512,6 +610,7 @@ class _ScorePopOverlay extends StatefulWidget {
   final double y;
   final double tileW;
   final double tileH;
+  final Duration startDelay;
 
   const _ScorePopOverlay({
     super.key,
@@ -519,6 +618,7 @@ class _ScorePopOverlay extends StatefulWidget {
     required this.y,
     required this.tileW,
     required this.tileH,
+    this.startDelay = Duration.zero,
   });
 
   @override
@@ -530,6 +630,7 @@ class _ScorePopOverlayState extends State<_ScorePopOverlay>
   late AnimationController _ctrl;
   late Animation<double> _dy;
   late Animation<double> _opacity;
+  bool _started = false;
 
   @override
   void initState() {
@@ -545,7 +646,11 @@ class _ScorePopOverlayState extends State<_ScorePopOverlay>
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 55),
       TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0), weight: 45),
     ]).animate(_ctrl);
-    _ctrl.forward();
+    Future.delayed(widget.startDelay, () {
+      if (!mounted) return;
+      setState(() => _started = true);
+      _ctrl.forward();
+    });
   }
 
   @override
@@ -556,6 +661,7 @@ class _ScorePopOverlayState extends State<_ScorePopOverlay>
 
   @override
   Widget build(BuildContext context) {
+    if (!_started) return const SizedBox.shrink();
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) => Positioned(

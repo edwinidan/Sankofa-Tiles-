@@ -18,6 +18,7 @@ const _kEdgeW = 14.0;
 const _kCornerRadius = 4.0;
 const _kFullTileAssetScale = 1.0;
 const _kTouchLiftDuration = Duration(milliseconds: 220);
+const _kCoordinatedMatchDuration = Duration(milliseconds: 760);
 
 class TileWidget extends ConsumerStatefulWidget {
   final TileModel tile;
@@ -26,6 +27,7 @@ class TileWidget extends ConsumerStatefulWidget {
   final bool showSuitCode;
   final bool forceHideName;
   final bool isAvailable;
+  final bool isCoordinatedMatch;
   final ValueChanged<bool>? onPressChanged;
 
   const TileWidget({
@@ -36,6 +38,7 @@ class TileWidget extends ConsumerStatefulWidget {
     this.showSuitCode = true,
     this.forceHideName = false,
     this.isAvailable = false,
+    this.isCoordinatedMatch = false,
     this.onPressChanged,
   });
 
@@ -52,10 +55,16 @@ class _TileWidgetState extends ConsumerState<TileWidget>
   late Animation<double> _shakeX;
 
   bool _isPressed = false;
+  bool _wasCoordinatedMatch = false;
+  bool _coordinatedMatchFinished = false;
 
   @override
   void initState() {
     super.initState();
+    _wasCoordinatedMatch = widget.isCoordinatedMatch;
+    if (widget.isCoordinatedMatch) {
+      _scheduleCoordinatedMatchFinish();
+    }
 
     _hintController = AnimationController(
       vsync: this,
@@ -81,6 +90,11 @@ class _TileWidgetState extends ConsumerState<TileWidget>
   @override
   void didUpdateWidget(TileWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.isCoordinatedMatch && !oldWidget.isCoordinatedMatch) {
+      _wasCoordinatedMatch = true;
+      _coordinatedMatchFinished = false;
+      _scheduleCoordinatedMatchFinish();
+    }
     if (widget.tile.isMismatched && !oldWidget.tile.isMismatched) {
       _shakeController.forward(from: 0);
     }
@@ -88,6 +102,13 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     if (widget.tile.isSelected && !oldWidget.tile.isSelected) {
       HapticService.selectionClick(ref.read(settingsProvider).hapticIntensity);
     }
+  }
+
+  void _scheduleCoordinatedMatchFinish() {
+    Future.delayed(_kCoordinatedMatchDuration, () {
+      if (!mounted || !widget.tile.isMatched) return;
+      setState(() => _coordinatedMatchFinished = true);
+    });
   }
 
   @override
@@ -134,7 +155,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
     // Matched: smash animation — impact burst → shake → shatter out
     if (tile.isMatched) {
-      body = _buildPhysicalTile(
+      if (_coordinatedMatchFinished) {
+        return const SizedBox.shrink();
+      }
+      final matchedTile = _buildPhysicalTile(
         tile: tile,
         assetPath: assetPath,
         assetScale: assetScale,
@@ -143,23 +167,39 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         tileH: tileH,
         showSuitCode: widget.showSuitCode,
         forceHideName: widget.forceHideName,
-      )
-          .animate()
-          .scale(
-            begin: const Offset(1, 1),
-            end: const Offset(1.25, 1.25),
-            duration: 80.ms,
-            curve: Curves.easeOut,
-          )
-          .then()
-          .shake(hz: 10, duration: 160.ms)
-          .then()
-          .scale(
-            end: Offset.zero,
-            duration: 210.ms,
-            curve: Curves.easeIn,
-          )
-          .fade(end: 0, duration: 210.ms);
+      );
+      body = (widget.isCoordinatedMatch || _wasCoordinatedMatch)
+          ? _TileShatter(
+              seed: tile.uid.hashCode,
+              startDelay: const Duration(milliseconds: 285),
+              tileBuilder: () => _buildPhysicalTile(
+                tile: tile,
+                assetPath: assetPath,
+                assetScale: assetScale,
+                showNames: showNames,
+                tileW: tileW,
+                tileH: tileH,
+                showSuitCode: widget.showSuitCode,
+                forceHideName: widget.forceHideName,
+              ),
+            )
+          : matchedTile
+              .animate()
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(1.25, 1.25),
+                duration: 80.ms,
+                curve: Curves.easeOut,
+              )
+              .then()
+              .shake(hz: 10, duration: 160.ms)
+              .then()
+              .scale(
+                end: Offset.zero,
+                duration: 210.ms,
+                curve: Curves.easeIn,
+              )
+              .fade(end: 0, duration: 210.ms);
     }
 
     // Hinted: stronger antique-gold pulse without dimming the tile artwork.
@@ -437,3 +477,188 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     );
   }
 }
+
+class _TileShatter extends StatefulWidget {
+  final int seed;
+  final Duration startDelay;
+  final Widget Function() tileBuilder;
+
+  const _TileShatter({
+    required this.seed,
+    required this.startDelay,
+    required this.tileBuilder,
+  });
+
+  @override
+  State<_TileShatter> createState() => _TileShatterState();
+}
+
+class _TileShatterState extends State<_TileShatter>
+    with SingleTickerProviderStateMixin {
+  static const _duration = Duration(milliseconds: 430);
+
+  late final AnimationController _controller;
+  late final List<_ShatterFragmentMotion> _motions;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _duration);
+    _motions = _buildMotions(widget.seed);
+
+    Future.delayed(widget.startDelay, () {
+      if (!mounted) return;
+      setState(() => _started = true);
+      _controller.forward();
+    });
+  }
+
+  List<_ShatterFragmentMotion> _buildMotions(int seed) {
+    final rng = Random(seed);
+    return List.generate(_kShatterPaths.length, (index) {
+      final center = _kShatterCenters[index];
+      final radial = Offset(center.dx - 0.5, center.dy - 0.5);
+      final distance = radial.distance;
+      final direction = distance == 0 ? const Offset(0, -1) : radial / distance;
+      final speed = 32.0 + rng.nextDouble() * 34.0;
+      return _ShatterFragmentMotion(
+        velocity: direction * speed +
+            Offset(
+              (rng.nextDouble() - 0.5) * 18,
+              -10 - rng.nextDouble() * 24,
+            ),
+        rotation: (rng.nextDouble() - 0.5) * 1.8,
+        scale: 0.88 + rng.nextDouble() * 0.12,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_started) return widget.tileBuilder();
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final progress = Curves.easeOutCubic.transform(_controller.value);
+        final elapsedSeconds =
+            _duration.inMilliseconds / 1000 * _controller.value;
+        final opacity =
+            (1 - ((_controller.value - 0.46) / 0.54).clamp(0.0, 1.0))
+                .toDouble();
+
+        return Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.expand,
+          children: [
+            for (var i = 0; i < _kShatterPaths.length; i++)
+              Transform.translate(
+                offset: _motions[i].velocity * elapsedSeconds +
+                    Offset(0, 80 * elapsedSeconds * elapsedSeconds),
+                child: Transform.rotate(
+                  angle: _motions[i].rotation * progress,
+                  child: Transform.scale(
+                    scale: 1 - (1 - _motions[i].scale) * progress,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: ClipPath(
+                        clipper: _TileFragmentClipper(_kShatterPaths[i]),
+                        child: widget.tileBuilder(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ShatterFragmentMotion {
+  final Offset velocity;
+  final double rotation;
+  final double scale;
+
+  const _ShatterFragmentMotion({
+    required this.velocity,
+    required this.rotation,
+    required this.scale,
+  });
+}
+
+class _TileFragmentClipper extends CustomClipper<Path> {
+  final List<Offset> points;
+
+  const _TileFragmentClipper(this.points);
+
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..moveTo(points.first.dx * size.width, points.first.dy * size.height);
+    for (final point in points.skip(1)) {
+      path.lineTo(point.dx * size.width, point.dy * size.height);
+    }
+    return path..close();
+  }
+
+  @override
+  bool shouldReclip(_TileFragmentClipper oldClipper) => false;
+}
+
+const _kShatterCenters = [
+  Offset(0.15, 0.16),
+  Offset(0.48, 0.14),
+  Offset(0.82, 0.18),
+  Offset(0.22, 0.47),
+  Offset(0.52, 0.45),
+  Offset(0.82, 0.50),
+  Offset(0.16, 0.82),
+  Offset(0.48, 0.80),
+  Offset(0.83, 0.82),
+];
+
+const _kShatterPaths = [
+  [Offset(0, 0), Offset(0.34, 0), Offset(0.28, 0.31), Offset(0, 0.38)],
+  [
+    Offset(0.34, 0),
+    Offset(0.68, 0),
+    Offset(0.62, 0.30),
+    Offset(0.28, 0.31),
+  ],
+  [Offset(0.68, 0), Offset(1, 0), Offset(1, 0.38), Offset(0.62, 0.30)],
+  [
+    Offset(0, 0.38),
+    Offset(0.28, 0.31),
+    Offset(0.36, 0.63),
+    Offset(0, 0.66),
+  ],
+  [
+    Offset(0.28, 0.31),
+    Offset(0.62, 0.30),
+    Offset(0.68, 0.64),
+    Offset(0.36, 0.63),
+  ],
+  [
+    Offset(0.62, 0.30),
+    Offset(1, 0.38),
+    Offset(1, 0.68),
+    Offset(0.68, 0.64),
+  ],
+  [Offset(0, 0.66), Offset(0.36, 0.63), Offset(0.31, 1), Offset(0, 1)],
+  [
+    Offset(0.36, 0.63),
+    Offset(0.68, 0.64),
+    Offset(0.66, 1),
+    Offset(0.31, 1),
+  ],
+  [Offset(0.68, 0.64), Offset(1, 0.68), Offset(1, 1), Offset(0.66, 1)],
+];

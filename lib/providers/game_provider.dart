@@ -48,6 +48,7 @@ class GameNotifier extends StateNotifier<GameState> {
   final Ref _ref;
   final int _reverseSolvedAttempts;
   bool _isDeveloperTest = false;
+  int _matchAnimationSequence = 0;
 
   GameNotifier(
     this._audio,
@@ -353,6 +354,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   void selectTile(String uid) {
     if (state.status != GameStatus.playing) return;
+    if (state.pendingMatchAnimation != null) return;
 
     final tile = state.tiles.firstWhere(
       (t) => t.uid == uid,
@@ -438,10 +440,6 @@ class GameNotifier extends StateNotifier<GameState> {
         }
       }
 
-      // Match! — double-thud slam-lock
-      HapticService.sequence(_hapticIntensity, [0, 80]);
-      _audio.playMatch();
-
       final matchedTiles = updatedTiles.map((t) {
         if (t.uid == firstUid || t.uid == uid) {
           return t.copyWith(
@@ -451,6 +449,10 @@ class GameNotifier extends StateNotifier<GameState> {
       }).toList();
 
       final newStreak = state.currentStreak + 1;
+      final matchAnimationId = _matchAnimationSequence++;
+      final matchAnimationStyle = matchAnimationId % 4 == 3
+          ? MatchAnimationStyle.secondHitsFirst
+          : MatchAnimationStyle.directCollision;
       final streakBonus = newStreak >= 5
           ? 200
           : newStreak == 4
@@ -469,7 +471,19 @@ class GameNotifier extends StateNotifier<GameState> {
           (row: firstTile.row, col: firstTile.col, layer: firstTile.layer),
           (row: secondTile.row, col: secondTile.col, layer: secondTile.layer),
         ],
+        pendingMatchAnimation: PendingMatchAnimation(
+          id: matchAnimationId,
+          firstTileUid: firstUid,
+          secondTileUid: uid,
+          style: matchAnimationStyle,
+        ),
       );
+
+      Future.delayed(const Duration(milliseconds: 285), () {
+        if (!mounted) return;
+        HapticService.sequence(_hapticIntensity, [0, 80]);
+        _audio.playMatch();
+      });
 
       _debugFinalTileState();
       _checkWin();
@@ -477,7 +491,10 @@ class GameNotifier extends StateNotifier<GameState> {
 
       Future.delayed(const Duration(milliseconds: 900), () {
         if (!mounted) return;
-        state = state.copyWith(pendingScorePops: const []);
+        state = state.copyWith(
+          pendingScorePops: const [],
+          clearPendingMatchAnimation: true,
+        );
       });
     } else {
       // No match — sharp "denied" slam

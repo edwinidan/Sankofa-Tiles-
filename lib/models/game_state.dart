@@ -5,6 +5,22 @@ enum GameStatus { idle, playing, paused, won, lost, loadFailed }
 
 enum DifficultyMode { easy, normal, relaxed }
 
+enum MatchAnimationStyle { directCollision, secondHitsFirst }
+
+class PendingMatchAnimation {
+  final int id;
+  final String firstTileUid;
+  final String secondTileUid;
+  final MatchAnimationStyle style;
+
+  const PendingMatchAnimation({
+    required this.id,
+    required this.firstTileUid,
+    required this.secondTileUid,
+    required this.style,
+  });
+}
+
 class GameState {
   final List<TileModel> tiles;
   final GameStatus status;
@@ -18,6 +34,7 @@ class GameState {
   final int levelId;
 
   final List<({int row, int col, int layer})> pendingScorePops;
+  final PendingMatchAnimation? pendingMatchAnimation;
   final int currentStreak;
 
   const GameState({
@@ -32,6 +49,7 @@ class GameState {
     this.selectedTileUid,
     this.loadError,
     this.pendingScorePops = const [],
+    this.pendingMatchAnimation,
     this.currentStreak = 0,
   });
 
@@ -62,6 +80,8 @@ class GameState {
     bool clearLoadError = false,
     int? levelId,
     List<({int row, int col, int layer})>? pendingScorePops,
+    PendingMatchAnimation? pendingMatchAnimation,
+    bool clearPendingMatchAnimation = false,
     int? currentStreak,
   }) =>
       GameState(
@@ -78,6 +98,9 @@ class GameState {
         loadError: clearLoadError ? null : (loadError ?? this.loadError),
         levelId: levelId ?? this.levelId,
         pendingScorePops: pendingScorePops ?? this.pendingScorePops,
+        pendingMatchAnimation: clearPendingMatchAnimation
+            ? null
+            : (pendingMatchAnimation ?? this.pendingMatchAnimation),
         currentStreak: currentStreak ?? this.currentStreak,
       );
 
