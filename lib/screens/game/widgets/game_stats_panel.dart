@@ -1,26 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/sankofa_game_theme.dart';
-import '../../../models/game_state.dart';
 import '../../../providers/game_provider.dart';
 
 class GameStatsPanel extends ConsumerWidget {
   const GameStatsPanel({super.key});
 
-  String _formatTime(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameProvider);
-    final timerWarning = gameState.difficulty == DifficultyMode.normal &&
-        gameState.secondsElapsed >= 240;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -32,10 +22,9 @@ class GameStatsPanel extends ConsumerWidget {
             value: gameState.score.toString(),
           ),
           _StatData(
-            icon: Icons.timer_outlined,
-            label: 'Time',
-            value: _formatTime(gameState.secondsElapsed),
-            valueColor: timerWarning ? AppColors.errorRed : null,
+            icon: Icons.layers_outlined,
+            label: 'Pairs Left',
+            value: gameState.remainingPairs.toString(),
           ),
         ];
 
@@ -76,13 +65,11 @@ class _StatData {
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
 
   const _StatData({
     required this.icon,
     required this.label,
     required this.value,
-    this.valueColor,
   });
 }
 
@@ -104,7 +91,7 @@ class _StatChip extends StatelessWidget {
             data.value,
             style: AppTextStyles.archiveTitleMedium.copyWith(
               fontSize: 16,
-              color: data.valueColor ?? SankofaGameTheme.darkText,
+              color: SankofaGameTheme.darkText,
             ),
           ),
         ),

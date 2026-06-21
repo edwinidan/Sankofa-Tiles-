@@ -37,7 +37,6 @@ class GameScreen extends ConsumerStatefulWidget {
 class _GameScreenState extends ConsumerState<GameScreen> {
   bool _showCombo = false;
   int _displayedStreak = 0;
-  DateTime? _lastMatchTime;
   late final Stopwatch _levelLoadStopwatch;
   late final AudioService _audioService;
   bool _reportedReadyFrame = false;
@@ -180,28 +179,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         });
       }
 
-      // Time-based Combo Trigger
-      // Only show banner if matches are fast: (2 in 2s, 3 in 5s, 4+ in 4s)
+      // Reward consecutive correct matches without requiring fast play.
       if (next.currentStreak > (prev?.currentStreak ?? 0)) {
-        final now = DateTime.now();
-        bool showBanner = false;
-
-        if (_lastMatchTime != null) {
-          final diff = now.difference(_lastMatchTime!).inMilliseconds / 1000.0;
-          final streak = next.currentStreak;
-
-          if (streak == 2 && diff <= 2.0) {
-            showBanner = true;
-          } else if (streak == 3 && diff <= 5.0) {
-            showBanner = true;
-          } else if (streak >= 4 && diff <= 4.0) {
-            showBanner = true;
-          }
-        }
-
-        _lastMatchTime = now;
-
-        if (showBanner) {
+        if (next.currentStreak >= 2) {
           _fireComboHaptic(next.currentStreak);
           setState(() {
             _showCombo = true;
@@ -211,8 +191,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             if (mounted) setState(() => _showCombo = false);
           });
         }
-      } else if (next.currentStreak == 0) {
-        _lastMatchTime = null;
       }
     });
 

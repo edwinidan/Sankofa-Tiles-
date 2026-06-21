@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +47,6 @@ class GameNotifier extends StateNotifier<GameState> {
   final AudioService _audio;
   final Ref _ref;
   final int _reverseSolvedAttempts;
-  Timer? _timer;
   bool _isDeveloperTest = false;
 
   GameNotifier(
@@ -76,7 +74,6 @@ class GameNotifier extends StateNotifier<GameState> {
     _isDeveloperTest = isDeveloperTest;
     final totalStopwatch = Stopwatch()..start();
     debugPrint('[LEVEL_LOAD] level=$levelId start');
-    _timer?.cancel();
 
     final levelDef = getLevelById(levelId);
     if (levelDef == null) return;
@@ -175,10 +172,6 @@ class GameNotifier extends StateNotifier<GameState> {
         '${stateStopwatch.elapsedMilliseconds} ms',
       );
 
-      if (difficulty == DifficultyMode.normal) {
-        _startTimer();
-      }
-
       _audio.startBackgroundMusic();
       totalStopwatch.stop();
       debugPrint(
@@ -201,7 +194,6 @@ class GameNotifier extends StateNotifier<GameState> {
     DifficultyMode difficulty,
     Stopwatch totalStopwatch,
   ) {
-    _timer?.cancel();
     totalStopwatch.stop();
     debugPrint(
       '[LEVEL_LOAD] level=$levelId failed safely after '
@@ -357,32 +349,6 @@ class GameNotifier extends StateNotifier<GameState> {
       pairs.addAll(List.filled(entry.count ~/ 2, entry.def));
     }
     return pairs;
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => tick());
-  }
-
-  void tick() {
-    if (state.status != GameStatus.playing) return;
-    state = state.copyWith(secondsElapsed: state.secondsElapsed + 1);
-    // 5-minute limit in normal mode
-    if (state.difficulty == DifficultyMode.normal &&
-        state.secondsElapsed >= 300) {
-      _timer?.cancel();
-      state = state.copyWith(status: GameStatus.lost);
-      if (!_isDeveloperTest) {
-        AnalyticsService.logLevelFailed(
-          state.levelId,
-          state.difficulty.name,
-          state.score,
-          'timer_expired',
-        );
-      }
-      _audio.playLose();
-      _audio.stopBackgroundMusic();
-    }
   }
 
   void selectTile(String uid) {
@@ -603,11 +569,18 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void shuffleRemaining() {
-    if (state.status != GameStatus.playing) return;
+    _shuffleRemaining();
+  }
+
+  bool _shuffleRemaining({
+    bool penalizeScore = true,
+    bool logUsage = true,
+  }) {
+    if (state.status != GameStatus.playing) return false;
 
     final unmatched = state.tiles.where((t) => !t.isMatched).toList();
     final matched = state.tiles.where((t) => t.isMatched).toList();
-    if (unmatched.length < 2) return;
+    if (unmatched.length < 2) return false;
 
     List<TileModel>? solvableShuffle;
     for (var attempt = 1; attempt <= _maxShuffleAttempts; attempt++) {
@@ -641,24 +614,25 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (solvableShuffle == null) {
       debugPrint('Shuffle refused: no solvable board found.');
-      return;
+      return false;
     }
 
     _audio.playShuffle();
 
     state = state.copyWith(
       tiles: solvableShuffle,
-      score: (state.score - 50).clamp(0, 999999),
+      score: penalizeScore ? (state.score - 50).clamp(0, 999999) : state.score,
       clearSelectedTile: true,
+      currentStreak: 0,
     );
-    if (!_isDeveloperTest) {
+    if (logUsage && !_isDeveloperTest) {
       AnalyticsService.logShuffleUsed(state.levelId, state.difficulty.name);
     }
+    return true;
   }
 
   void pauseGame() {
     if (state.status != GameStatus.playing) return;
-    _timer?.cancel();
     state = state.copyWith(status: GameStatus.paused);
     if (!_isDeveloperTest) {
       AnalyticsService.logPauseUsed(state.levelId, state.difficulty.name);
@@ -666,8 +640,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void leaveGame() {
-    _timer?.cancel();
-    unawaited(_audio.stopGameAudio());
+    _audio.stopGameAudio();
     state = GameState.initial();
     _isDeveloperTest = false;
   }
@@ -675,25 +648,11 @@ class GameNotifier extends StateNotifier<GameState> {
   void resumeGame() {
     if (state.status != GameStatus.paused) return;
     state = state.copyWith(status: GameStatus.playing);
-    if (state.difficulty == DifficultyMode.normal) {
-      _startTimer();
-    }
   }
 
   void _checkWin() {
     if (!state.hasWon) return;
-    _timer?.cancel();
-
-    int bonus = 0;
-    if (state.difficulty == DifficultyMode.normal) {
-      final remaining = (300 - state.secondsElapsed).clamp(0, 300);
-      bonus = remaining * 2;
-    }
-
-    state = state.copyWith(
-      status: GameStatus.won,
-      score: state.score + bonus,
-    );
+    state = state.copyWith(status: GameStatus.won);
 
     _audio.playWin();
     _audio.stopBackgroundMusic();
@@ -703,7 +662,15 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.status != GameStatus.playing) return;
     _debugFinalTileState();
     if (state.isStuck) {
-      _timer?.cancel();
+      final recovered = _shuffleRemaining(
+        penalizeScore: false,
+        logUsage: false,
+      );
+      if (recovered) {
+        debugPrint('No moves remained; board automatically reshuffled.');
+        return;
+      }
+
       state = state.copyWith(status: GameStatus.lost);
       if (!_isDeveloperTest) {
         AnalyticsService.logLevelFailed(
@@ -759,11 +726,5 @@ class GameNotifier extends StateNotifier<GameState> {
       }
       return t;
     }).toList();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 }

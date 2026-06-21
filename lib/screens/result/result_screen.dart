@@ -158,10 +158,8 @@ class _WinContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = getLevelById(gameState.levelId);
-    final matchScore = gameState.moves * 100;
-    final timeBonus = gameState.difficulty == DifficultyMode.normal
-        ? (300 - gameState.secondsElapsed).clamp(0, 300) * 2
-        : 0;
+    final pairsCleared =
+        gameState.tiles.where((tile) => tile.isMatched).length ~/ 2;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
@@ -217,16 +215,15 @@ class _WinContent extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _ScoreRow(
-            label: 'Matches',
-            value: '${gameState.moves} × 100',
-            score: matchScore,
+            label: 'Pairs cleared',
+            value: '',
+            score: pairsCleared,
           ),
-          if (gameState.difficulty == DifficultyMode.normal)
-            _ScoreRow(
-              label: 'Time Bonus',
-              value: '${300 - gameState.secondsElapsed.clamp(0, 300)}s × 2',
-              score: timeBonus,
-            ),
+          _ScoreRow(
+            label: 'Moves used',
+            value: '',
+            score: gameState.moves,
+          ),
           Divider(
             color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.42),
           ),
@@ -292,6 +289,9 @@ class _LoseContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pairsMatched =
+        gameState.tiles.where((tile) => tile.isMatched).length ~/ 2;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
       decoration: SankofaGameTheme.appParchmentPanelDecoration,
@@ -337,7 +337,7 @@ class _LoseContent extends StatelessWidget {
           _ScoreRow(
             label: 'Pairs matched',
             value: '',
-            score: gameState.moves,
+            score: pairsMatched,
           ),
           const SizedBox(height: 22),
           if (launchConfig.isDeveloperTest)
