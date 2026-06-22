@@ -11,6 +11,16 @@ import '../../../providers/game_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import 'tile_widget.dart';
 
+@visibleForTesting
+bool shouldRenderBoardTile(
+  TileModel tile,
+  PendingMatchAnimation? matchAnimation,
+) {
+  if (!tile.isMatched) return true;
+  return tile.uid == matchAnimation?.firstTileUid ||
+      tile.uid == matchAnimation?.secondTileUid;
+}
+
 class BoardWidget extends ConsumerStatefulWidget {
   const BoardWidget({super.key});
 
@@ -50,7 +60,10 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
         if (layerComparison != 0) return layerComparison;
         return a.$1.compareTo(b.$1);
       });
-    final baseOrder = indexedTiles.map((entry) => entry.$2).toList();
+    final baseOrder = indexedTiles
+        .map((entry) => entry.$2)
+        .where((tile) => shouldRenderBoardTile(tile, matchAnimation))
+        .toList();
     final sortedTiles = [
       ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 0),
       ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 1),
