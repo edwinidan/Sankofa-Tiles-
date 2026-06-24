@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/sankofa_game_theme.dart';
+import '../../../core/economy/economy_models.dart';
 import '../../../models/game_state.dart';
+import '../../../providers/economy_provider.dart';
 import '../../../providers/game_provider.dart';
 
 class GameControlDock extends ConsumerWidget {
@@ -12,6 +14,8 @@ class GameControlDock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameProvider);
     final notifier = ref.read(gameProvider.notifier);
+    final economy = ref.watch(economyProvider);
+    final economyNotifier = ref.read(economyProvider.notifier);
     final isPlaying = gameState.status == GameStatus.playing;
 
     return SafeArea(
@@ -29,14 +33,51 @@ class GameControlDock extends ConsumerWidget {
                 _ControlButton(
                   diameter: buttonDiameter,
                   icon: Icons.lightbulb_outline,
-                  label: 'Hint',
-                  onTap: isPlaying ? notifier.useHint : null,
+                  label: 'Hint ${economy.boosterCount(BoosterType.hint)}',
+                  onTap: isPlaying && economy.boosterCount(BoosterType.hint) > 0
+                      ? () async {
+                          if (await economyNotifier
+                              .spendBooster(BoosterType.hint)) {
+                            notifier.useHint();
+                          }
+                        }
+                      : null,
                 ),
                 _ControlButton(
                   diameter: buttonDiameter,
                   icon: Icons.shuffle_rounded,
-                  label: 'Shuffle',
-                  onTap: isPlaying ? notifier.shuffleRemaining : null,
+                  label: 'Shuffle ${economy.boosterCount(BoosterType.shuffle)}',
+                  onTap:
+                      isPlaying && economy.boosterCount(BoosterType.shuffle) > 0
+                          ? () async {
+                              if (await economyNotifier
+                                  .spendBooster(BoosterType.shuffle)) {
+                                notifier.shuffleRemaining();
+                              }
+                            }
+                          : null,
+                ),
+                _ControlButton(
+                  diameter: buttonDiameter,
+                  icon: Icons.auto_fix_high_outlined,
+                  label:
+                      'Open Path ${economy.boosterCount(BoosterType.openPath)}',
+                  onTap: isPlaying &&
+                          economy.boosterCount(BoosterType.openPath) > 0
+                      ? () async {
+                          if (await economyNotifier
+                              .spendBooster(BoosterType.openPath)) {
+                            final used = notifier.useOpenPath();
+                            if (!used) {
+                              await economyNotifier.addBooster(
+                                BoosterType.openPath,
+                                1,
+                                reason: 'open_path_refund',
+                              );
+                            }
+                          }
+                        }
+                      : null,
                 ),
                 _ControlButton(
                   diameter: buttonDiameter,

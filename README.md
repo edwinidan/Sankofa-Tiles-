@@ -1,17 +1,45 @@
-# sankofa_tiles
+# Sankofa Tiles
 
-A new Flutter project.
+A Ghanaian Adinkra Mahjong solitaire tile-matching game built with Flutter.
 
-## Getting Started
+Match pairs of Adinkra symbol tiles on 3D-layered boards following classic
+Mahjong solitaire "free tile" rules. 50 levels spanning five difficulty tiers,
+from novice to master.
 
-This project is a starting point for a Flutter application.
+**Version:** 1.0.0+3
+**Platforms:** Android, iOS (portrait only)
+**Tech:** Flutter + Riverpod + Firebase
 
-A few resources to get you started if this is your first Flutter project:
+## Quick Start
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Project Documentation
+
+| Document | Purpose |
+|---|---|
+| `CONTEXT.md` | Architecture, state management, conventions (AI handoff) |
+| `docs/GAME_FLOW.md` | End-to-end user flow and experience mapping |
+| `docs/SANKOFA_TILES_APP_CONTEXT.md` | Full app reference (screens, assets, checklist) |
+| `docs/FIREBASE_TRACKING_NOTES.md` | Analytics events and Crashlytics details |
+| `PRIVACY_POLICY_FINDINGS.md` | Privacy-relevant codebase audit |
+
+## Key Dependencies
+
+- **State:** flutter_riverpod
+- **Routing:** go_router
+- **Persistence:** shared_preferences
+- **Audio:** audioplayers (.ogg SFX, .mp3 music)
+- **Firebase:** Analytics + Crashlytics
+- **Fonts:** Google Fonts (Cinzel, Nunito)
+- **Animation:** flutter_animate, lottie
+
+## Testing
+
+```bash
+flutter analyze
+flutter test
+```

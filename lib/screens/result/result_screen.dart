@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/chapter_data.dart';
 import '../../core/constants/level_data.dart';
+import '../../core/economy/economy_models.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
@@ -11,6 +13,7 @@ import '../../core/utils/audio_service.dart';
 import '../../models/game_state.dart';
 import '../../models/game_launch_config.dart';
 import '../../providers/game_provider.dart';
+import '../../providers/economy_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
@@ -38,6 +41,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   late final AudioService _audioService;
   int _stars = 0;
   bool _resultHandled = false;
+  RewardGrantSummary? _rewardSummary;
 
   @override
   void initState() {
@@ -51,13 +55,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     if (widget.gameState.status == GameStatus.won) {
-      _saveResult();
+      unawaited(_saveResult());
     }
 
     _controller.forward();
   }
 
-  void _saveResult() {
+  Future<void> _saveResult() async {
     if (_resultHandled) return;
 
     final level = getLevelById(widget.gameState.levelId);
@@ -66,6 +70,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     _stars = computeStars(widget.gameState.score, level.starThresholds);
     if (widget.launchConfig.isDeveloperTest) return;
+    final progress = ref.read(progressProvider);
+    final previousStars = progress.getStars(widget.gameState.levelId);
+    final wasCompleted = progress.isLevelCompleted(widget.gameState.levelId);
 
     AnalyticsService.logLevelCompleted(
       widget.gameState.levelId,
@@ -75,11 +82,22 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       widget.gameState.secondsElapsed,
     );
 
-    ref.read(progressProvider).saveLevelResult(
+    final rewardSummary =
+        await ref.read(economyProvider.notifier).grantLevelRewards(
+              gameState: widget.gameState,
+              previousStars: previousStars,
+              wasCompleted: wasCompleted,
+            );
+
+    await ref.read(progressProvider).saveLevelResult(
           widget.gameState.levelId,
           widget.gameState.score,
           _stars,
         );
+
+    if (mounted) {
+      setState(() => _rewardSummary = rewardSummary);
+    }
   }
 
   @override
@@ -94,6 +112,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     final isWin = widget.gameState.status == GameStatus.won;
     final backLocation =
         widget.launchConfig.isDeveloperTest ? '/developer/levels' : '/';
+    final bestScore = widget.launchConfig.isDeveloperTest
+        ? widget.gameState.score
+        : ref
+                .watch(progressProvider)
+                .getLevelResult(widget.gameState.levelId)
+                ?.bestScore ??
+            widget.gameState.score;
 
     return PopScope(
       canPop: false,
@@ -121,6 +146,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                               ? _WinContent(
                                   gameState: widget.gameState,
                                   stars: _stars,
+                                  bestScore: bestScore,
+                                  rewardSummary: _rewardSummary,
                                   scaleAnim: _scaleAnim,
                                   launchConfig: widget.launchConfig,
                                 )
@@ -145,12 +172,16 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 class _WinContent extends StatelessWidget {
   final GameState gameState;
   final int stars;
+  final int bestScore;
+  final RewardGrantSummary? rewardSummary;
   final Animation<double> scaleAnim;
   final GameLaunchConfig launchConfig;
 
   const _WinContent({
     required this.gameState,
     required this.stars,
+    required this.bestScore,
+    required this.rewardSummary,
     required this.scaleAnim,
     required this.launchConfig,
   });
@@ -224,6 +255,21 @@ class _WinContent extends StatelessWidget {
             value: '',
             score: gameState.moves,
           ),
+          _ScoreRow(
+            label: 'Best streak',
+            value: '',
+            score: gameState.bestStreak,
+          ),
+          _ScoreRow(
+            label: 'Shuffles used',
+            value: '',
+            score: gameState.shufflesUsed,
+          ),
+          _ScoreRow(
+            label: 'Best score',
+            value: '',
+            score: bestScore,
+          ),
           Divider(
             color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.42),
           ),
@@ -234,27 +280,32 @@ class _WinContent extends StatelessWidget {
             bold: true,
           ),
           const SizedBox(height: 22),
+          _RewardReveal(summary: rewardSummary),
+          const SizedBox(height: 14),
           if (launchConfig.isDeveloperTest)
             _DeveloperResultActions(
               levelId: gameState.levelId,
               includeNext: gameState.levelId < kLevels.last.id,
             )
+          else if (isChapterFinalLevel(gameState.levelId))
+            _ResultActions(
+              primaryLabel:
+                  gameState.levelId == kLevels.last.id ? 'FINISH' : 'CONTINUE',
+              primaryIcon: Icons.auto_awesome,
+              onPrimary: () =>
+                  context.go('/chapter-complete/${gameState.levelId}'),
+              levelId: gameState.levelId,
+            )
           else if (gameState.levelId < kLevels.last.id)
-            KenteButton(
-              label: 'NEXT GAME',
-              icon: Icons.arrow_forward,
-              width: double.infinity,
-              onTap: () {
+            _ResultActions(
+              primaryLabel: 'NEXT LEVEL',
+              primaryIcon: Icons.arrow_forward,
+              onPrimary: () {
                 final nextLevelId = gameState.levelId + 1;
                 AnalyticsService.logNextGamePressed(nextLevelId);
-                context.go(
-                  '/game/$nextLevelId',
-                  extra: GameLaunchConfig(
-                    levelId: nextLevelId,
-                    launchMode: GameLaunchMode.normalProgression,
-                  ),
-                );
+                context.go('/level/$nextLevelId');
               },
+              levelId: gameState.levelId,
             )
           else ...[
             Text(
@@ -273,6 +324,55 @@ class _WinContent extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _RewardReveal extends StatelessWidget {
+  const _RewardReveal({required this.summary});
+
+  final RewardGrantSummary? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    if (summary == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: SankofaGameTheme.darkPanelDecoration(disabled: true),
+        child: Text(
+          'Revealing rewards...',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: SankofaGameTheme.mutedLightText,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final lines = [
+      if (summary!.cowries > 0) '+${summary!.cowries} Cowries',
+      for (final entry in summary!.boosters.entries)
+        '+${entry.value} ${entry.key.label}',
+      if (summary!.newBest) 'New best result',
+      if (summary!.chapterCompleted) 'Chapter reward unlocked',
+      for (final symbol in summary!.unlockedSymbols) 'New symbol: $symbol',
+      for (final achievement in summary!.achievements)
+        'Achievement: $achievement',
+      'Balance: ${summary!.updatedBalance} Cowries',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
+      child: Text(
+        lines.join('\n'),
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: SankofaGameTheme.parchmentLight,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -346,36 +446,71 @@ class _LoseContent extends StatelessWidget {
               includeNext: false,
             )
           else
-            Row(
-              children: [
-                Expanded(
-                  child: KenteButton(
-                    label: 'HOME',
-                    icon: Icons.home_outlined,
-                    onTap: () => context.go('/'),
+            _ResultActions(
+              primaryLabel: 'RETRY',
+              primaryIcon: Icons.refresh,
+              onPrimary: () {
+                AnalyticsService.logLevelRetried(gameState.levelId);
+                context.go(
+                  '/game/${gameState.levelId}',
+                  extra: GameLaunchConfig(
+                    levelId: gameState.levelId,
+                    launchMode: GameLaunchMode.normalProgression,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: KenteButton(
-                    label: 'RETRY',
-                    icon: Icons.refresh,
-                    onTap: () {
-                      AnalyticsService.logLevelRetried(gameState.levelId);
-                      context.go(
-                        '/game/${gameState.levelId}',
-                        extra: GameLaunchConfig(
-                          levelId: gameState.levelId,
-                          launchMode: GameLaunchMode.normalProgression,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                );
+              },
+              levelId: gameState.levelId,
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ResultActions extends StatelessWidget {
+  const _ResultActions({
+    required this.primaryLabel,
+    required this.primaryIcon,
+    required this.onPrimary,
+    required this.levelId,
+  });
+
+  final String primaryLabel;
+  final IconData primaryIcon;
+  final VoidCallback onPrimary;
+  final int levelId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        KenteButton(
+          label: primaryLabel,
+          icon: primaryIcon,
+          width: double.infinity,
+          onTap: onPrimary,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: KenteButton(
+                label: 'REPLAY',
+                icon: Icons.refresh,
+                onTap: () => context.go('/level/$levelId'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: KenteButton(
+                label: 'HOME',
+                icon: Icons.home_outlined,
+                onTap: () => context.go('/'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

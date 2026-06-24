@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/chapter_data.dart';
+import '../../core/economy/economy_models.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
-import '../../models/game_launch_config.dart';
+import '../../providers/economy_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
@@ -38,6 +40,10 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       const AdinkraDivider(),
                       const SizedBox(height: 28),
+                      const _WalletSummary(),
+                      const SizedBox(height: 14),
+                      const _ProgressSummary(),
+                      const SizedBox(height: 16),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 340),
                         child: Container(
@@ -47,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
                           child: Column(
                             children: [
                               KenteButton(
-                                label: 'PLAY',
+                                label: 'CONTINUE',
                                 icon: Icons.play_arrow_rounded,
                                 width: double.infinity,
                                 onTap: () {
@@ -63,15 +69,22 @@ class HomeScreen extends ConsumerWidget {
                                     );
                                     return;
                                   }
-                                  context.push(
-                                    '/game/$levelId',
-                                    extra: GameLaunchConfig(
-                                      levelId: levelId,
-                                      launchMode:
-                                          GameLaunchMode.normalProgression,
-                                    ),
-                                  );
+                                  context.push('/level/$levelId');
                                 },
+                              ),
+                              const SizedBox(height: 12),
+                              KenteButton(
+                                label: 'JOURNEY',
+                                icon: Icons.map_outlined,
+                                width: double.infinity,
+                                onTap: () => context.push('/journey'),
+                              ),
+                              const SizedBox(height: 12),
+                              KenteButton(
+                                label: 'HOW TO PLAY',
+                                icon: Icons.help_outline,
+                                width: double.infinity,
+                                onTap: () => context.push('/tutorial?replay=1'),
                               ),
                               const SizedBox(height: 12),
                               KenteButton(
@@ -83,23 +96,8 @@ class HomeScreen extends ConsumerWidget {
                                   context.push('/settings');
                                 },
                               ),
-                              const SizedBox(height: 12),
-                              KenteButton(
-                                label: 'HOW TO PLAY',
-                                icon: Icons.help_outline,
-                                width: double.infinity,
-                                onTap: () => context.push('/onboarding'),
-                              ),
-                              const SizedBox(height: 12),
-                              KenteButton(
-                                label: 'TILE PREVIEW',
-                                icon: Icons.grid_view_outlined,
-                                width: double.infinity,
-                                onTap: () {
-                                  AnalyticsService.logTilePreviewOpened();
-                                  context.push('/tile-preview');
-                                },
-                              ),
+                              const SizedBox(height: 14),
+                              const _RewardEntryRow(),
                             ],
                           ),
                         ),
@@ -119,6 +117,176 @@ class HomeScreen extends ConsumerWidget {
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProgressSummary extends ConsumerWidget {
+  const _ProgressSummary();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(progressProvider);
+    final nextLevelId = progress.nextUnfinishedLevelId;
+    final chapter = chapterForLevel(nextLevelId ?? 50);
+    final completed = progress.highestCompletedLevel;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 380),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
+        child: Column(
+          children: [
+            Text(
+              progress.hasCompletedAllLevels
+                  ? 'Campaign Complete'
+                  : 'Current Chapter: ${chapter.title}',
+              style: AppTextStyles.titleMedium.copyWith(
+                color: SankofaGameTheme.antiqueGold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: completed / 50,
+              backgroundColor: SankofaGameTheme.boardEdge,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                SankofaGameTheme.antiqueGold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Levels $completed/50 · Stars ${progress.totalStars}/150',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: SankofaGameTheme.mutedLightText,
+              ),
+            ),
+            if (nextLevelId != null)
+              Text(
+                'Next level: $nextLevelId',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WalletSummary extends ConsumerWidget {
+  const _WalletSummary();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final economy = ref.watch(economyProvider);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 380),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: SankofaGameTheme.darkPanelDecoration(),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.monetization_on_outlined,
+              color: SankofaGameTheme.antiqueGold,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${economy.cowries} Cowries',
+                style: AppTextStyles.titleMedium.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
+            ),
+            Text(
+              'Hints ${economy.boosterCount(BoosterType.hint)} · '
+              'Shuffles ${economy.boosterCount(BoosterType.shuffle)}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: SankofaGameTheme.mutedLightText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RewardEntryRow extends StatelessWidget {
+  const _RewardEntryRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _HomeRewardButton(
+            icon: Icons.calendar_today_outlined,
+            label: 'Daily',
+            onTap: () => context.push('/daily-reward'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _HomeRewardButton(
+            icon: Icons.auto_awesome_outlined,
+            label: 'Collection',
+            onTap: () {
+              AnalyticsService.logTilePreviewOpened();
+              context.push('/tile-preview');
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeRewardButton extends StatelessWidget {
+  const _HomeRewardButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          decoration: SankofaGameTheme.darkPanelDecoration(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: SankofaGameTheme.antiqueGold, size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: SankofaGameTheme.parchmentLight,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

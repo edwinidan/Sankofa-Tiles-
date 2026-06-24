@@ -87,7 +87,39 @@ class AnalyticsService {
 
   static void logOnboardingCompleted() => _event('onboarding_completed');
 
+  static void logTutorialStarted({required bool replay}) => _event(
+        'tutorial_started',
+        {'replay': replay},
+      );
+
+  static void logTutorialStepCompleted(int step) =>
+      _event('tutorial_step_completed', {'step': step});
+
+  static void logTutorialSkipped() => _event('tutorial_skipped');
+
+  static void logTutorialCompleted() => _event('tutorial_completed');
+
   static void logResetProgress() => _event('reset_progress');
+
+  static void logWalletChanged(String reason, int amount) => _event(
+        'wallet_changed',
+        {'reason': reason, 'amount': amount},
+      );
+
+  static void logBoosterChanged(String booster, String reason, int amount) =>
+      _event(
+        'booster_changed',
+        {'booster': booster, 'reason': reason, 'amount': amount},
+      );
+
+  static void logDailyRewardClaimed(int day) =>
+      _event('daily_reward_claimed', {'day': day});
+
+  static void logCollectionUnlocked(String symbolId) =>
+      _event('collection_unlocked', {'symbol_id': symbolId});
+
+  static void logAchievementUnlocked(String achievementId) =>
+      _event('achievement_unlocked', {'achievement_id': achievementId});
 
   static void _event(
     String name, [

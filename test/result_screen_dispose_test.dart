@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
+import 'package:sankofa_tiles/core/utils/storage_service.dart';
+import 'package:sankofa_tiles/core/economy/economy_models.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
 import 'package:sankofa_tiles/models/game_launch_config.dart';
+import 'package:sankofa_tiles/models/level_model.dart';
 import 'package:sankofa_tiles/providers/game_provider.dart';
 import 'package:sankofa_tiles/providers/progress_provider.dart';
+import 'package:sankofa_tiles/providers/settings_provider.dart';
 import 'package:sankofa_tiles/screens/result/result_screen.dart';
 
 class _RecordingAudioService extends AudioService {
@@ -19,12 +23,96 @@ class _RecordingAudioService extends AudioService {
   }
 }
 
-class _RecordingStorage {
+class _RecordingStorage extends StorageService {
   int saveCalls = 0;
+  int cowries = 0;
+  final boosters = <BoosterType, int>{};
+  final transactions = <String>{};
+  final unlockedCollectionIds = <String>{};
+  final claimedAchievementIds = <String>{};
 
+  @override
   Future<void> saveLevelResult(int levelId, int score, int stars) async {
     saveCalls++;
   }
+
+  @override
+  int getStars(int levelId) => 0;
+
+  @override
+  bool isLevelCompleted(int levelId) => false;
+
+  @override
+  int getHighestCompletedLevel() => 0;
+
+  @override
+  LevelResult? getLevelResult(int levelId) => null;
+
+  @override
+  int getCowries() => cowries;
+
+  @override
+  Future<void> setCowries(int amount) async {
+    cowries = amount;
+  }
+
+  @override
+  int getBooster(BoosterType type) => boosters[type] ?? 0;
+
+  @override
+  Future<void> setBooster(BoosterType type, int count) async {
+    boosters[type] = count;
+  }
+
+  @override
+  bool hasEconomyTransaction(String transactionId) =>
+      transactions.contains(transactionId);
+
+  @override
+  Future<void> recordEconomyTransaction(String transactionId) async {
+    transactions.add(transactionId);
+  }
+
+  @override
+  int getDailyRewardDay() => 1;
+
+  @override
+  Future<void> setDailyRewardDay(int day) async {}
+
+  @override
+  String? getLastDailyClaimDate() => null;
+
+  @override
+  Future<void> setLastDailyClaimDate(String value) async {}
+
+  @override
+  bool isCollectionUnlocked(String tileId) =>
+      unlockedCollectionIds.contains(tileId);
+
+  @override
+  Future<void> unlockCollectionId(String tileId) async {
+    unlockedCollectionIds.add(tileId);
+  }
+
+  @override
+  void unlockCollectionIdSync(String tileId) {
+    unlockedCollectionIds.add(tileId);
+  }
+
+  @override
+  Set<String> getUnlockedCollectionIds() => unlockedCollectionIds;
+
+  @override
+  bool isAchievementClaimed(String achievementId) =>
+      claimedAchievementIds.contains(achievementId);
+
+  @override
+  Future<void> claimAchievement(String achievementId) async {
+    claimedAchievementIds.add(achievementId);
+  }
+
+  @override
+  Set<String> getClaimedAchievementIds() => claimedAchievementIds;
 }
 
 void main() {
@@ -47,6 +135,7 @@ void main() {
       ProviderScope(
         overrides: [
           audioServiceProvider.overrideWithValue(audio),
+          storageServiceProvider.overrideWithValue(storage),
           progressProvider.overrideWithValue(ProgressService(storage)),
         ],
         child: const MaterialApp(

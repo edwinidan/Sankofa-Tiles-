@@ -467,6 +467,7 @@ class GameNotifier extends StateNotifier<GameState> {
         moves: state.moves + 1,
         clearSelectedTile: true,
         currentStreak: newStreak,
+        bestStreak: newStreak > state.bestStreak ? newStreak : state.bestStreak,
         pendingScorePops: [
           (row: firstTile.row, col: firstTile.col, layer: firstTile.layer),
           (row: secondTile.row, col: secondTile.col, layer: secondTile.layer),
@@ -589,6 +590,49 @@ class GameNotifier extends StateNotifier<GameState> {
     _shuffleRemaining();
   }
 
+  bool useOpenPath() {
+    if (state.status != GameStatus.playing) return false;
+    final pairs = BoardSolver.findAvailableMatchingPairs(state.tiles);
+    if (pairs.isEmpty) return false;
+
+    TilePair? chosen;
+    for (final pair in pairs) {
+      if (BoardSolver.isSafeMove(
+        state.tiles,
+        pair.first,
+        pair.second,
+        maxSearchNodes: _moveSearchNodes,
+      )) {
+        chosen = pair;
+        break;
+      }
+    }
+    chosen ??= pairs.first;
+
+    final removedIds = {chosen.first.uid, chosen.second.uid};
+    final updatedTiles = state.tiles.map((tile) {
+      if (removedIds.contains(tile.uid)) {
+        return tile.copyWith(
+            isMatched: true, isSelected: false, isHinted: false);
+      }
+      return tile;
+    }).toList();
+    final newStreak = state.currentStreak + 1;
+
+    _audio.playMatch();
+    state = state.copyWith(
+      tiles: updatedTiles,
+      score: state.score + 100,
+      moves: state.moves + 1,
+      currentStreak: newStreak,
+      bestStreak: newStreak > state.bestStreak ? newStreak : state.bestStreak,
+      clearSelectedTile: true,
+    );
+    _checkWin();
+    _checkStuck();
+    return true;
+  }
+
   bool _shuffleRemaining({
     bool penalizeScore = true,
     bool logUsage = true,
@@ -641,6 +685,7 @@ class GameNotifier extends StateNotifier<GameState> {
       score: penalizeScore ? (state.score - 50).clamp(0, 999999) : state.score,
       clearSelectedTile: true,
       currentStreak: 0,
+      shufflesUsed: logUsage ? state.shufflesUsed + 1 : state.shufflesUsed,
     );
     if (logUsage && !_isDeveloperTest) {
       AnalyticsService.logShuffleUsed(state.levelId, state.difficulty.name);

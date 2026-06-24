@@ -5,6 +5,7 @@ import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../models/tile_model.dart';
+import '../../providers/economy_provider.dart';
 import '../game/widgets/tile_widget.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -21,6 +22,9 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
   @override
   Widget build(BuildContext context) {
     final def = kAllTiles[_selectedIndex];
+    final economy = ref.watch(economyProvider);
+    final service = ref.read(economyServiceProvider);
+    final unlocked = economy.unlockedCollectionIds.contains(def.id);
     final tile = TileModel(def: def, row: 0, col: 0);
     final assetPath = def.assetPath;
 
@@ -30,7 +34,7 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
         backgroundColor: SankofaGameTheme.backgroundTop,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          'Tile Preview',
+          'Adinkra Collection',
           style: AppTextStyles.displaySmall.copyWith(
             color: SankofaGameTheme.antiqueGold,
           ),
@@ -54,20 +58,27 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                     margin: const EdgeInsets.fromLTRB(24, 20, 24, 10),
                     padding: const EdgeInsets.all(22),
                     decoration: SankofaGameTheme.appParchmentPanelDecoration,
-                    child: assetPath != null
+                    child: unlocked && assetPath != null
                         ? Image.asset(
                             assetPath,
                             width: 180,
                             height: 180,
                             fit: BoxFit.contain,
                           )
-                        : TileWidget(
-                            tile: tile,
-                            width: 128,
-                            height: 170,
-                            showSuitCode: false,
-                            forceHideName: true,
-                          ),
+                        : unlocked
+                            ? TileWidget(
+                                tile: tile,
+                                width: 128,
+                                height: 170,
+                                showSuitCode: false,
+                                forceHideName: true,
+                              )
+                            : Icon(
+                                Icons.lock_outline,
+                                size: 96,
+                                color: SankofaGameTheme.mutedGold
+                                    .withValues(alpha: 0.72),
+                              ),
                   ),
                 ),
               ),
@@ -79,24 +90,26 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                 child: Column(
                   children: [
                     Text(
-                      def.name,
+                      unlocked ? def.name : 'Undiscovered Symbol',
                       style: AppTextStyles.titleLarge.copyWith(
                         color: SankofaGameTheme.antiqueGold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      def.meaning,
+                      unlocked
+                          ? def.meaning
+                          : service.collectionUnlockSource(def.id),
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: SankofaGameTheme.parchmentLight,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (def.assetPath != null)
+                    if (unlocked)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
-                          'PNG asset',
+                          service.collectionUnlockSource(def.id),
                           style: AppTextStyles.bodySmall.copyWith(
                             color: SankofaGameTheme.mutedLightText,
                           ),
@@ -126,6 +139,8 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                   itemBuilder: (context, index) {
                     final t = kAllTiles[index];
                     final isSelected = index == _selectedIndex;
+                    final tileUnlocked =
+                        economy.unlockedCollectionIds.contains(t.id);
                     return GestureDetector(
                       onTap: () => setState(() => _selectedIndex = index),
                       child: AnimatedContainer(
@@ -143,11 +158,21 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                                   width: 2.5,
                                 ),
                         ),
-                        child: TileWidget(
-                          tile: TileModel(def: t, row: 0, col: 0),
-                          width: isSelected ? 50 : 44,
-                          height: isSelected ? 66 : 58,
-                        ),
+                        child: tileUnlocked
+                            ? TileWidget(
+                                tile: TileModel(def: t, row: 0, col: 0),
+                                width: isSelected ? 50 : 44,
+                                height: isSelected ? 66 : 58,
+                              )
+                            : SizedBox(
+                                width: isSelected ? 50 : 44,
+                                height: isSelected ? 66 : 58,
+                                child: const Icon(
+                                  Icons.lock_outline,
+                                  color: SankofaGameTheme.mutedLightText,
+                                  size: 20,
+                                ),
+                              ),
                       ),
                     );
                   },

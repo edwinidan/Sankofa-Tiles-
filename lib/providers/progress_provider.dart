@@ -15,11 +15,29 @@ class ProgressService {
 
   bool isLevelUnlocked(int levelId) => _storage.isLevelUnlocked(levelId);
 
-  LevelResult? getLevelResult(int levelId) => _storage.getLevelResult(levelId);
+  LevelResult? getLevelResult(int levelId) {
+    try {
+      return _storage.getLevelResult(levelId);
+    } on NoSuchMethodError {
+      return null;
+    }
+  }
 
-  int getStars(int levelId) => _storage.getStars(levelId);
+  int getStars(int levelId) {
+    try {
+      return _storage.getStars(levelId);
+    } on NoSuchMethodError {
+      return 0;
+    }
+  }
 
-  bool isLevelCompleted(int levelId) => _storage.isLevelCompleted(levelId);
+  bool isLevelCompleted(int levelId) {
+    try {
+      return _storage.isLevelCompleted(levelId);
+    } on NoSuchMethodError {
+      return false;
+    }
+  }
 
   int get highestCompletedLevel {
     final highest = _storage.getHighestCompletedLevel() as int;
@@ -33,6 +51,9 @@ class ProgressService {
 
   bool get hasCompletedAllLevels =>
       kLevels.isNotEmpty && highestCompletedLevel >= kLevels.length;
+
+  int get totalStars =>
+      kLevels.fold(0, (sum, level) => sum + getStars(level.id));
 
   List<bool> get unlockedLevels =>
       kLevels.map((l) => isLevelUnlocked(l.id)).toList();

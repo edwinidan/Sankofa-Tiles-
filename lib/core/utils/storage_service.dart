@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/level_data.dart';
+import '../economy/economy_models.dart';
 import '../../models/level_model.dart';
 import 'crash_reporting_service.dart';
 import 'haptic_service.dart';
@@ -13,10 +14,18 @@ class StorageService {
   static const _keyMusicEnabled = 'music_enabled';
   static const _keyMusicVolume = 'music_volume';
   static const _keyOnboardingComplete = 'onboarding_complete';
+  static const _keyTutorialComplete = 'tutorial_complete';
   static const _keyShowTileNames = 'show_tile_names';
   static const _keyHapticIntensity = 'haptic_intensity';
   static const _keyCampaignProgressSchemaVersion =
       'campaign_progress_schema_version';
+  static const _keyCowries = 'economy_cowries';
+  static const _prefixBooster = 'economy_booster_';
+  static const _prefixEconomyTransaction = 'economy_tx_';
+  static const _keyDailyRewardDay = 'daily_reward_day';
+  static const _keyLastDailyClaimDate = 'daily_last_claim_date';
+  static const _prefixCollectionUnlocked = 'collection_unlocked_';
+  static const _prefixAchievementClaimed = 'achievement_claimed_';
   static const _campaignProgressSchemaVersion = 3;
 
   late SharedPreferences _prefs;
@@ -167,6 +176,10 @@ class StorageService {
   Future<void> setOnboardingComplete() async =>
       _prefs.setBool(_keyOnboardingComplete, true);
 
+  bool isTutorialComplete() => _prefs.getBool(_keyTutorialComplete) ?? false;
+  Future<void> setTutorialComplete() async =>
+      _prefs.setBool(_keyTutorialComplete, true);
+
   // Show tile names
   bool isShowTileNames() => _prefs.getBool(_keyShowTileNames) ?? true;
   Future<void> setShowTileNames(bool val) async =>
@@ -183,6 +196,58 @@ class StorageService {
 
   Future<void> setHapticIntensity(HapticIntensity intensity) async =>
       _prefs.setString(_keyHapticIntensity, intensity.name);
+
+  int getCowries() => (_prefs.getInt(_keyCowries) ?? 0).clamp(0, 1 << 31);
+  Future<void> setCowries(int amount) async =>
+      _prefs.setInt(_keyCowries, amount.clamp(0, 1 << 31));
+
+  int getBooster(BoosterType type) =>
+      (_prefs.getInt('$_prefixBooster${type.name}') ?? 0).clamp(0, 999999);
+  Future<void> setBooster(BoosterType type, int count) async =>
+      _prefs.setInt('$_prefixBooster${type.name}', count.clamp(0, 999999));
+
+  bool hasEconomyTransaction(String transactionId) =>
+      _prefs.getBool('$_prefixEconomyTransaction$transactionId') == true;
+  Future<void> recordEconomyTransaction(String transactionId) async =>
+      _prefs.setBool('$_prefixEconomyTransaction$transactionId', true);
+
+  int getDailyRewardDay() =>
+      (_prefs.getInt(_keyDailyRewardDay) ?? 1).clamp(1, 7);
+  Future<void> setDailyRewardDay(int day) async =>
+      _prefs.setInt(_keyDailyRewardDay, day.clamp(1, 7));
+  String? getLastDailyClaimDate() => _prefs.getString(_keyLastDailyClaimDate);
+  Future<void> setLastDailyClaimDate(String value) async =>
+      _prefs.setString(_keyLastDailyClaimDate, value);
+
+  bool isCollectionUnlocked(String tileId) =>
+      _prefs.getBool('$_prefixCollectionUnlocked$tileId') == true;
+  Future<void> unlockCollectionId(String tileId) async =>
+      _prefs.setBool('$_prefixCollectionUnlocked$tileId', true);
+  void unlockCollectionIdSync(String tileId) {
+    if (!isCollectionUnlocked(tileId)) {
+      _prefs.setBool('$_prefixCollectionUnlocked$tileId', true);
+    }
+  }
+
+  Set<String> getUnlockedCollectionIds() => _prefs
+      .getKeys()
+      .where((key) =>
+          key.startsWith(_prefixCollectionUnlocked) &&
+          _prefs.getBool(key) == true)
+      .map((key) => key.substring(_prefixCollectionUnlocked.length))
+      .toSet();
+
+  bool isAchievementClaimed(String achievementId) =>
+      _prefs.getBool('$_prefixAchievementClaimed$achievementId') == true;
+  Future<void> claimAchievement(String achievementId) async =>
+      _prefs.setBool('$_prefixAchievementClaimed$achievementId', true);
+  Set<String> getClaimedAchievementIds() => _prefs
+      .getKeys()
+      .where((key) =>
+          key.startsWith(_prefixAchievementClaimed) &&
+          _prefs.getBool(key) == true)
+      .map((key) => key.substring(_prefixAchievementClaimed.length))
+      .toSet();
 
   // Reset
   Future<void> resetAllProgress() async {

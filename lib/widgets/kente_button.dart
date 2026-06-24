@@ -20,56 +20,62 @@ class KenteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: SankofaGameTheme.appParchment,
-          foregroundColor: SankofaGameTheme.darkText,
-          disabledBackgroundColor:
-              SankofaGameTheme.appParchmentDark.withValues(alpha: 0.62),
-          disabledForegroundColor: SankofaGameTheme.mutedText,
-          side: BorderSide(
-            color: onTap != null
-                ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.72)
-                : SankofaGameTheme.mutedText.withValues(alpha: 0.35),
-            width: 1.5,
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: label,
+      child: SizedBox(
+        width: width,
+        height: small ? 44 : 52,
+        child: ElevatedButton(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: SankofaGameTheme.appParchment,
+            foregroundColor: SankofaGameTheme.darkText,
+            disabledBackgroundColor:
+                SankofaGameTheme.appParchmentDark.withValues(alpha: 0.62),
+            disabledForegroundColor: SankofaGameTheme.mutedText,
+            side: BorderSide(
+              color: onTap != null
+                  ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.72)
+                  : SankofaGameTheme.mutedText.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: small ? 16 : 24,
+              vertical: small ? 10 : 14,
+            ),
+            elevation: 4,
+            shadowColor: Colors.black.withValues(alpha: 0.3),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: small ? 16 : 24,
-            vertical: small ? 10 : 14,
-          ),
-          elevation: 4,
-          shadowColor: Colors.black.withValues(alpha: 0.3),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: small ? 16 : 20),
-                const SizedBox(width: 8),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: small ? 16 : 20),
+                  const SizedBox(width: 8),
+                ],
+                Text(label,
+                    style: small
+                        ? AppTextStyles.labelSmall.copyWith(
+                            fontSize: 13,
+                            color: onTap != null
+                                ? SankofaGameTheme.darkText
+                                : SankofaGameTheme.mutedText,
+                          )
+                        : AppTextStyles.archiveButtonText.copyWith(
+                            color: onTap != null
+                                ? SankofaGameTheme.darkText
+                                : SankofaGameTheme.mutedText,
+                          )),
               ],
-              Text(label,
-                  style: small
-                      ? AppTextStyles.labelSmall.copyWith(
-                          fontSize: 13,
-                          color: onTap != null
-                              ? SankofaGameTheme.darkText
-                              : SankofaGameTheme.mutedText,
-                        )
-                      : AppTextStyles.archiveButtonText.copyWith(
-                          color: onTap != null
-                              ? SankofaGameTheme.darkText
-                              : SankofaGameTheme.mutedText,
-                        )),
-            ],
+            ),
           ),
         ),
       ),

@@ -6,7 +6,6 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../providers/settings_provider.dart';
-import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -21,7 +20,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _controller = PageController();
   int _currentPage = 0;
 
-  final _pages = const [_Page1(), _Page2(), _Page3(), _Page4()];
+  final _pages = const [_Page1(), _Page3(), _Page4()];
 
   @override
   void dispose() {
@@ -116,7 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final storage = ref.read(storageServiceProvider);
     await storage.setOnboardingComplete();
     AnalyticsService.logOnboardingCompleted();
-    if (mounted) context.go('/');
+    if (mounted) context.go('/tutorial');
   }
 }
 
@@ -132,50 +131,6 @@ class _Page1 extends StatelessWidget {
           'Sankofa is an Akan word meaning "go back and get it" — the wisdom of learning from the past.\n\n'
           'This game celebrates the rich visual language of Adinkra symbols from the Akan people of Ghana and Côte d\'Ivoire, '
           'woven into a meditative tile-matching experience inspired by Mahjong solitaire.',
-    );
-  }
-}
-
-class _Page2 extends StatelessWidget {
-  const _Page2();
-
-  @override
-  Widget build(BuildContext context) {
-    return _OnboardingPage(
-      icon: Icons.touch_app_outlined,
-      title: 'How to Play',
-      body: '',
-      child: Column(
-        children: [
-          const _StepRow(number: '1', text: 'Tap any tile to select it'),
-          const SizedBox(height: 12),
-          const _StepRow(
-            number: '2',
-            text: 'Tap another tile with the same Adinkra symbol',
-          ),
-          const SizedBox(height: 12),
-          const _StepRow(
-            number: '3',
-            text: 'Matching pairs are removed from the board',
-          ),
-          const SizedBox(height: 12),
-          const _StepRow(
-            number: '4',
-            text: 'Clear all tiles to complete the level',
-          ),
-          const SizedBox(height: 20),
-          const AdinkraDivider(),
-          const SizedBox(height: 12),
-          Text(
-            'Use hints to highlight a matching pair.\nShuffle to rearrange remaining tiles.',
-            style: AppTextStyles.archiveBodyMedium.copyWith(
-              color: SankofaGameTheme.mutedGold,
-              fontStyle: FontStyle.italic,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -235,10 +190,9 @@ class _Page4 extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _OnboardingPage(
       icon: Icons.wb_sunny_outlined,
-      title: 'Ready?',
+      title: 'Ready to Practice?',
       body:
-          'Gye Nyame — "Except God" — the most important Adinkra symbol, representing the supremacy of the Almighty.\n\n'
-          'May your journey through Adinkra Tiles be filled with wisdom and joy.',
+          'The next screen is a short interactive tutorial. It will teach matching, blocked tiles, and hints before your first campaign level.',
     );
   }
 }
@@ -295,48 +249,6 @@ class _OnboardingPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _StepRow extends StatelessWidget {
-  final String number;
-  final String text;
-
-  const _StepRow({required this.number, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: SankofaGameTheme.antiqueGold,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            number,
-            style: AppTextStyles.archiveLabelSmall.copyWith(
-              color: SankofaGameTheme.darkText,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.archiveBodyMedium.copyWith(
-              color: SankofaGameTheme.darkText,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

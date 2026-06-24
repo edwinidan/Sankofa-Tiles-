@@ -36,6 +36,8 @@ class GameState {
   final List<({int row, int col, int layer})> pendingScorePops;
   final PendingMatchAnimation? pendingMatchAnimation;
   final int currentStreak;
+  final int bestStreak;
+  final int shufflesUsed;
 
   const GameState({
     required this.tiles,
@@ -51,6 +53,8 @@ class GameState {
     this.pendingScorePops = const [],
     this.pendingMatchAnimation,
     this.currentStreak = 0,
+    this.bestStreak = 0,
+    this.shufflesUsed = 0,
   });
 
   int get remainingPairs => tiles.where((t) => !t.isMatched).length ~/ 2;
@@ -83,6 +87,8 @@ class GameState {
     PendingMatchAnimation? pendingMatchAnimation,
     bool clearPendingMatchAnimation = false,
     int? currentStreak,
+    int? bestStreak,
+    int? shufflesUsed,
   }) =>
       GameState(
         tiles: tiles ?? this.tiles,
@@ -102,6 +108,8 @@ class GameState {
             ? null
             : (pendingMatchAnimation ?? this.pendingMatchAnimation),
         currentStreak: currentStreak ?? this.currentStreak,
+        bestStreak: bestStreak ?? this.bestStreak,
+        shufflesUsed: shufflesUsed ?? this.shufflesUsed,
       );
 
   static GameState initial() => const GameState(
@@ -114,5 +122,7 @@ class GameState {
         secondsElapsed: 0,
         loadError: null,
         levelId: 1,
+        bestStreak: 0,
+        shufflesUsed: 0,
       );
 }

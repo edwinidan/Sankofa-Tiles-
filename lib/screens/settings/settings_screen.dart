@@ -85,6 +85,18 @@ class SettingsScreen extends ConsumerWidget {
                 value: settings.showTileNames,
                 onChanged: notifier.setShowTileNames,
               ),
+              _LinkTile(
+                icon: Icons.school_outlined,
+                label: 'Replay Tutorial',
+                description: 'Practice matching, blocked tiles, and hints',
+                onTap: () => context.push('/tutorial?replay=1'),
+              ),
+              _LinkTile(
+                icon: Icons.auto_awesome_outlined,
+                label: 'Adinkra Collection',
+                description: 'Collection progression arrives in Phase 3',
+                onTap: () => context.push('/tile-preview'),
+              ),
               const SizedBox(height: 16),
               const AdinkraDivider(),
               const SizedBox(height: 16),

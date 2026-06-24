@@ -4,12 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app.dart';
+import 'app_bootstrapper.dart';
 import 'core/utils/analytics_service.dart';
 import 'core/utils/crash_reporting_service.dart';
-import 'core/utils/storage_service.dart';
-import 'providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,25 +35,5 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // Initialize storage
-  final storage = StorageService();
-  try {
-    await storage.init();
-  } catch (error, stackTrace) {
-    CrashReportingService.recordNonFatal(
-      error,
-      stackTrace,
-      reason: 'Storage initialization failed',
-    );
-    rethrow;
-  }
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        storageServiceProvider.overrideWithValue(storage),
-      ],
-      child: const SankofaTilesApp(),
-    ),
-  );
+  runApp(const AppBootstrapper());
 }
