@@ -9,6 +9,8 @@
 | `progressProvider` | `lib/providers/progress_provider.dart` | Wraps storage progress reads, unlock checks, next unfinished level, and result saving. |
 | `economyServiceProvider` | `lib/providers/economy_provider.dart` | Supplies the centralized economy service for wallet, boosters, rewards, daily claims, achievements, and collection unlocks. |
 | `economyProvider` | `lib/providers/economy_provider.dart` | Owns the derived `EconomyState`, refreshes after economy writes, and logs economy analytics. |
+| `monetizationServiceProvider` | `lib/providers/monetization_provider.dart` | Supplies the centralized monetization service for catalog, purchases, rewarded ads, interstitial eligibility, and restore. |
+| `monetizationProvider` | `lib/providers/monetization_provider.dart` | Owns `MonetizationState`, refreshes after monetization writes, and logs shop/ad/purchase analytics. |
 | `audioServiceProvider` | `lib/providers/game_provider.dart` | Creates `AudioService` from current settings and listens for setting changes. |
 | `gameProvider` | `lib/providers/game_provider.dart` | Owns active `GameState`, level startup, tile selection, hint, shuffle, Open Path, pause/resume, win/loss. |
 
@@ -35,6 +37,13 @@
 | `daily_last_claim_date` | string | `StorageService` | Last local claim date in `yyyy-mm-dd` form. |
 | `collection_unlocked_<tileId>` | bool | `StorageService` | Adinkra Collection unlock flag for a symbol id. |
 | `achievement_claimed_<achievementId>` | bool | `StorageService` | One-time achievement claim marker. |
+| `monetization_entitlement_<id>` | bool | `StorageService` | Permanent monetization entitlement such as Remove Ads or cosmetics. |
+| `monetization_purchase_<productId>` | bool | `StorageService` | Owned one-time/restorable product marker. |
+| `monetization_callback_<callbackId>` | bool | `StorageService` | Idempotency marker for purchase and rewarded-ad callbacks. |
+| `monetization_interstitial_completed_since_last` | int | `StorageService` | Completed-level counter for interstitial frequency rules. |
+| `monetization_interstitial_session_count` | int | `StorageService` | Interstitial count for the current app session; reset on storage initialization. |
+| `monetization_last_interstitial_millis` | int | `StorageService` | Last interstitial timestamp in epoch milliseconds. |
+| `monetization_last_rewarded_ad_millis` | int | `StorageService` | Last rewarded ad completion timestamp in epoch milliseconds. |
 
 ## Migration Behavior
 
@@ -74,6 +83,19 @@ Reward rules are centralized in `lib/core/economy/economy_config.dart`:
 - Chapter completion: 120 Cowries once on chapter-final levels.
 - Daily rewards: seven-day local cycle.
 - Achievements: claim-once Cowrie or booster grants.
+
+## Monetization State
+
+`MonetizationState` contains the current sandbox/production environment, product catalog, entitlement ids, owned product ids, product loading status, offline status, active product id, purchase state, and last user-facing monetization message.
+
+Product ids, sandbox store ids, rewarded ad rewards, and interstitial frequency constants are centralized in `lib/core/monetization/monetization_config.dart`. Reward grants still flow through `EconomyService` so the Phase 3 wallet and booster inventory remain the source of truth.
+
+Important rules:
+
+- Remove Ads is a permanent entitlement and suppresses forced interstitial eligibility.
+- Rewarded ad rewards are voluntary and remain available to Remove Ads owners.
+- Purchase and ad callbacks use idempotency markers before granting value.
+- Restore Purchases restores non-consumable and cosmetic entitlements only.
 
 ## Audio and Haptics
 

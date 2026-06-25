@@ -20,6 +20,7 @@
 | Result | `lib/screens/result/result_screen.dart` | `/result` | Win/loss summary, grants Phase 3 rewards for normal wins, saves normal wins, offers next/retry/home actions. |
 | Chapter Complete | `lib/screens/chapter/chapter_complete_screen.dart` | `/chapter-complete/:levelId` | Chapter milestone and campaign-complete surface. |
 | Daily Reward | `lib/screens/daily/daily_reward_screen.dart` | `/daily-reward` | Seven-day local reward cycle with Cowrie/booster claim state. |
+| Shop | `lib/screens/shop/shop_screen.dart` | `/shop` | Sandbox monetization catalog with Featured, Boosters, Cowries, Cosmetics, Remove Ads, Restore Purchases, and voluntary rewarded gift. |
 | Settings | `lib/screens/settings/settings_screen.dart` | `/settings` | Audio, music volume, haptics, tile names, privacy, developer tools. |
 | Adinkra Collection | `lib/screens/preview/tile_preview_screen.dart` | `/tile-preview` | Progression-based collection browser with locked symbols, unlock source hints, and existing verified tile content for unlocked items. |
 | Developer Level Tester | `lib/screens/developer/developer_level_tester_screen.dart` | `/developer/levels` | Developer-only level grid and test launch controls. |
@@ -34,7 +35,7 @@
 | Combo overlay | `lib/screens/game/game_screen.dart` | Streak >= 2 | Temporary animated streak feedback. |
 | Game settings sheet | `lib/screens/game/game_screen.dart` | Header settings button | Bottom sheet for audio/music/tile names/haptics. Uses some legacy `AppColors`. |
 | Reset progress dialog | `lib/screens/settings/settings_screen.dart` | Developer reset action | Confirms and clears level progress keys. |
-| SnackBars | Home, Settings, Developer Tester | Completion, reset, privacy failure, test reset | Short status feedback. |
+| SnackBars | Home, Settings, Developer Tester, Daily, Shop, Result, Game controls | Completion, reward, reset, privacy failure, purchase/ad status, test reset | Short status feedback. |
 
 ## Reusable UI
 
@@ -49,6 +50,17 @@
 | `BoardWidget` | `lib/screens/game/widgets/board_widget.dart` | Rendered tile board. |
 | `TileWidget` | `lib/screens/game/widgets/tile_widget.dart` | Individual tile presentation. |
 
-## Missing Planned Screens
+## Monetization Surfaces
 
-These are not implemented after Phase 3: shop, rewarded ads, interstitial ads, banner ads, in-app purchase flows, restore purchases, and remove-ads flows.
+| Surface | File | Trigger | Behavior |
+|---|---|---|---|
+| Shop sections | `lib/screens/shop/shop_screen.dart` | Home Shop button | Featured, Boosters, Cowries, Cosmetics, Remove Ads, and Restore sections. |
+| Purchase status | `lib/screens/shop/shop_screen.dart` | Product Buy button | Sandbox pending/success/cancel/failure/offline/unavailable/already-owned states through `MonetizationService`. |
+| Restore Purchases | `lib/screens/shop/shop_screen.dart` | Shop Restore tab | Restores permanent local entitlements from owned product markers. |
+| Rewarded completion double | `lib/screens/result/result_screen.dart` | Win result | Optional rewarded grant that doubles earned Cowries. |
+| Rewarded booster rescue | `lib/screens/game/widgets/game_control_dock.dart` | Hint/Shuffle with empty inventory | Optional rewarded grant of one Hint or Shuffle, then spends it on the action. |
+| Rewarded daily/shop/retry | Daily, Shop, Result screens | Bonus chest, shop gift, loss retry assist | Optional sandbox rewarded grants. |
+
+## Deferred Production Integrations
+
+Live Google Mobile Ads, App Store / Play Billing, server-side receipt validation, consent UI, localized store prices, and cosmetic tile-back rendering are not integrated in the current sandbox monetization build.

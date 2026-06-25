@@ -121,6 +121,57 @@ class AnalyticsService {
   static void logAchievementUnlocked(String achievementId) =>
       _event('achievement_unlocked', {'achievement_id': achievementId});
 
+  static void logShopViewed(String section) =>
+      _event('shop_viewed', {'section': section});
+
+  static void logProductViewed(String productId) =>
+      _event('product_viewed', {'product_id': productId});
+
+  static void logPurchaseAttempt(String productId) =>
+      _event('purchase_attempt', {'product_id': productId});
+
+  static void logPurchaseSuccess(String productId) =>
+      _event('purchase_success', {'product_id': productId});
+
+  static void logPurchaseFailure(String productId, String reason) =>
+      _event('purchase_failure', {
+        'product_id': productId,
+        'reason': reason,
+      });
+
+  static void logRestorePurchases(String result, int restoredCount) =>
+      _event('restore_purchases', {
+        'result': result,
+        'restored_count': restoredCount,
+      });
+
+  static void logRewardedAdRequested(String placement) =>
+      _event('rewarded_ad_requested', {'placement': placement});
+
+  static void logRewardedAdCompleted(String placement) =>
+      _event('rewarded_ad_completed', {'placement': placement});
+
+  static void logRewardedAdFailed(String placement, String reason) =>
+      _event('rewarded_ad_failed', {
+        'placement': placement,
+        'reason': reason,
+      });
+
+  static void logInterstitialShown(String placement) =>
+      _event('interstitial_shown', {'placement': placement});
+
+  static void logInterstitialSkipped(String placement, String reason) =>
+      _event('interstitial_skipped', {
+        'placement': placement,
+        'reason': reason,
+      });
+
+  static void logRemoveAdsEntitlement(bool active, String source) =>
+      _event('remove_ads_entitlement', {
+        'active': active,
+        'source': source,
+      });
+
   static void _event(
     String name, [
     Map<String, Object>? parameters,

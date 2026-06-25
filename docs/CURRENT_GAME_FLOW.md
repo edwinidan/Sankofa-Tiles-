@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document records the current Adinkra Tiles flow after Phase 3. It reflects the code in `lib/main.dart`, `lib/app.dart`, `lib/core/router/app_router.dart`, the screen files, providers, and persistence services.
+This document records the current Adinkra Tiles flow after Phase 5 validation. It reflects the code in `lib/main.dart`, `lib/app.dart`, `lib/core/router/app_router.dart`, the screen files, providers, and persistence services.
 
 ## Routes
 
@@ -18,6 +18,7 @@ This document records the current Adinkra Tiles flow after Phase 3. It reflects 
 | `/chapter-complete/:levelId` | `chapter_complete` | `ChapterCompleteScreen` | Chapter milestone or final campaign completion after levels 10, 20, 30, 40, and 50. |
 | `/settings` | `settings` | `SettingsScreen` | Opens global settings, privacy policy, and developer tools when enabled. |
 | `/daily-reward` | `daily_reward` | `DailyRewardScreen` | Seven-day local daily reward claim surface. |
+| `/shop` | `shop` | `ShopScreen` | Sandbox product catalog, Remove Ads entitlement, restore purchases, and optional shop reward. |
 | `/tile-preview` | `tile_preview` | `TilePreviewScreen` | Progression-based Adinkra Collection with locked and unlocked symbols. |
 | `/developer/levels` | `developer_level_tester` | `DeveloperLevelTesterScreen` | Present only when `developerToolsEnabled` is true. Launches levels without saving normal progress. |
 
@@ -57,7 +58,7 @@ Firebase failures are logged with `debugPrint` and do not stop startup. Storage 
   -> /
 ```
 
-The onboarding is informational only. There is no interactive tutorial state yet.
+The onboarding is followed by an interactive tutorial. Tutorial completion is stored separately from onboarding and can be replayed from Settings.
 
 ## Returning User
 
@@ -65,6 +66,7 @@ The onboarding is informational only. There is no interactive tutorial state yet
 /
   -> HomeScreen
   -> wallet and booster summary from EconomyProvider
+  -> Shop and Daily Reward entry points remain optional
   -> CONTINUE
   -> ProgressService.nextUnfinishedLevelId
   -> /level/<levelId>
@@ -112,6 +114,8 @@ Final pair matched
   -> EconomyNotifier.grantLevelRewards
   -> reward reveal shows Cowries, boosters, collection unlocks, achievements, and balance
   -> ProgressService.saveLevelResult
+  -> MonetizationNotifier records interstitial eligibility state
+  -> optional rewarded ad can double earned Cowries
   -> NEXT GAME, RETURN HOME, or developer actions
 ```
 
@@ -127,6 +131,7 @@ No available matching pair
   -> AnalyticsService.logLevelFailed(reason: no_moves)
   -> lose audio/haptics
   -> /result
+  -> optional rewarded retry Shuffle
   -> HOME or RETRY
 ```
 
@@ -171,3 +176,23 @@ Home
 ```
 
 Collection unlocks are deterministic. Completing a level unlocks the first two symbols from that level, and existing progress is backfilled from completed levels when the economy state loads.
+
+## Shop and Monetization
+
+```text
+Home
+  -> SHOP
+  -> /shop
+  -> Featured / Boosters / Cowries / Cosmetics / Remove Ads / Restore
+  -> sandbox purchase state
+  -> EconomyService grants Cowries or boosters
+  -> StorageService persists permanent entitlements and idempotency markers
+```
+
+Current monetization behavior is SDK-neutral and sandbox-oriented:
+
+- Product ids and test store ids are centralized in `MonetizationConfig`.
+- Remove Ads is a permanent local entitlement that suppresses forced interstitial eligibility.
+- Rewarded placements are voluntary and grant rewards only after a successful callback.
+- Interstitials are frequency-gated and are not shown during gameplay, after loss, during tutorial, or to Remove Ads owners.
+- Live ad SDKs, platform billing SDKs, server receipt validation, consent UI, and localized store prices remain production integration blockers.

@@ -94,7 +94,7 @@ class SettingsScreen extends ConsumerWidget {
               _LinkTile(
                 icon: Icons.auto_awesome_outlined,
                 label: 'Adinkra Collection',
-                description: 'Collection progression arrives in Phase 3',
+                description: 'Review symbols unlocked through your journey',
                 onTap: () => context.push('/tile-preview'),
               ),
               const SizedBox(height: 16),

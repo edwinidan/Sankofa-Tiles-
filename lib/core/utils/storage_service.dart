@@ -26,6 +26,17 @@ class StorageService {
   static const _keyLastDailyClaimDate = 'daily_last_claim_date';
   static const _prefixCollectionUnlocked = 'collection_unlocked_';
   static const _prefixAchievementClaimed = 'achievement_claimed_';
+  static const _prefixMonetizationEntitlement = 'monetization_entitlement_';
+  static const _prefixMonetizationPurchase = 'monetization_purchase_';
+  static const _prefixMonetizationCallback = 'monetization_callback_';
+  static const _keyInterstitialCompletedSinceLast =
+      'monetization_interstitial_completed_since_last';
+  static const _keyInterstitialSessionCount =
+      'monetization_interstitial_session_count';
+  static const _keyLastInterstitialMillis =
+      'monetization_last_interstitial_millis';
+  static const _keyLastRewardedAdMillis =
+      'monetization_last_rewarded_ad_millis';
   static const _campaignProgressSchemaVersion = 3;
 
   late SharedPreferences _prefs;
@@ -34,6 +45,7 @@ class StorageService {
     try {
       _prefs = await SharedPreferences.getInstance();
       await _migrateCampaignProgressIfNeeded();
+      await _prefs.setInt(_keyInterstitialSessionCount, 0);
     } catch (error, stackTrace) {
       CrashReportingService.recordNonFatal(
         error,
@@ -210,6 +222,65 @@ class StorageService {
       _prefs.getBool('$_prefixEconomyTransaction$transactionId') == true;
   Future<void> recordEconomyTransaction(String transactionId) async =>
       _prefs.setBool('$_prefixEconomyTransaction$transactionId', true);
+
+  bool hasMonetizationEntitlement(String entitlementId) =>
+      _prefs.getBool('$_prefixMonetizationEntitlement$entitlementId') == true;
+  Future<void> setMonetizationEntitlement(String entitlementId) async =>
+      _prefs.setBool('$_prefixMonetizationEntitlement$entitlementId', true);
+  Set<String> getMonetizationEntitlementIds() => _prefs
+      .getKeys()
+      .where((key) =>
+          key.startsWith(_prefixMonetizationEntitlement) &&
+          _prefs.getBool(key) == true)
+      .map((key) => key.substring(_prefixMonetizationEntitlement.length))
+      .toSet();
+
+  bool hasMonetizationPurchase(String productId) =>
+      _prefs.getBool('$_prefixMonetizationPurchase$productId') == true;
+  Future<void> recordMonetizationPurchase(String productId) async =>
+      _prefs.setBool('$_prefixMonetizationPurchase$productId', true);
+  Set<String> getMonetizationPurchaseIds() => _prefs
+      .getKeys()
+      .where((key) =>
+          key.startsWith(_prefixMonetizationPurchase) &&
+          _prefs.getBool(key) == true)
+      .map((key) => key.substring(_prefixMonetizationPurchase.length))
+      .toSet();
+
+  bool hasMonetizationCallback(String callbackId) =>
+      _prefs.getBool('$_prefixMonetizationCallback$callbackId') == true;
+  Future<void> recordMonetizationCallback(String callbackId) async =>
+      _prefs.setBool('$_prefixMonetizationCallback$callbackId', true);
+
+  int getInterstitialCompletedSinceLast() =>
+      (_prefs.getInt(_keyInterstitialCompletedSinceLast) ?? 0).clamp(0, 999999);
+  Future<void> setInterstitialCompletedSinceLast(int count) async =>
+      _prefs.setInt(_keyInterstitialCompletedSinceLast, count.clamp(0, 999999));
+
+  int getInterstitialSessionCount() =>
+      (_prefs.getInt(_keyInterstitialSessionCount) ?? 0).clamp(0, 999999);
+  Future<void> setInterstitialSessionCount(int count) async =>
+      _prefs.setInt(_keyInterstitialSessionCount, count.clamp(0, 999999));
+
+  DateTime? getLastInterstitialAt() {
+    final millis = _prefs.getInt(_keyLastInterstitialMillis);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> setLastInterstitialAt(DateTime value) async => _prefs.setInt(
+        _keyLastInterstitialMillis,
+        value.millisecondsSinceEpoch,
+      );
+
+  DateTime? getLastRewardedAdAt() {
+    final millis = _prefs.getInt(_keyLastRewardedAdMillis);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> setLastRewardedAdAt(DateTime value) async => _prefs.setInt(
+        _keyLastRewardedAdMillis,
+        value.millisecondsSinceEpoch,
+      );
 
   int getDailyRewardDay() =>
       (_prefs.getInt(_keyDailyRewardDay) ?? 1).clamp(1, 7);

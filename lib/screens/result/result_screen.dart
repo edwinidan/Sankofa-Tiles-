@@ -14,6 +14,8 @@ import '../../models/game_state.dart';
 import '../../models/game_launch_config.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/economy_provider.dart';
+import '../../providers/monetization_provider.dart';
+import '../../core/monetization/monetization_models.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
@@ -94,6 +96,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           widget.gameState.score,
           _stars,
         );
+    await ref
+        .read(monetizationProvider.notifier)
+        .recordLevelWinAndMaybeShowInterstitial();
 
     if (mounted) {
       setState(() => _rewardSummary = rewardSummary);
@@ -281,6 +286,12 @@ class _WinContent extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           _RewardReveal(summary: rewardSummary),
+          if (rewardSummary != null && rewardSummary!.cowries > 0) ...[
+            const SizedBox(height: 10),
+            _DoubleCowriesReward(
+              cowries: rewardSummary!.cowries,
+            ),
+          ],
           const SizedBox(height: 14),
           if (launchConfig.isDeveloperTest)
             _DeveloperResultActions(
@@ -378,6 +389,34 @@ class _RewardReveal extends StatelessWidget {
   }
 }
 
+class _DoubleCowriesReward extends ConsumerWidget {
+  const _DoubleCowriesReward({
+    required this.cowries,
+  });
+
+  final int cowries;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return KenteButton(
+      label: 'DOUBLE COWRIES',
+      icon: Icons.ondemand_video_outlined,
+      width: double.infinity,
+      onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        final result =
+            await ref.read(monetizationProvider.notifier).completeRewardedAd(
+                  placement: RewardedPlacement.doubleCompletionCowries,
+                  baseCowries: cowries,
+                );
+        messenger.showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      },
+    );
+  }
+}
+
 class _LoseContent extends StatelessWidget {
   final GameState gameState;
   final GameLaunchConfig launchConfig;
@@ -440,6 +479,10 @@ class _LoseContent extends StatelessWidget {
             score: pairsMatched,
           ),
           const SizedBox(height: 22),
+          if (!launchConfig.isDeveloperTest) ...[
+            const _RetryAssistReward(),
+            const SizedBox(height: 10),
+          ],
           if (launchConfig.isDeveloperTest)
             _DeveloperResultActions(
               levelId: gameState.levelId,
@@ -463,6 +506,29 @@ class _LoseContent extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _RetryAssistReward extends ConsumerWidget {
+  const _RetryAssistReward();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return KenteButton(
+      label: 'GET RETRY SHUFFLE',
+      icon: Icons.ondemand_video_outlined,
+      width: double.infinity,
+      onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        final result =
+            await ref.read(monetizationProvider.notifier).completeRewardedAd(
+                  placement: RewardedPlacement.retryAssistance,
+                );
+        messenger.showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      },
     );
   }
 }

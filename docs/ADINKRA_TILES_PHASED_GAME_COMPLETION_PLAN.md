@@ -148,8 +148,8 @@ At the end of each phase:
 | Phase 1 | Completed | Launch Experience and Visual Foundation | Fix splash, loading, theme consistency, transitions, and app shell |
 | Phase 2 | Completed | Complete Core Game Flow | Add tutorial, Journey, pre-level, pause, result, and chapter screens |
 | Phase 3 | Completed | Rewards, Currency, Boosters, and Collection | Build the meta-game and player reward loop |
-| Phase 4 | Not Started | Shop, Ads, and In-App Purchases | Add monetization only after the economy exists |
-| Phase 5 | Not Started | QA, Balancing, Analytics, and Release Readiness | Validate the full experience before production release |
+| Phase 4 | Completed | Shop, Ads, and In-App Purchases | Add monetization only after the economy exists |
+| Phase 5 | Completed | QA, Balancing, Analytics, and Release Readiness | Validate the full experience before production release |
 
 ---
 
@@ -1052,6 +1052,9 @@ At completion:
 
 # 8. Phase 4 — Shop, Ads, and In-App Purchases
 
+**Status:** Completed  
+**Completion Report:** `docs/PHASE_4_IMPLEMENTATION_REPORT.md`
+
 ## Goal
 
 Add monetization in a way that fits the completed game loop and does not damage player trust.
@@ -1321,6 +1324,9 @@ At completion:
 ---
 
 # 9. Phase 5 — QA, Balancing, Analytics, and Release Readiness
+
+**Status:** Completed  
+**Completion Report:** `docs/PHASE_5_FINAL_REPORT.md`
 
 ## Goal
 

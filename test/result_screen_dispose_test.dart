@@ -30,6 +30,13 @@ class _RecordingStorage extends StorageService {
   final transactions = <String>{};
   final unlockedCollectionIds = <String>{};
   final claimedAchievementIds = <String>{};
+  final monetizationEntitlements = <String>{};
+  final monetizationPurchases = <String>{};
+  final monetizationCallbacks = <String>{};
+  int interstitialCompletedSinceLast = 0;
+  int interstitialSessionCount = 0;
+  DateTime? lastInterstitialAt;
+  DateTime? lastRewardedAdAt;
 
   @override
   Future<void> saveLevelResult(int levelId, int score, int stars) async {
@@ -113,6 +120,71 @@ class _RecordingStorage extends StorageService {
 
   @override
   Set<String> getClaimedAchievementIds() => claimedAchievementIds;
+
+  @override
+  bool hasMonetizationEntitlement(String entitlementId) =>
+      monetizationEntitlements.contains(entitlementId);
+
+  @override
+  Future<void> setMonetizationEntitlement(String entitlementId) async {
+    monetizationEntitlements.add(entitlementId);
+  }
+
+  @override
+  Set<String> getMonetizationEntitlementIds() => monetizationEntitlements;
+
+  @override
+  bool hasMonetizationPurchase(String productId) =>
+      monetizationPurchases.contains(productId);
+
+  @override
+  Future<void> recordMonetizationPurchase(String productId) async {
+    monetizationPurchases.add(productId);
+  }
+
+  @override
+  Set<String> getMonetizationPurchaseIds() => monetizationPurchases;
+
+  @override
+  bool hasMonetizationCallback(String callbackId) =>
+      monetizationCallbacks.contains(callbackId);
+
+  @override
+  Future<void> recordMonetizationCallback(String callbackId) async {
+    monetizationCallbacks.add(callbackId);
+  }
+
+  @override
+  int getInterstitialCompletedSinceLast() => interstitialCompletedSinceLast;
+
+  @override
+  Future<void> setInterstitialCompletedSinceLast(int count) async {
+    interstitialCompletedSinceLast = count;
+  }
+
+  @override
+  int getInterstitialSessionCount() => interstitialSessionCount;
+
+  @override
+  Future<void> setInterstitialSessionCount(int count) async {
+    interstitialSessionCount = count;
+  }
+
+  @override
+  DateTime? getLastInterstitialAt() => lastInterstitialAt;
+
+  @override
+  Future<void> setLastInterstitialAt(DateTime value) async {
+    lastInterstitialAt = value;
+  }
+
+  @override
+  DateTime? getLastRewardedAdAt() => lastRewardedAdAt;
+
+  @override
+  Future<void> setLastRewardedAdAt(DateTime value) async {
+    lastRewardedAdAt = value;
+  }
 }
 
 void main() {

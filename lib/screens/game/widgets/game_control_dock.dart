@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/sankofa_game_theme.dart';
 import '../../../core/economy/economy_models.dart';
+import '../../../core/monetization/monetization_models.dart';
 import '../../../models/game_state.dart';
 import '../../../providers/economy_provider.dart';
 import '../../../providers/game_provider.dart';
+import '../../../providers/monetization_provider.dart';
 
 class GameControlDock extends ConsumerWidget {
   const GameControlDock({super.key});
@@ -34,8 +36,22 @@ class GameControlDock extends ConsumerWidget {
                   diameter: buttonDiameter,
                   icon: Icons.lightbulb_outline,
                   label: 'Hint ${economy.boosterCount(BoosterType.hint)}',
-                  onTap: isPlaying && economy.boosterCount(BoosterType.hint) > 0
+                  onTap: isPlaying
                       ? () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          if (economy.boosterCount(BoosterType.hint) <= 0) {
+                            final result = await ref
+                                .read(monetizationProvider.notifier)
+                                .completeRewardedAd(
+                                  placement: RewardedPlacement.freeHint,
+                                );
+                            if (!result.completed) {
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(result.message)),
+                              );
+                              return;
+                            }
+                          }
                           if (await economyNotifier
                               .spendBooster(BoosterType.hint)) {
                             notifier.useHint();
@@ -47,15 +63,29 @@ class GameControlDock extends ConsumerWidget {
                   diameter: buttonDiameter,
                   icon: Icons.shuffle_rounded,
                   label: 'Shuffle ${economy.boosterCount(BoosterType.shuffle)}',
-                  onTap:
-                      isPlaying && economy.boosterCount(BoosterType.shuffle) > 0
-                          ? () async {
-                              if (await economyNotifier
-                                  .spendBooster(BoosterType.shuffle)) {
-                                notifier.shuffleRemaining();
-                              }
+                  onTap: isPlaying
+                      ? () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          if (economy.boosterCount(BoosterType.shuffle) <= 0) {
+                            final result = await ref
+                                .read(monetizationProvider.notifier)
+                                .completeRewardedAd(
+                                  placement:
+                                      RewardedPlacement.freeRescueShuffle,
+                                );
+                            if (!result.completed) {
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(result.message)),
+                              );
+                              return;
                             }
-                          : null,
+                          }
+                          if (await economyNotifier
+                              .spendBooster(BoosterType.shuffle)) {
+                            notifier.shuffleRemaining();
+                          }
+                        }
+                      : null,
                 ),
                 _ControlButton(
                   diameter: buttonDiameter,

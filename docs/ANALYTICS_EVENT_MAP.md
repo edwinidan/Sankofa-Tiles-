@@ -26,6 +26,18 @@ The router installs `_AnalyticsNavigatorObserver`, which attempts to log screen 
 | `daily_reward_claimed` | `day` | Successful daily reward claim. |
 | `collection_unlocked` | `symbol_id` | New Adinkra Collection symbol unlocked from a level reward. |
 | `achievement_unlocked` | `achievement_id` | Newly earned achievement reward. |
+| `shop_viewed` | `section` | Shop screen section changes. |
+| `product_viewed` | `product_id` | Product card purchase intent. |
+| `purchase_attempt` | `product_id` | Shop purchase button. |
+| `purchase_success` | `product_id` | Successful sandbox purchase grant. |
+| `purchase_failure` | `product_id`, `reason` | Cancelled, failed, offline, unavailable, or already-owned purchase result. |
+| `restore_purchases` | `result`, `restored_count` | Restore Purchases flow. |
+| `rewarded_ad_requested` | `placement` | Voluntary rewarded placement request. |
+| `rewarded_ad_completed` | `placement` | Rewarded placement completion with reward grant. |
+| `rewarded_ad_failed` | `placement`, `reason` | Rewarded placement failure, cancellation, offline, or duplicate callback. |
+| `interstitial_shown` | `placement` | Controlled interstitial eligibility accepted. |
+| `interstitial_skipped` | `placement`, `reason` | Interstitial suppressed by frequency, cooldown, tutorial, loss, or Remove Ads rules. |
+| `remove_ads_entitlement` | `active`, `source` | Remove Ads entitlement activation or restore. |
 | `settings_opened` | `source` | Home/settings entry and game settings sheet. |
 | `tile_preview_opened` | none | Home Tile Preview button. |
 | `onboarding_completed` | none | Onboarding finish/skip. |
@@ -54,3 +66,4 @@ Current non-fatal reports:
 - `logAppOpen()` exists but is not called.
 - Router screen names may depend on route settings provided by GoRouter; this should be verified after transition changes.
 - Daily reward view, missed-day, and cycle-completion analytics are not separated yet; Phase 3 logs successful claims only.
+- Live ad impression and billing receipt analytics are not present because Phase 4 uses SDK-neutral sandbox services.

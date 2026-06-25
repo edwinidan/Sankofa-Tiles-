@@ -4,6 +4,8 @@
 > Purpose: Complete reference for current codebase state
 > Scope: Documentation only — no code changes
 
+> Phase 5 note: this document is a historical pre-Phase-5 context snapshot. The current release-readiness state is documented in `Project_Report.md`, `docs/FINAL_GAME_FLOW.md`, `docs/RELEASE_CHECKLIST.md`, and `docs/PHASE_5_FINAL_REPORT.md`.
+
 ---
 
 # App Identity

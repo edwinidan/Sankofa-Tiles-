@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/economy/economy_models.dart';
+import '../../core/monetization/monetization_models.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../providers/economy_provider.dart';
+import '../../providers/monetization_provider.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -102,6 +104,23 @@ class DailyRewardScreen extends ConsumerWidget {
                             );
                           }
                         : null,
+                  ),
+                  const SizedBox(height: 12),
+                  KenteButton(
+                    label: 'BONUS CHEST',
+                    icon: Icons.ondemand_video_outlined,
+                    width: double.infinity,
+                    onTap: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final result = await ref
+                          .read(monetizationProvider.notifier)
+                          .completeRewardedAd(
+                            placement: RewardedPlacement.bonusDailyChest,
+                          );
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(result.message)),
+                      );
+                    },
                   ),
                 ],
               ),

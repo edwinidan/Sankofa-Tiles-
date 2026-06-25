@@ -1,5 +1,7 @@
 # GAME_FLOW.md — Sankofa Tiles
 
+> Phase 5 note: this file is preserved as historical flow documentation from the earlier MVP audit. For the current release-readiness flow, use `docs/FINAL_GAME_FLOW.md` and `docs/CURRENT_GAME_FLOW.md`.
+
 ## 1. Purpose of this Document
 
 This document maps the current user experience of Sankofa Tiles end-to-end. It documents exactly what happens at runtime based on the source code (as of 2026-06-24, version 1.0.0+3), not what was planned or what documentation previously claimed.

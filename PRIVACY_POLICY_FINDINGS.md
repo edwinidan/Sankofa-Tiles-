@@ -39,6 +39,18 @@ The app sends the following events to Google Firebase Analytics. None of these e
 | `tile_preview_opened` | *(no parameters)* | `analytics_service.dart:75` |
 | `onboarding_completed` | *(no parameters)* | `analytics_service.dart:77` |
 | `reset_progress` | *(no parameters)* | `analytics_service.dart:79` |
+| `shop_viewed` | `section` | `analytics_service.dart` |
+| `product_viewed` | `product_id` | `analytics_service.dart` |
+| `purchase_attempt` | `product_id` | `analytics_service.dart` |
+| `purchase_success` | `product_id` | `analytics_service.dart` |
+| `purchase_failure` | `product_id`, `reason` | `analytics_service.dart` |
+| `restore_purchases` | `result`, `restored_count` | `analytics_service.dart` |
+| `rewarded_ad_requested` | `placement` | `analytics_service.dart` |
+| `rewarded_ad_completed` | `placement` | `analytics_service.dart` |
+| `rewarded_ad_failed` | `placement`, `reason` | `analytics_service.dart` |
+| `interstitial_shown` | `placement` | `analytics_service.dart` |
+| `interstitial_skipped` | `placement`, `reason` | `analytics_service.dart` |
+| `remove_ads_entitlement` | `active`, `source` | `analytics_service.dart` |
 
 **Important note about Firebase Analytics defaults:** Even though the app does not explicitly pass advertising IDs or device identifiers, Firebase Analytics can automatically collect:
 - App-instance ID (a random identifier tied to each app install)
@@ -86,6 +98,14 @@ All data stored by SharedPreferences lives **only on the device**. It is never u
 | `onboarding_complete` | Boolean — whether onboarding was finished | `storage_service.dart:14` |
 | `show_tile_names` | Boolean — whether Adinkra symbol names appear on tiles | `storage_service.dart:15` |
 | `haptic_intensity` | String enum — haptic feedback level (off/low/medium/high) | `storage_service.dart:16` |
+| `economy_cowries` and `economy_booster_*` | Local Cowrie wallet and booster inventory | `storage_service.dart` |
+| `economy_tx_*` | Local reward idempotency markers | `storage_service.dart` |
+| `daily_reward_day`, `daily_last_claim_date` | Local daily reward cycle state | `storage_service.dart` |
+| `collection_unlocked_*`, `achievement_claimed_*` | Local collection and achievement unlock flags | `storage_service.dart` |
+| `monetization_entitlement_*` | Local permanent entitlements such as Remove Ads or cosmetics | `storage_service.dart` |
+| `monetization_purchase_*` | Local one-time/restorable product ownership markers | `storage_service.dart` |
+| `monetization_callback_*` | Local purchase/rewarded-callback idempotency markers | `storage_service.dart` |
+| `monetization_last_*`, `monetization_interstitial_*` | Local ad frequency and cooldown state | `storage_service.dart` |
 
 ### 2.4 Google Fonts
 
@@ -102,8 +122,8 @@ The following are explicitly **not** collected or accessed by this app:
 - **No user accounts or authentication** — no login, sign-up, email, or password
 - **No personal identifiers** — no name, phone number, address, or date of birth
 - **No precise location** — no GPS or fine-location permission
-- **No advertising ID** — no `google_mobile_ads` or AdMob SDK
-- **No in-app purchases** — no RevenueCat, no `in_app_purchase` plugin
+- **No advertising ID in the current code** — Phase 4 adds SDK-neutral sandbox/test ad flows but no `google_mobile_ads` or AdMob SDK yet.
+- **No live billing SDK in the current code** — Phase 4 adds local sandbox purchase states and entitlement handling but no RevenueCat or `in_app_purchase` plugin yet.
 - **No photos, media, or files** — no camera, microphone, photo library, or file system access
 - **No contacts or calendars**
 - **No health or fitness data**
@@ -179,18 +199,22 @@ The app provides **no in-app mechanism to request deletion** of Firebase-collect
 
 ---
 
-## 8. Monetization Plans (NOT yet implemented)
+## 8. Monetization Status
 
-The project plan (`sankofa_tiles_project_plan.md`) references planned features that are **not currently in the codebase**:
+Phase 4 adds a local, SDK-neutral monetization layer:
 
-- Google AdMob ads (`google_mobile_ads` package)
-- In-app purchases for tile packs
-- RevenueCat for "remove ads" purchase management
+- Shop screen and product catalog.
+- Sandbox purchase, restore, cancellation, failure, offline, and already-owned states.
+- Local Remove Ads entitlement.
+- Rewarded-ad style voluntary rewards using test/sandbox callbacks.
+- Interstitial frequency eligibility state.
 
-If any of these are added later, the privacy policy must be updated to disclose:
+The code still does **not** include live AdMob, Google Mobile Ads, RevenueCat, or platform billing SDKs. If those SDKs are added before release, the privacy policy must be updated to disclose:
+
 - Advertising ID usage (AdMob)
 - Purchase history collection
 - RevenueCat's data handling practices
+- Consent requirements and ad personalization settings
 
 ---
 
@@ -208,7 +232,7 @@ Based on the findings above, your privacy policy must at minimum disclose:
 8. **User controls** — the in-app "Reset All Progress" option and that uninstalling deletes all local data
 9. **Children's privacy** — a clear statement about whether the app targets children and what measures are in place
 10. **Third-party links** — links to Google's privacy policies
-11. **No ads/IAP** — that the current version has no advertisements or in-app purchases
+11. **Monetization status** — that the current code has sandbox monetization state but no live ad or billing SDK; update this before any production release with real ads or purchases.
 
 ---
 

@@ -244,6 +244,14 @@ class _RewardEntryRow extends StatelessWidget {
             },
           ),
         ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _HomeRewardButton(
+            icon: Icons.storefront_outlined,
+            label: 'Shop',
+            onTap: () => context.push('/shop'),
+          ),
+        ),
       ],
     );
   }

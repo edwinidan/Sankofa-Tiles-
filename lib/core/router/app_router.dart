@@ -11,6 +11,7 @@ import '../../screens/journey/journey_screen.dart';
 import '../../screens/pre_level/pre_level_screen.dart';
 import '../../screens/chapter/chapter_complete_screen.dart';
 import '../../screens/daily/daily_reward_screen.dart';
+import '../../screens/shop/shop_screen.dart';
 import '../../screens/developer/developer_level_tester_screen.dart';
 import '../../screens/game/game_screen.dart';
 import '../../screens/result/result_screen.dart';
@@ -76,6 +77,15 @@ GoRouter createAppRouter(StorageService storage) {
           context,
           state,
           const DailyRewardScreen(),
+        ),
+      ),
+      GoRoute(
+        name: 'shop',
+        path: '/shop',
+        pageBuilder: (context, state) => _slideFadePage(
+          context,
+          state,
+          const ShopScreen(),
         ),
       ),
       GoRoute(
