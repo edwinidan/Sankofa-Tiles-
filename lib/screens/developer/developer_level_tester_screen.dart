@@ -201,16 +201,6 @@ class _DeveloperLevelCard extends StatelessWidget {
               const SizedBox(height: 8),
               _InfoLine(label: 'Layout', value: level.layoutName),
               _InfoLine(label: 'Tiles', value: '${level.tileCount}'),
-              _InfoLine(label: 'Layers', value: '${level.layerCount}'),
-              _InfoLine(
-                label: 'Compact tile',
-                value: '${_compactFit.tileWidth.toStringAsFixed(1)} × '
-                    '${_compactFit.tileHeight.toStringAsFixed(1)}',
-              ),
-              _InfoLine(
-                label: 'Board fit',
-                value: _fitsAllViewports ? 'SAFE' : 'UNSAFE',
-              ),
               _InfoLine(
                 label: 'Difficulty',
                 value: level.difficultyCategory,
