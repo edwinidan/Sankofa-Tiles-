@@ -398,15 +398,15 @@ class GameNotifier extends StateNotifier<GameState> {
 
   double _peekCoverageForLevel(LevelDefinition levelDef) {
     final base = switch (levelDef.difficultyCategory) {
-      'Novice' => 0.04,
-      'Apprentice' => 0.07,
-      'Strategic' => 0.10,
-      'Advanced' => 0.12,
-      'Master' => 0.15,
-      _ => 0.07,
+      'Novice' => 0.10,
+      'Apprentice' => 0.14,
+      'Strategic' => 0.18,
+      'Advanced' => 0.22,
+      'Master' => 0.26,
+      _ => 0.14,
     };
-    final progressionBonus = ((levelDef.id - 1) / 100).clamp(0.0, 0.05);
-    return (base + progressionBonus).clamp(0.02, 0.20);
+    final progressionBonus = ((levelDef.id - 1) / 100).clamp(0.0, 0.06);
+    return (base + progressionBonus).clamp(0.05, 0.30);
   }
 
   void selectTile(String uid) {
