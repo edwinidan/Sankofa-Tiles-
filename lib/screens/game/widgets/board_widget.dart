@@ -16,6 +16,7 @@ bool shouldRenderBoardTile(
   TileModel tile,
   PendingMatchAnimation? matchAnimation,
 ) {
+  if (tile.isHidden) return false;
   if (!tile.isMatched) return true;
   return tile.uid == matchAnimation?.firstTileUid ||
       tile.uid == matchAnimation?.secondTileUid;
@@ -52,7 +53,7 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
       return const SizedBox.shrink();
     }
 
-    final availableUids = gameState.availableTileUids;
+    final freeUids = gameState.freeTileUids;
     final matchAnimation = gameState.pendingMatchAnimation;
     final indexedTiles = gameState.tiles.indexed.toList()
       ..sort((a, b) {
@@ -144,7 +145,7 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                 final index = entry.key;
                 final tile = entry.value;
                 final offset = tileOffset(tile.row, tile.col, tile.layer);
-                final isAvail = availableUids.contains(tile.uid);
+                final isAvail = freeUids.contains(tile.uid);
                 final isFirstMatchTile =
                     tile.uid == matchAnimation?.firstTileUid;
                 final isSecondMatchTile =

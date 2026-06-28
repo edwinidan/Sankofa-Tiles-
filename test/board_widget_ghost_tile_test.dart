@@ -27,6 +27,16 @@ void main() {
     );
   });
 
+  test('hidden tiles are not rendered', () {
+    expect(
+      shouldRenderBoardTile(
+        tile(uid: 'hidden').copyWith(visibility: TileVisibility.hidden),
+        null,
+      ),
+      isFalse,
+    );
+  });
+
   test('matched tiles remain visible only during their smash animation', () {
     final matched = tile(uid: 'matched', isMatched: true);
     const animation = PendingMatchAnimation(

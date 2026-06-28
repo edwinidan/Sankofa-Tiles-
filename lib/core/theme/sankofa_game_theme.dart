@@ -147,15 +147,16 @@ class SankofaGameTheme {
     final factor = layer.clamp(0, 6).toDouble();
     return [
       BoxShadow(
-        color: tileShadow.withValues(alpha: 0.24 + factor * 0.025),
-        offset: Offset(1.5 + factor * 0.35, 2.5 + factor * 0.45),
-        blurRadius: 4.0 + factor * 0.75,
-        spreadRadius: 0.2,
+        color: tileShadow.withValues(alpha: 0.16 + factor * 0.018),
+        offset: Offset(0, 4.0 + factor * 0.55),
+        blurRadius: 11.0 + factor * 1.4,
+        spreadRadius: -2.0,
       ),
       BoxShadow(
-        color: parchmentLight.withValues(alpha: 0.10),
-        offset: const Offset(-0.7, -0.7),
-        blurRadius: 1.2,
+        color: tileShadow.withValues(alpha: 0.08 + factor * 0.01),
+        offset: Offset(0, 1.2 + factor * 0.18),
+        blurRadius: 3.5 + factor * 0.35,
+        spreadRadius: -1.5,
       ),
     ];
   }

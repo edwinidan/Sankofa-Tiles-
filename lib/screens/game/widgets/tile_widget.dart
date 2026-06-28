@@ -10,6 +10,7 @@ import '../../../providers/game_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/sankofa_game_theme.dart';
+import '../../../widgets/tile_back.dart';
 
 const _kDefaultTileW = 64.0;
 const _kDefaultTileH = 85.0;
@@ -153,6 +154,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
     Widget body;
 
+    if (tile.isHidden) {
+      return const SizedBox.shrink();
+    }
+
     // Matched: smash animation — impact burst → shake → shatter out
     if (tile.isMatched) {
       if (_coordinatedMatchFinished) {
@@ -202,6 +207,16 @@ class _TileWidgetState extends ConsumerState<TileWidget>
               .fade(end: 0, duration: 210.ms);
     }
 
+    // Covered or blocked: visible back artwork. Free covered tiles can be
+    // tapped to peek/select, then return face-down unless matched.
+    else if (tile.isCovered || (!widget.isAvailable && !tile.isMatched)) {
+      body = _buildInteractiveTile(
+        tile: tile,
+        tileH: tileH,
+        child: TileBackWidget(width: tileW, height: tileH),
+      );
+    }
+
     // Hinted: stronger antique-gold pulse without dimming the tile artwork.
     else if (tile.isHinted) {
       body = AnimatedBuilder(
@@ -237,43 +252,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         forceHideName: widget.forceHideName,
       );
 
-      body = GestureDetector(
-        onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
-        onTapDown: (_) {
-          HapticService.tilePress(ref.read(settingsProvider).hapticIntensity);
-          setState(() => _isPressed = true);
-          widget.onPressChanged?.call(true);
-        },
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          widget.onPressChanged?.call(false);
-        },
-        onTapCancel: () {
-          setState(() => _isPressed = false);
-          widget.onPressChanged?.call(false);
-        },
-        child: AnimatedSlide(
-          duration: _kTouchLiftDuration,
-          curve: _isPressed ? Curves.easeOutCubic : Curves.easeOutBack,
-          offset: Offset(
-            0,
-            _isPressed
-                ? -min(10.0, tileH * 0.12) / tileH
-                : tile.isSelected
-                    ? -min(5.0, tileH * 0.06) / tileH
-                    : 0,
-          ),
-          child: AnimatedScale(
-            duration: _kTouchLiftDuration,
-            curve: Curves.easeOutCubic,
-            scale: _isPressed
-                ? 1.24
-                : tile.isSelected
-                    ? 1.20
-                    : 1.0,
-            child: physicalTile,
-          ),
-        ),
+      body = _buildInteractiveTile(
+        tile: tile,
+        tileH: tileH,
+        child: physicalTile,
       );
     }
 
@@ -284,7 +266,79 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         offset: Offset(_shakeX.value, 0),
         child: child,
       ),
-      child: body,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          final rotate = Tween<double>(
+            begin: pi / 2,
+            end: 0,
+          ).animate(animation);
+          return AnimatedBuilder(
+            animation: rotate,
+            child: child,
+            builder: (context, animatedChild) {
+              return Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateY(rotate.value),
+                child: animatedChild,
+              );
+            },
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey('${tile.uid}_${tile.visibility}_${tile.isMatched}'),
+          child: body,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInteractiveTile({
+    required TileModel tile,
+    required double tileH,
+    required Widget child,
+  }) {
+    return GestureDetector(
+      onTap: () => ref.read(gameProvider.notifier).selectTile(tile.uid),
+      onTapDown: (_) {
+        HapticService.tilePress(ref.read(settingsProvider).hapticIntensity);
+        setState(() => _isPressed = true);
+        widget.onPressChanged?.call(true);
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onPressChanged?.call(false);
+      },
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+        widget.onPressChanged?.call(false);
+      },
+      child: AnimatedSlide(
+        duration: _kTouchLiftDuration,
+        curve: _isPressed ? Curves.easeOutCubic : Curves.easeOutBack,
+        offset: Offset(
+          0,
+          _isPressed
+              ? -min(10.0, tileH * 0.12) / tileH
+              : tile.isSelected
+                  ? -min(5.0, tileH * 0.06) / tileH
+                  : 0,
+        ),
+        child: AnimatedScale(
+          duration: _kTouchLiftDuration,
+          curve: Curves.easeOutCubic,
+          scale: _isPressed
+              ? 1.24
+              : tile.isSelected
+                  ? 1.20
+                  : 1.0,
+          child: child,
+        ),
+      ),
     );
   }
 

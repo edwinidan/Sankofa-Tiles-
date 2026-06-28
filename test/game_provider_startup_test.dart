@@ -7,6 +7,7 @@ import 'package:sankofa_tiles/core/utils/board_solver.dart';
 import 'package:sankofa_tiles/core/utils/campaign_validator.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
+import 'package:sankofa_tiles/models/tile_model.dart';
 import 'package:sankofa_tiles/providers/game_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -65,6 +66,47 @@ void main() {
         reason: 'Level $levelId startup regressed',
       );
     }
+  });
+
+  test('layered levels start with a mixed face-up and back-tile layout', () {
+    final container = ProviderContainer(
+      overrides: [
+        audioServiceProvider.overrideWithValue(
+          AudioService(sound: false, music: false),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    container
+        .read(gameProvider.notifier)
+        .startLevel(10, DifficultyMode.relaxed);
+
+    final state = container.read(gameProvider);
+    final freeUids =
+        BoardSolver.getFreeTiles(state.tiles).map((tile) => tile.uid).toSet();
+    final blockedTiles =
+        state.tiles.where((tile) => !freeUids.contains(tile.uid)).toList();
+
+    expect(state.status, GameStatus.playing);
+    expect(
+      state.tiles.where((tile) => tile.visibility == TileVisibility.revealed),
+      isNotEmpty,
+    );
+    expect(
+      state.tiles.where((tile) => tile.visibility == TileVisibility.covered),
+      isNotEmpty,
+    );
+    expect(
+      blockedTiles.where((tile) => tile.visibility == TileVisibility.revealed),
+      isNotEmpty,
+    );
+    expect(
+      blockedTiles.where((tile) => tile.visibility == TileVisibility.covered),
+      isNotEmpty,
+    );
+    expect(state.availableTileUids, isNotEmpty);
+    expect(BoardSolver.isSolvable(state.tiles), isTrue);
   });
 
   test('all campaign levels generate without exceptions', () {

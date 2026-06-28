@@ -62,12 +62,30 @@ class GameState {
   bool get hasWon => tiles.isNotEmpty && tiles.every((t) => t.isMatched);
 
   Set<String> get availableTileUids {
+    return BoardSolver.getFreeTiles(tiles)
+        .where((tile) => tile.isRevealed)
+        .map((tile) => tile.uid)
+        .toSet();
+  }
+
+  Set<String> get freeTileUids {
     return BoardSolver.getFreeTiles(tiles).map((tile) => tile.uid).toSet();
+  }
+
+  Set<String> get peekableTileUids {
+    return BoardSolver.getFreeTiles(tiles)
+        .where((tile) => tile.isCovered)
+        .map((tile) => tile.uid)
+        .toSet();
   }
 
   bool get isStuck {
     final remaining = tiles.where((t) => !t.isMatched).length;
-    return remaining > 0 && !BoardSolver.hasAvailableMove(tiles);
+    if (peekableTileUids.isNotEmpty) return false;
+    final hasRevealedMove = BoardSolver.findAvailableMatchingPairs(tiles).any(
+      (pair) => pair.first.isRevealed && pair.second.isRevealed,
+    );
+    return remaining > 0 && !hasRevealedMove;
   }
 
   GameState copyWith({

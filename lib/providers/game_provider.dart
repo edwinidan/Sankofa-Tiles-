@@ -153,9 +153,11 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
+      final preparedTiles = _applyInitialPeekCoverage(tiles, levelDef);
+
       final stateStopwatch = Stopwatch()..start();
       state = GameState(
-        tiles: tiles,
+        tiles: preparedTiles,
         status: GameStatus.playing,
         difficulty: difficulty,
         score: 0,
@@ -352,6 +354,61 @@ class GameNotifier extends StateNotifier<GameState> {
     return pairs;
   }
 
+  List<TileModel> _applyInitialPeekCoverage(
+    List<TileModel> tiles,
+    LevelDefinition levelDef,
+  ) {
+    final rng = Random(levelDef.id * 9973 + tiles.length);
+    final freeUids =
+        BoardSolver.getFreeTiles(tiles).map((tile) => tile.uid).toSet();
+    final freeTiles = tiles
+        .where((tile) => freeUids.contains(tile.uid))
+        .toList()
+      ..shuffle(rng);
+    final blockedTiles = tiles
+        .where((tile) => !freeUids.contains(tile.uid))
+        .toList()
+      ..shuffle(rng);
+
+    final coverage = _peekCoverageForLevel(levelDef);
+    final freeTarget = freeTiles.isEmpty
+        ? 0
+        : max(1, (freeTiles.length * coverage * 0.55).round());
+    final blockedTarget = blockedTiles.isEmpty
+        ? 0
+        : (blockedTiles.length * coverage).round().clamp(
+              1,
+              max(1, blockedTiles.length - 1),
+            ) as int;
+
+    final coveredUids = <String>{
+      ...freeTiles.take(freeTarget).map((tile) => tile.uid),
+      ...blockedTiles.take(blockedTarget).map((tile) => tile.uid),
+    };
+
+    return tiles.map((tile) {
+      return tile.copyWith(
+        visibility: coveredUids.contains(tile.uid)
+            ? TileVisibility.covered
+            : TileVisibility.revealed,
+        isPeeked: false,
+      );
+    }).toList();
+  }
+
+  double _peekCoverageForLevel(LevelDefinition levelDef) {
+    final base = switch (levelDef.difficultyCategory) {
+      'Novice' => 0.18,
+      'Apprentice' => 0.22,
+      'Strategic' => 0.26,
+      'Advanced' => 0.30,
+      'Master' => 0.34,
+      _ => 0.22,
+    };
+    final progressionBonus = ((levelDef.id - 1) / 100).clamp(0.0, 0.08);
+    return (base + progressionBonus).clamp(0.12, 0.38);
+  }
+
   void selectTile(String uid) {
     if (state.status != GameStatus.playing) return;
     if (state.pendingMatchAnimation != null) return;
@@ -363,9 +420,24 @@ class GameNotifier extends StateNotifier<GameState> {
     if (tile.isMatched) return;
 
     // Mahjong rule: tile must be free (not covered, one side open)
-    if (!state.availableTileUids.contains(uid)) return;
+    if (!state.freeTileUids.contains(uid)) return;
 
     _audio.playTileTap();
+
+    if (tile.isCovered && state.selectedTileUid == null) {
+      state = state.copyWith(
+        tiles: _updateTile(
+          uid,
+          isSelected: true,
+          isPeeked: true,
+          visibility: TileVisibility.revealed,
+        ),
+        selectedTileUid: uid,
+      );
+      return;
+    }
+
+    if (!tile.isRevealed && !tile.isCovered) return;
 
     // No tile selected yet
     if (state.selectedTileUid == null) {
@@ -379,7 +451,10 @@ class GameNotifier extends StateNotifier<GameState> {
     // Same tile tapped — deselect
     if (state.selectedTileUid == uid) {
       state = state.copyWith(
-        tiles: _updateTile(uid, isSelected: false),
+        tiles: _hidePeekedTiles(
+          _updateTile(uid, isSelected: false),
+          onlyTileUids: {uid},
+        ),
         clearSelectedTile: true,
       );
       return;
@@ -390,7 +465,12 @@ class GameNotifier extends StateNotifier<GameState> {
     final firstTile = state.tiles.firstWhere((t) => t.uid == firstUid);
     final secondTile = tile;
 
-    final updatedTiles = _updateTile(uid, isSelected: true);
+    final updatedTiles = _updateTile(
+      uid,
+      isSelected: true,
+      isPeeked: tile.isCovered ? true : null,
+      visibility: tile.isCovered ? TileVisibility.revealed : null,
+    );
 
     if (firstTile.def.id == secondTile.def.id) {
       final isSafeMove = BoardSolver.isSafeMove(
@@ -434,7 +514,12 @@ class GameNotifier extends StateNotifier<GameState> {
               }
               return t;
             }).toList();
-            state = state.copyWith(tiles: cleared);
+            state = state.copyWith(
+              tiles: _hidePeekedTiles(
+                cleared,
+                onlyTileUids: {firstUid, uid},
+              ),
+            );
           });
           return;
         }
@@ -443,7 +528,11 @@ class GameNotifier extends StateNotifier<GameState> {
       final matchedTiles = updatedTiles.map((t) {
         if (t.uid == firstUid || t.uid == uid) {
           return t.copyWith(
-              isMatched: true, isSelected: false, isHinted: false);
+            isMatched: true,
+            isSelected: false,
+            isHinted: false,
+            isPeeked: false,
+          );
         }
         return t;
       }).toList();
@@ -524,7 +613,12 @@ class GameNotifier extends StateNotifier<GameState> {
           }
           return t;
         }).toList();
-        state = state.copyWith(tiles: deselected);
+        state = state.copyWith(
+          tiles: _hidePeekedTiles(
+            deselected,
+            onlyTileUids: {firstUid, uid},
+          ),
+        );
         _checkStuck();
       });
     }
@@ -533,7 +627,7 @@ class GameNotifier extends StateNotifier<GameState> {
   void useHint() {
     if (state.status != GameStatus.playing) return;
 
-    final pairs = BoardSolver.findAvailableMatchingPairs(state.tiles);
+    final pairs = _findRevealedMatchingPairs(state.tiles);
     if (pairs.isEmpty) return;
 
     _audio.playHint();
@@ -592,7 +686,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
   bool useOpenPath() {
     if (state.status != GameStatus.playing) return false;
-    final pairs = BoardSolver.findAvailableMatchingPairs(state.tiles);
+    final pairs = _findRevealedMatchingPairs(state.tiles);
     if (pairs.isEmpty) return false;
 
     TilePair? chosen;
@@ -613,7 +707,11 @@ class GameNotifier extends StateNotifier<GameState> {
     final updatedTiles = state.tiles.map((tile) {
       if (removedIds.contains(tile.uid)) {
         return tile.copyWith(
-            isMatched: true, isSelected: false, isHinted: false);
+          isMatched: true,
+          isSelected: false,
+          isHinted: false,
+          isPeeked: false,
+        );
       }
       return tile;
     }).toList();
@@ -659,6 +757,10 @@ class GameNotifier extends StateNotifier<GameState> {
           layer: layer,
           isSelected: false,
           isHinted: false,
+          isPeeked: false,
+          visibility: unmatched[i].isPeeked
+              ? TileVisibility.covered
+              : unmatched[i].visibility,
         );
       });
 
@@ -748,7 +850,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   bool _hasSafeMatchingMove(List<TileModel> tiles) {
-    return BoardSolver.findAvailableMatchingPairs(tiles).any(
+    return _findRevealedMatchingPairs(tiles).any(
       (pair) => BoardSolver.isSafeMove(
         tiles,
         pair.first,
@@ -777,6 +879,8 @@ class GameNotifier extends StateNotifier<GameState> {
     bool? isSelected,
     bool? isMatched,
     bool? isHinted,
+    bool? isPeeked,
+    TileVisibility? visibility,
   }) {
     return state.tiles.map((t) {
       if (t.uid == uid) {
@@ -784,9 +888,36 @@ class GameNotifier extends StateNotifier<GameState> {
           isSelected: isSelected,
           isMatched: isMatched,
           isHinted: isHinted,
+          isPeeked: isPeeked,
+          visibility: visibility,
         );
       }
       return t;
+    }).toList();
+  }
+
+  List<TilePair> _findRevealedMatchingPairs(List<TileModel> tiles) {
+    return BoardSolver.findAvailableMatchingPairs(tiles)
+        .where((pair) => pair.first.isRevealed && pair.second.isRevealed)
+        .toList();
+  }
+
+  List<TileModel> _hidePeekedTiles(
+    List<TileModel> tiles, {
+    Set<String>? onlyTileUids,
+  }) {
+    return tiles.map((tile) {
+      final shouldConsider =
+          onlyTileUids == null || onlyTileUids.contains(tile.uid);
+      if (shouldConsider && tile.isPeeked && !tile.isMatched) {
+        return tile.copyWith(
+          isSelected: false,
+          isHinted: false,
+          isPeeked: false,
+          visibility: TileVisibility.covered,
+        );
+      }
+      return tile;
     }).toList();
   }
 }
