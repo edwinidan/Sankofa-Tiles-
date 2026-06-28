@@ -373,12 +373,12 @@ class GameNotifier extends StateNotifier<GameState> {
     final coverage = _peekCoverageForLevel(levelDef);
     final freeTarget = freeTiles.isEmpty
         ? 0
-        : (freeTiles.length * coverage * 0.55).round();
+        : max(1, (freeTiles.length * coverage * 0.55).round());
     final blockedTarget = blockedTiles.isEmpty
         ? 0
         : (blockedTiles.length * coverage).round().clamp(
-              0,
-              max(0, blockedTiles.length - 1),
+              1,
+              max(1, blockedTiles.length - 1),
             ) as int;
 
     final coveredUids = <String>{
@@ -398,15 +398,15 @@ class GameNotifier extends StateNotifier<GameState> {
 
   double _peekCoverageForLevel(LevelDefinition levelDef) {
     final base = switch (levelDef.difficultyCategory) {
-      'Novice' => 0.01,
-      'Apprentice' => 0.03,
-      'Strategic' => 0.05,
-      'Advanced' => 0.08,
-      'Master' => 0.12,
-      _ => 0.03,
+      'Novice' => 0.04,
+      'Apprentice' => 0.07,
+      'Strategic' => 0.10,
+      'Advanced' => 0.12,
+      'Master' => 0.15,
+      _ => 0.07,
     };
-    final progressionBonus = ((levelDef.id - 1) / 100).clamp(0.0, 0.04);
-    return (base + progressionBonus).clamp(0.0, 0.15);
+    final progressionBonus = ((levelDef.id - 1) / 100).clamp(0.0, 0.05);
+    return (base + progressionBonus).clamp(0.02, 0.20);
   }
 
   void selectTile(String uid) {

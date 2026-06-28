@@ -209,7 +209,7 @@ class _TileWidgetState extends ConsumerState<TileWidget>
 
     // Covered or blocked: visible back artwork. Free covered tiles can be
     // tapped to peek/select, then return face-down unless matched.
-    else if (tile.isCovered || (!widget.isAvailable && !tile.isMatched)) {
+    else if (tile.isCovered) {
       body = _buildInteractiveTile(
         tile: tile,
         tileH: tileH,
