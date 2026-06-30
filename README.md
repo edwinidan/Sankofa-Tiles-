@@ -3,8 +3,8 @@
 A Ghanaian Adinkra Mahjong solitaire tile-matching game built with Flutter.
 
 Match pairs of Adinkra symbol tiles on 3D-layered boards following classic
-Mahjong solitaire "free tile" rules. 50 levels spanning five difficulty tiers,
-from novice to master.
+Mahjong solitaire "free tile" rules. 200 levels spanning twenty themed chapters,
+from novice boards to legendary archive trials.
 
 **Version:** 1.0.0+3
 **Platforms:** Android, iOS (portrait only)

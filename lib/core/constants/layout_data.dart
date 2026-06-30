@@ -511,34 +511,40 @@ final smallShrineLayout = namedLayout(
 final openCourtyardLayout = namedLayout(
   'openCourtyard',
   'Open Courtyard',
-  courtyardLayout(width: 5, height: 4, towers: 1),
+  compactLayeredFormation([
+    [4, 6, 6, 6, 4],
+    [2, 4, 2],
+    [2, 2],
+  ]),
 );
 
 final riverPathLayout = namedLayout(
   'riverPath',
   'River Path',
-  windingPathLayout(turns: 3),
+  compactLayeredFormation([
+    [4, 6, 6, 6, 4],
+    [2, 4, 4, 2],
+    [2, 2, 2],
+  ]),
 );
 
 final wisdomHouseLayout = namedLayout(
   'wisdomHouse',
   'Wisdom House',
-  courtyardLayout(width: 6, height: 5, towers: 2),
+  compactLayeredFormation([
+    [4, 6, 6, 4],
+    [2, 4, 4, 2],
+    [2, 2],
+  ]),
 );
 
 final gatheringWingsLayout = namedLayout(
   'gatheringWings',
   'Gathering Wings',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6],
-    [3, 4, 4, 3],
-    [2, 4, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    -1,
-    1,
-    0
+    [4, 6, 7, 7, 6, 4],
+    [2, 4, 4, 2],
+    [2, 2],
   ]),
 );
 
@@ -549,10 +555,6 @@ final elderBridgeLayout = namedLayout(
     [4, 6, 6, 6, 4],
     [2, 4, 4, 2],
     [2, 2],
-  ], layerColumnOffsets: [
-    0,
-    1,
-    -1
   ]),
 );
 
@@ -560,10 +562,9 @@ final heritageTurtleLayout = namedLayout(
   'heritageTurtle',
   'Heritage Turtle',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
+    [4, 6, 7, 7, 6, 4],
     [3, 4, 4, 3],
     [2, 4, 2],
-    [2],
   ]),
 );
 
@@ -571,17 +572,9 @@ final butterflyLayout = namedLayout(
   'butterfly',
   'Butterfly',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
-    [4, 5, 5, 4],
-    [2, 3, 3, 2],
-    [2, 2, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    -1,
-    1,
-    -1,
-    0
+    [4, 6, 7, 7, 7, 5, 4],
+    [2, 4, 6, 4, 2],
+    [2, 4, 2],
   ]),
 );
 
@@ -589,10 +582,9 @@ final templeStepsLayout = namedLayout(
   'templeSteps',
   'Temple Steps',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
+    [4, 6, 7, 7, 6, 4],
     [3, 4, 4, 3],
     [2, 4, 2],
-    [2],
   ]),
 );
 
@@ -600,15 +592,9 @@ final wisdomStaircaseLayout = namedLayout(
   'wisdomStaircase',
   'Wisdom Staircase',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6],
-    [2, 3, 4, 3, 2],
+    [4, 6, 6, 6, 4],
+    [2, 4, 4, 2],
     [2, 4, 2],
-    [2],
-  ], layerColumnOffsets: [
-    -1,
-    0,
-    1,
-    0
   ]),
 );
 
@@ -616,15 +602,9 @@ final crownLayout = namedLayout(
   'crown',
   'Crown',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
+    [4, 6, 7, 7, 6, 4],
     [3, 4, 4, 3],
     [2, 4, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    -1,
-    1,
-    0
   ]),
 );
 
@@ -632,15 +612,9 @@ final sacredGroveLayout = namedLayout(
   'sacredGrove',
   'Sacred Grove',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6],
+    [4, 6, 6, 6, 4],
     [3, 4, 4, 3],
     [2, 2, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    1,
-    -1,
-    0
   ]),
 );
 
@@ -648,55 +622,49 @@ final royalStoolLayout = namedLayout(
   'royalStool',
   'Royal Stool',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
-    [4, 5, 5, 4],
-    [2, 3, 3, 2],
+    [4, 6, 7, 7, 7, 5, 4],
+    [4, 6, 6, 4],
     [2, 2],
-    [2],
   ]),
 );
 
 final ancestralGateLayout = namedLayout(
   'ancestralGate',
   'Ancestral Gate',
-  courtyardLayout(width: 7, height: 5, towers: 2),
+  compactLayeredFormation([
+    [4, 6, 7, 7, 6, 4],
+    [2, 4, 4, 2],
+    [2, 2],
+  ]),
 );
 
 final twinTowersLayout = namedLayout(
   'twinTowers',
   'Twin Towers',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6],
+    [4, 6, 6, 6, 4],
     [3, 4, 4, 3],
     [2, 4, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    1,
-    -1,
-    0
   ]),
 );
 
 final raisedCourtyardLayout = namedLayout(
   'raisedCourtyard',
   'Raised Courtyard',
-  courtyardLayout(width: 7, height: 6, towers: 3),
+  compactLayeredFormation([
+    [4, 6, 7, 7, 6, 4],
+    [3, 4, 4, 3],
+    [2, 4, 2],
+  ]),
 );
 
 final splitIslandsLayout = namedLayout(
   'splitIslands',
   'Split Islands',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
+    [4, 6, 7, 7, 6, 4],
     [4, 4, 4, 4],
     [2, 4, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    -1,
-    1,
-    0
   ]),
 );
 
@@ -704,10 +672,9 @@ final fortressLayout = namedLayout(
   'fortress',
   'Fortress',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
+    [4, 6, 7, 7, 6, 4],
     [3, 4, 4, 3],
     [2, 4, 2],
-    [2],
   ]),
 );
 
@@ -715,11 +682,9 @@ final hiddenCenterLayout = namedLayout(
   'hiddenCenter',
   'Hidden Center',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6, 6],
-    [4, 4, 5, 5, 4],
-    [2, 4, 4, 4],
-    [2, 2, 2],
-    [2],
+    [4, 6, 7, 7, 7, 5, 4],
+    [4, 6, 6, 6, 4],
+    [2, 4, 4, 2],
   ]),
 );
 
@@ -727,11 +692,9 @@ final festivalArchiveLayout = namedLayout(
   'festivalArchive',
   'Festival Archive',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
-    [4, 5, 5, 4],
-    [2, 4, 4, 2],
+    [4, 6, 7, 7, 7, 5, 4],
+    [2, 4, 6, 6, 4],
     [2, 2, 2],
-    [2],
   ]),
 );
 
@@ -742,7 +705,6 @@ final layeredCourtyardLayout = namedLayout(
     [4, 6, 6, 6, 6],
     [2, 4, 4, 2],
     [2, 2, 2],
-    [2],
   ]),
 );
 
@@ -753,12 +715,6 @@ final windingPathLayoutA = namedLayout(
     [4, 6, 6, 6, 4],
     [2, 4, 4, 2],
     [2, 2, 2],
-    [2],
-  ], layerColumnOffsets: [
-    -1,
-    0,
-    1,
-    0
   ]),
 );
 
@@ -766,11 +722,9 @@ final grandTurtleLayout = namedLayout(
   'grandTurtle',
   'Grand Turtle',
   compactLayeredFormation([
-    [5, 6, 6, 6, 6, 6, 5],
-    [4, 4, 4, 4, 4, 4],
-    [4, 4, 4, 4],
-    [2, 4, 2],
-    [2],
+    [4, 6, 7, 7, 7, 6, 5],
+    [4, 6, 7, 7, 6, 2],
+    [2, 4, 4, 2],
   ]),
 );
 
@@ -778,11 +732,9 @@ final layeredShrineLayout = namedLayout(
   'layeredShrine',
   'Layered Shrine',
   compactLayeredFormation([
-    [4, 5, 6, 6, 6, 6, 5],
-    [4, 4, 4, 4, 4, 4],
-    [4, 4, 4, 4],
-    [2, 4, 2],
-    [2],
+    [4, 6, 7, 7, 7, 6, 5],
+    [3, 6, 7, 7, 5, 2],
+    [2, 4, 4, 2],
   ]),
 );
 
@@ -790,17 +742,9 @@ final multiPeakLayout = namedLayout(
   'multiPeak',
   'Multi Peak',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6, 6],
-    [4, 4, 4, 4, 4],
-    [2, 4, 4, 4],
-    [2, 2, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    -1,
-    1,
-    -1,
-    0
+    [4, 6, 7, 7, 7, 5, 4],
+    [3, 5, 6, 5, 3],
+    [2, 4, 4],
   ]),
 );
 
@@ -808,11 +752,9 @@ final complexFortressLayout = namedLayout(
   'complexFortress',
   'Complex Fortress',
   compactLayeredFormation([
-    [4, 6, 6, 6, 6],
-    [4, 5, 5, 4],
-    [2, 3, 3, 2],
-    [2, 2],
-    [2],
+    [4, 6, 7, 7, 7, 5, 4],
+    [3, 5, 5, 3],
+    [2, 2, 2],
   ]),
 );
 
@@ -820,17 +762,9 @@ final sacredBridgeLayout = namedLayout(
   'sacredBridge',
   'Sacred Bridge',
   compactLayeredFormation([
-    [4, 5, 6, 6, 5, 4],
-    [4, 5, 5, 4],
-    [2, 3, 3, 2],
-    [2, 2, 2],
-    [2],
-  ], layerColumnOffsets: [
-    0,
-    -1,
-    1,
-    -1,
-    0
+    [4, 6, 7, 7, 7, 6, 5],
+    [3, 5, 5, 3],
+    [2, 4, 2],
   ]),
 );
 
@@ -838,11 +772,9 @@ final ancestralCrownLayout = namedLayout(
   'ancestralCrown',
   'Ancestral Crown',
   compactLayeredFormation([
-    [5, 6, 6, 6, 6, 6, 5],
-    [4, 5, 6, 5, 4, 2],
-    [4, 4, 4, 4],
-    [2, 4, 2],
-    [2, 2],
+    [4, 6, 7, 7, 7, 6, 5],
+    [3, 5, 7, 7, 6, 4],
+    [2, 4, 4, 2],
   ]),
 );
 
@@ -850,11 +782,9 @@ final grandTreasuryLayout = namedLayout(
   'grandTreasury',
   'Grand Treasury',
   compactLayeredFormation([
-    [6, 7, 7, 7, 7, 7, 7],
-    [6, 6, 6, 6, 6, 6],
-    [4, 4, 6, 6, 4, 2],
-    [4, 4, 4, 4],
-    [2, 2],
+    [6, 7, 7, 7, 7, 7, 6],
+    [5, 7, 7, 7, 7, 5],
+    [4, 6, 7, 6, 4],
   ]),
 );
 
@@ -862,11 +792,9 @@ final templeComplexLayout = namedLayout(
   'templeComplex',
   'Temple Complex',
   compactLayeredFormation([
-    [4, 5, 6, 6, 6, 5],
-    [4, 4, 4, 4, 4],
-    [2, 4, 4, 2],
-    [2, 2],
-    [2],
+    [4, 6, 7, 7, 7, 5, 4],
+    [3, 5, 6, 4],
+    [2, 4, 4],
   ]),
 );
 
@@ -874,12 +802,9 @@ final finalArchiveLayout = namedLayout(
   'finalArchive',
   'Final Archive',
   compactLayeredFormation([
-    [5, 6, 7, 7, 7, 7, 5],
-    [4, 6, 6, 6, 6, 6],
-    [4, 4, 4, 4, 4, 4],
-    [2, 4, 4, 4],
-    [2, 2],
-    [2],
+    [6, 7, 7, 7, 7, 7, 6],
+    [5, 7, 7, 7, 7, 5],
+    [4, 6, 7, 6, 4],
   ]),
 );
 

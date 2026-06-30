@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/chapter_data.dart';
+import '../../core/constants/level_data.dart';
 import '../../core/economy/economy_models.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../providers/economy_provider.dart';
 import '../../providers/progress_provider.dart';
+import '../../widgets/cowrie_icon.dart';
 import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/adinkra_divider.dart';
@@ -131,8 +133,11 @@ class _ProgressSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final nextLevelId = progress.nextUnfinishedLevelId;
-    final chapter = chapterForLevel(nextLevelId ?? 50);
+    final chapter = chapterForLevel(nextLevelId ?? kFinalCampaignLevelId);
     final completed = progress.highestCompletedLevel;
+    final progressValue = kCampaignLevelCount == 0
+        ? 0.0
+        : (completed / kCampaignLevelCount).clamp(0.0, 1.0);
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 380),
@@ -152,7 +157,7 @@ class _ProgressSummary extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             LinearProgressIndicator(
-              value: completed / 50,
+              value: progressValue,
               backgroundColor: SankofaGameTheme.boardEdge,
               valueColor: const AlwaysStoppedAnimation<Color>(
                 SankofaGameTheme.antiqueGold,
@@ -160,7 +165,8 @@ class _ProgressSummary extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Levels $completed/50 · Stars ${progress.totalStars}/150',
+              'Levels $completed/$kCampaignLevelCount · Stars '
+              '${progress.totalStars}/$kMaximumCampaignStars',
               style: AppTextStyles.bodySmall.copyWith(
                 color: SankofaGameTheme.mutedLightText,
               ),
@@ -192,14 +198,9 @@ class _WalletSummary extends ConsumerWidget {
         decoration: SankofaGameTheme.darkPanelDecoration(),
         child: Row(
           children: [
-            const Icon(
-              Icons.monetization_on_outlined,
-              color: SankofaGameTheme.antiqueGold,
-            ),
-            const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                '${economy.cowries} Cowries',
+              child: CowrieAmount(
+                amount: economy.cowries,
                 style: AppTextStyles.titleMedium.copyWith(
                   color: SankofaGameTheme.parchmentLight,
                 ),

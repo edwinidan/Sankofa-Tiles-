@@ -54,7 +54,14 @@ class GameControlDock extends ConsumerWidget {
                           }
                           if (await economyNotifier
                               .spendBooster(BoosterType.hint)) {
-                            notifier.useHint();
+                            final used = notifier.useHint();
+                            if (!used) {
+                              await economyNotifier.addBooster(
+                                BoosterType.hint,
+                                1,
+                                reason: 'hint_refund',
+                              );
+                            }
                           }
                         }
                       : null,
@@ -82,7 +89,14 @@ class GameControlDock extends ConsumerWidget {
                           }
                           if (await economyNotifier
                               .spendBooster(BoosterType.shuffle)) {
-                            notifier.shuffleRemaining();
+                            final used = notifier.shuffleRemaining();
+                            if (!used) {
+                              await economyNotifier.addBooster(
+                                BoosterType.shuffle,
+                                1,
+                                reason: 'shuffle_refund',
+                              );
+                            }
                           }
                         }
                       : null,

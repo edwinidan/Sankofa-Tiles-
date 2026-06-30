@@ -62,13 +62,13 @@
    - Pause → pause overlay with Resume / Quit
    - Settings (gear icon) → in-game settings bottom sheet
 7. **Game End** → Auto-navigates to `/result`:
-   - **Win** → Stars (computed from dynamic thresholds), score breakdown, "NEXT GAME" button (or "All Levels Completed" / "RETURN HOME" at level 50)
+   - **Win** → Stars (computed from dynamic thresholds), score breakdown, "NEXT GAME" button (or "All Levels Completed" / "RETURN HOME" at level 200)
    - **Lose** (no more moves after auto-shuffle) → Score, proverb, Home / Retry buttons
 8. **Result** → User can go Home, Retry, or (on win) Next Game.
 9. **Other flows**:
     - Settings (from Home) → Audio, haptic, show tile names, privacy policy, developer tools section
     - Tile Preview (from Home) → Browse all ~90 Adinkra tile symbols
-    - Developer Level Tester (from Settings, debug only) → Test any of 50 levels without saving progress
+    - Developer Level Tester (from Settings, debug only) → Test any of 200 levels without saving progress
 
 ## Navigation Approach
 
@@ -190,11 +190,11 @@ Shows large preview image (or rendered TileWidget), name/meaning info panel, and
 
 **File:** `lib/screens/developer/developer_level_tester_screen.dart`
 
-**Purpose:** Developer tool for testing all 50 levels.
+**Purpose:** Developer tool for testing all 200 levels.
 
 **Route:** `/developer/levels` (only available when `developerToolsEnabled` is true — debug mode or `ENABLE_DEVELOPER_TOOLS=true`).
 
-Shows grid of 50 level cards with layout stats, validation status, board-fit checks, and difficulty category. Buttons: TEST NEXT UNFINISHED, TEST ALL SEQUENTIALLY, RESET TEST SESSION. Developer tests never save to real progress.
+Shows grid of 200 level cards with layout stats, validation status, board-fit checks, and difficulty category. Buttons: TEST NEXT UNFINISHED, TEST ALL SEQUENTIALLY, RESET TEST SESSION. Developer tests never save to real progress.
 
 ---
 
@@ -244,7 +244,7 @@ No available matching pairs → auto-shuffle attempt (no penalty) → if shuffle
 
 # Level System
 
-50 levels across 5 chapters with dynamic star thresholds:
+200 levels across 20 chapters with dynamic star thresholds:
 
 | Chapter | Levels | Difficulty Category | Symbol Types |
 |---|---|---|---|
@@ -253,6 +253,7 @@ No available matching pairs → auto-shuffle attempt (no penalty) → if shuffle
 | Heritage | 21–30 | Strategic | 25–33 |
 | Ancestral Trials | 31–40 | Advanced | 34–40 |
 | Grand Archive | 41–50 | Master | 40–46 |
+| Chapters 6–20 (Extended Campaign) | 51–200 | Expert to Mythic | Progressive |
 
 Progression: Complete level N to unlock N+1. Tracked via `completed_N` boolean keys and `highest_completed_level` integer.
 
@@ -329,7 +330,7 @@ No PII is logged. No advertising IDs.
 | Privacy policy | Linked |
 | Firebase Crashlytics | Integrated |
 | Firebase Analytics | Integrated |
-| 50 levels | Complete |
+| 200 levels | Complete |
 | Onboarding/tutorial | Complete |
 | Settings | Complete |
 | Monetization (ads/IAP) | Not started |
@@ -342,7 +343,7 @@ No PII is logged. No advertising IDs.
 | File | Tests |
 |---|---|
 | `test/widget_test.dart` | 1 placeholder test |
-| `test/game_provider_startup_test.dart` | 7 tests — campaign structure, level startup speed, all-50 startup, reverse generation failure, progression, migration |
+| `test/game_provider_startup_test.dart` | 7 tests — campaign structure, level startup speed, all-200 startup, reverse generation failure, progression, migration |
 | `test/progression_flow_test.dart` | 4 tests — next level resolution, legacy migration, final level clamping, developer test isolation |
 | `test/board_layout_geometry_test.dart` | Board layout geometry tests |
 | `test/board_widget_ghost_tile_test.dart` | Ghost tile rendering tests |
@@ -353,4 +354,4 @@ All tests pass. `flutter analyze` returns no issues.
 
 ---
 
-*Last updated: 2026-06-24 — 50 levels, Firebase integrated, no timer, linear progression.*
+*Last updated: 2026-06-30 — 200 levels, Firebase integrated, no timer, linear progression.*

@@ -148,6 +148,81 @@ LevelDefinition _level(
   );
 }
 
+List<LevelDefinition> _extendedCampaignLevels() {
+  final chapters = <({String chapter, String difficulty})>[
+    (chapter: 'Memory Keepers', difficulty: 'Expert'),
+    (chapter: 'Royal Paths', difficulty: 'Elder'),
+    (chapter: 'Spirit Trials', difficulty: 'Elder'),
+    (chapter: 'Living Archive', difficulty: 'Legendary'),
+    (chapter: 'Eternal Sankofa', difficulty: 'Legendary'),
+    (chapter: 'River Archives', difficulty: 'Legendary'),
+    (chapter: 'Golden Lineage', difficulty: 'Legendary'),
+    (chapter: 'Ancestral Maps', difficulty: 'Legendary'),
+    (chapter: 'Moonlit Courtyards', difficulty: 'Legendary'),
+    (chapter: 'Hidden Libraries', difficulty: 'Legendary'),
+    (chapter: 'Royal Constellations', difficulty: 'Mythic'),
+    (chapter: 'Spirit Labyrinths', difficulty: 'Mythic'),
+    (chapter: 'Crown of Memory', difficulty: 'Mythic'),
+    (chapter: 'The Deep Archive', difficulty: 'Mythic'),
+    (chapter: 'Sankofa Forever', difficulty: 'Mythic'),
+  ];
+
+  final layouts = <NamedLayout>[
+    sacredBridgeLayout,
+    layeredShrineLayout,
+    ancestralCrownLayout,
+    templeComplexLayout,
+    grandTurtleLayout,
+    multiPeakLayout,
+    finalArchiveLayout,
+    grandTreasuryLayout,
+    layeredCourtyardLayout,
+    hiddenCenterLayout,
+    royalStoolLayout,
+    festivalArchiveLayout,
+    complexFortressLayout,
+    splitIslandsLayout,
+    raisedCourtyardLayout,
+    fortressLayout,
+    twinTowersLayout,
+    wisdomStaircaseLayout,
+    crownLayout,
+    riverPathLayout,
+  ];
+
+  const motifs = [
+    'Gate',
+    'Shrine',
+    'Crown',
+    'Temple',
+    'Crossing',
+    'Peaks',
+    'Archive',
+    'Treasury',
+    'Courtyard',
+    'Trial',
+  ];
+
+  return List.unmodifiable([
+    for (var chapterIndex = 0; chapterIndex < chapters.length; chapterIndex++)
+      for (var slot = 0; slot < motifs.length; slot++)
+        _level(
+          51 + chapterIndex * motifs.length + slot,
+          '${chapters[chapterIndex].chapter} ${motifs[slot]}',
+          chapters[chapterIndex].chapter,
+          chapterIndex == chapters.length - 1 && slot == motifs.length - 1
+              ? finalArchiveLayout
+              : layouts[(chapterIndex * 3 + slot) % layouts.length],
+          34 + chapterIndex * 3 + slot,
+          chapters[chapterIndex].difficulty,
+          symbolStart:
+              chapterIndex == chapters.length - 1 && slot == motifs.length - 1
+                  ? kTileIds.length - 1
+                  : 88 + chapterIndex * 7 + slot * 3,
+        ),
+  ]);
+}
+
 final List<LevelDefinition> kLevels = [
   _level(
       1, 'First Symbols', 'First Symbols', compactDiamondLayout, 7, 'Novice'),
@@ -274,7 +349,12 @@ final List<LevelDefinition> kLevels = [
   _level(50, 'Ancestral Treasury', 'Grand Archive', finalArchiveLayout, 46,
       'Master',
       symbolStart: 86),
+  ..._extendedCampaignLevels(),
 ];
+
+int get kCampaignLevelCount => kLevels.length;
+int get kFinalCampaignLevelId => kLevels.last.id;
+int get kMaximumCampaignStars => kCampaignLevelCount * 3;
 
 LevelDefinition? getLevelById(int id) {
   try {

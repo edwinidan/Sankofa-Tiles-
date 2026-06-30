@@ -8,6 +8,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../providers/economy_provider.dart';
 import '../../providers/monetization_provider.dart';
+import '../../widgets/cowrie_icon.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -78,11 +79,23 @@ class DailyRewardScreen extends ConsumerWidget {
                   const SizedBox(height: 18),
                   _RewardBreakdown(reward: reward),
                   const SizedBox(height: 18),
-                  Text(
-                    'Balance: ${economy.cowries} Cowries',
-                    style: AppTextStyles.archiveBodyMedium.copyWith(
-                      color: SankofaGameTheme.mutedGold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Balance: ',
+                        style: AppTextStyles.archiveBodyMedium.copyWith(
+                          color: SankofaGameTheme.mutedGold,
+                        ),
+                      ),
+                      CowrieAmount(
+                        amount: economy.cowries,
+                        iconSize: 22,
+                        style: AppTextStyles.archiveBodyMedium.copyWith(
+                          color: SankofaGameTheme.mutedGold,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   KenteButton(
@@ -140,7 +153,6 @@ class _RewardBreakdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lines = [
-      if (reward.cowries > 0) '${reward.cowries} Cowries',
       for (final entry in reward.boosters.entries)
         '${entry.value} ${entry.key.label}',
     ];
@@ -148,12 +160,28 @@ class _RewardBreakdown extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: SankofaGameTheme.darkPanelDecoration(),
-      child: Text(
-        lines.join('\n'),
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: SankofaGameTheme.parchmentLight,
-        ),
-        textAlign: TextAlign.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (reward.cowries > 0)
+            CowrieAmount(
+              amount: reward.cowries,
+              iconSize: 22,
+              mainAxisAlignment: MainAxisAlignment.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: SankofaGameTheme.parchmentLight,
+              ),
+            ),
+          if (reward.cowries > 0 && lines.isNotEmpty) const SizedBox(height: 6),
+          if (lines.isNotEmpty)
+            Text(
+              lines.join('\n'),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: SankofaGameTheme.parchmentLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+        ],
       ),
     );
   }

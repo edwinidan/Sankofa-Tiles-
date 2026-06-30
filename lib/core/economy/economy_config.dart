@@ -85,7 +85,7 @@ class EconomyConfig {
     AchievementDefinition(
       id: 'complete_campaign',
       title: 'Grand Archivist',
-      description: 'Complete all 50 levels.',
+      description: 'Complete all campaign levels.',
       cowries: 300,
     ),
   ];

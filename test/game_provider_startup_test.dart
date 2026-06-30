@@ -30,9 +30,9 @@ void main() {
       isEmpty,
       reason: issues.map((issue) => issue.toString()).join('\n'),
     );
-    expect(kLevels, hasLength(50));
+    expect(kLevels, hasLength(200));
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(50, (i) => i + 1)));
+        orderedEquals(List.generate(200, (i) => i + 1)));
     expect(kLevels.where((level) => level.layerCount <= 1),
         hasLength(lessThanOrEqualTo(2)));
   });
@@ -49,7 +49,22 @@ void main() {
 
     final notifier = container.read(gameProvider.notifier);
 
-    for (final levelId in [1, 5, 10, 18, 25, 35, 42, 50]) {
+    for (final levelId in [
+      1,
+      5,
+      10,
+      18,
+      25,
+      35,
+      42,
+      50,
+      75,
+      100,
+      125,
+      150,
+      175,
+      200,
+    ]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
       stopwatch.stop();
@@ -139,7 +154,7 @@ void main() {
     }
 
     stopwatch.stop();
-    expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
+    expect(stopwatch.elapsed, lessThan(const Duration(seconds: 10)));
   });
 
   test('reverse generation exhaustion fails safely without a board', () {
@@ -194,10 +209,11 @@ void main() {
     }
 
     expect(kLevels.last.tileCount, lessThanOrEqualTo(130));
-    expect(kLevels.last.layerCount, greaterThanOrEqualTo(5));
+    expect(kLevels.last.layerCount, 3);
     expect(kLevels.last.tileIds, contains('woforo_dua_pa_a'));
     expect(kLevels.where((level) => level.id >= 31 && level.layerCount == 1),
         isEmpty);
+    expect(kLevels.where((level) => level.layerCount > 3), isEmpty);
   });
 
   test('campaign progress migration preserves existing level results',
@@ -218,5 +234,7 @@ void main() {
     expect(storage.getStars(25), 2);
     expect(storage.isLevelUnlocked(26), isTrue);
     expect(storage.isLevelUnlocked(50), isFalse);
+    expect(storage.isLevelUnlocked(100), isFalse);
+    expect(storage.isLevelUnlocked(200), isFalse);
   });
 }

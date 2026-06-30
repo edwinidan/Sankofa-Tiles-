@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/chapter_data.dart';
+import '../../core/constants/level_data.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../providers/progress_provider.dart';
@@ -23,7 +24,7 @@ class ChapterCompleteScreen extends ConsumerWidget {
       0,
       (sum, level) => sum + progress.getStars(level.id),
     );
-    final campaignComplete = completedLevelId >= 50;
+    final campaignComplete = completedLevelId >= kFinalCampaignLevelId;
     final nextLevelId = campaignComplete ? null : completedLevelId + 1;
 
     return Scaffold(

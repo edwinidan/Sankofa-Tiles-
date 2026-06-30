@@ -38,13 +38,14 @@ There are 35 named layout archetypes in `kLayoutLibrary`, including compact diam
 
 ## Campaign Progression
 
-The campaign is now 50 levels:
+The campaign is now 200 levels:
 
 - Chapter 1: First Symbols, levels 1-10
 - Chapter 2: Paths of Wisdom, levels 11-20
 - Chapter 3: Heritage, levels 21-30
 - Chapter 4: Ancestral Trials, levels 31-40
 - Chapter 5: Grand Archive, levels 41-50
+- Chapters 6-20: Extended Chapters, levels 51-200
 
 Late levels are no longer a run of flat 12-column grids. Most late boards use stacked layouts with raised centers, towers, crowns, courtyards, bridges, and strategic choke points. Flat or flatter boards are reserved as occasional change-of-pace layouts.
 
@@ -82,7 +83,7 @@ Because levels 1-25 retain their IDs, existing progress is preserved. A campaign
 
 Automated coverage now checks:
 
-- all 50 levels exist with sequential IDs
+- all 200 levels exist with sequential IDs
 - every layout has an even tile count
 - no duplicate layout coordinates exist
 - every symbol distribution sums to the layout tile count

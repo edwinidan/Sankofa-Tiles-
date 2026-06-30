@@ -1,6 +1,7 @@
 import '../constants/chapter_data.dart';
 import '../constants/level_data.dart';
 import '../constants/tile_data.dart';
+import '../constants/tile_unlock_data.dart';
 import '../utils/storage_service.dart';
 import '../../models/game_state.dart';
 import 'economy_config.dart';
@@ -161,12 +162,9 @@ class EconomyService {
       }
     }
 
-    final level = getLevelById(levelId);
-    if (level != null) {
-      for (final id in level.tileIds.take(2)) {
-        if (await _unlockCollection(id)) {
-          unlockedSymbols.add(id);
-        }
+    if (getLevelById(levelId) != null) {
+      for (final id in tileIdsUnlockedAtLevel(levelId)) {
+        if (await _unlockCollection(id)) unlockedSymbols.add(id);
       }
     }
 
@@ -199,10 +197,8 @@ class EconomyService {
   void backfillCollectionUnlocks() {
     final completed =
         _storage.getHighestCompletedLevel().clamp(0, kLevels.length);
-    for (final level in kLevels.where((level) => level.id <= completed)) {
-      for (final id in level.tileIds.take(2)) {
-        _storage.unlockCollectionIdSync(id);
-      }
+    for (final id in tileIdsUnlockedThroughLevel(completed)) {
+      _storage.unlockCollectionIdSync(id);
     }
   }
 
@@ -276,7 +272,8 @@ class EconomyService {
       'chapter_complete' => isChapterFinalLevel(state.levelId),
       'discover_20_symbols' => _storage.getUnlockedCollectionIds().length >= 20,
       'earn_50_stars' => totalStars >= 50,
-      'complete_campaign' => completed >= 50 || state.levelId >= 50,
+      'complete_campaign' => completed >= kFinalCampaignLevelId ||
+          state.levelId >= kFinalCampaignLevelId,
       _ => false,
     };
   }
@@ -292,10 +289,9 @@ class EconomyService {
   }
 
   String collectionUnlockSource(String tileId) {
-    for (final level in kLevels) {
-      if (level.tileIds.take(2).contains(tileId)) {
-        return 'Unlocked from Level ${level.id}';
-      }
+    final levelId = unlockLevelForTileId(tileId);
+    if (levelId != null) {
+      return 'Unlocked at Level $levelId';
     }
     return 'Unlocked through the Grand Archive';
   }

@@ -8,6 +8,7 @@ import '../../models/tile_model.dart';
 import '../../providers/economy_provider.dart';
 import '../game/widgets/tile_widget.dart';
 import '../../widgets/sankofa_background.dart';
+import '../../widgets/tile_back.dart';
 
 class TilePreviewScreen extends ConsumerStatefulWidget {
   const TilePreviewScreen({super.key});
@@ -73,11 +74,10 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                                 showSuitCode: false,
                                 forceHideName: true,
                               )
-                            : Icon(
-                                Icons.lock_outline,
-                                size: 96,
-                                color: SankofaGameTheme.mutedGold
-                                    .withValues(alpha: 0.72),
+                            : const _LockedCollectionTile(
+                                width: 128,
+                                height: 170,
+                                lockSize: 38,
                               ),
                   ),
                 ),
@@ -167,10 +167,10 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                             : SizedBox(
                                 width: isSelected ? 50 : 44,
                                 height: isSelected ? 66 : 58,
-                                child: const Icon(
-                                  Icons.lock_outline,
-                                  color: SankofaGameTheme.mutedLightText,
-                                  size: 20,
+                                child: _LockedCollectionTile(
+                                  width: isSelected ? 50 : 44,
+                                  height: isSelected ? 66 : 58,
+                                  lockSize: isSelected ? 18 : 16,
                                 ),
                               ),
                       ),
@@ -182,6 +182,50 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _LockedCollectionTile extends StatelessWidget {
+  const _LockedCollectionTile({
+    required this.width,
+    required this.height,
+    required this.lockSize,
+  });
+
+  final double width;
+  final double height;
+  final double lockSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Locked Adinkra symbol',
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Opacity(
+            opacity: 0.58,
+            child: TileBackWidget(width: width, height: height),
+          ),
+          Container(
+            width: lockSize * 1.55,
+            height: lockSize * 1.55,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: SankofaGameTheme.backgroundTop.withValues(alpha: 0.78),
+              border: Border.all(
+                color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Icon(
+              Icons.lock_outline,
+              color: SankofaGameTheme.parchmentLight,
+              size: lockSize,
+            ),
+          ),
+        ],
       ),
     );
   }

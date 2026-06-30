@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sankofa_tiles/core/economy/economy_config.dart';
 import 'package:sankofa_tiles/core/economy/economy_models.dart';
 import 'package:sankofa_tiles/core/economy/economy_service.dart';
+import 'package:sankofa_tiles/core/constants/tile_unlock_data.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
 
@@ -114,6 +115,8 @@ void main() {
 
     expect(first.cowries, greaterThan(0));
     expect(replay.cowries, 0);
+    expect(first.unlockedSymbols, orderedEquals(tileIdsUnlockedAtLevel(1)));
+    expect(replay.unlockedSymbols, isEmpty);
     expect(storage.getCowries(), first.cowries);
   });
 
@@ -155,8 +158,22 @@ void main() {
 
     final state = economy.loadState();
 
-    expect(state.unlockedCollectionIds, isNotEmpty);
-    expect(state.unlockedCollectionIds.length, greaterThanOrEqualTo(2));
+    expect(
+      state.unlockedCollectionIds,
+      equals(tileIdsUnlockedThroughLevel(5).toSet()),
+    );
+  });
+
+  test('collection unlock sources come from the unlock rule table', () async {
+    final storage = await _storage({});
+    final economy = EconomyService(storage);
+    final level200Tile = tileIdsUnlockedAtLevel(200).last;
+
+    expect(economy.collectionUnlockSource('aban'), 'Unlocked at Level 1');
+    expect(
+      economy.collectionUnlockSource(level200Tile),
+      'Unlocked at Level 200',
+    );
   });
 
   test('corrupted negative balances and boosters recover safely', () async {

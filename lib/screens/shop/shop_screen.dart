@@ -8,6 +8,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../providers/economy_provider.dart';
 import '../../providers/monetization_provider.dart';
+import '../../widgets/cowrie_icon.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -127,8 +128,8 @@ class _WalletStrip extends StatelessWidget {
         spacing: 12,
         runSpacing: 8,
         children: [
-          Text(
-            '${economy.cowries} Cowries',
+          CowrieAmount(
+            amount: economy.cowries,
             style: AppTextStyles.titleMedium.copyWith(
               color: SankofaGameTheme.parchmentLight,
             ),
@@ -391,7 +392,6 @@ class _RewardLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lines = [
-      if (reward.cowries > 0) '${reward.cowries} Cowries',
       for (final entry in reward.boosters.entries)
         '${entry.value} ${entry.key.label}',
       if (reward.entitlementIds.contains(MonetizationEntitlements.removeAds))
@@ -399,11 +399,32 @@ class _RewardLine extends StatelessWidget {
       if (reward.cosmeticIds.isNotEmpty) 'Cosmetic unlock',
     ];
 
-    return Text(
-      lines.isEmpty ? 'Permanent unlock' : lines.join(' · '),
-      style: AppTextStyles.labelSmall.copyWith(
-        color: SankofaGameTheme.mutedGold,
-      ),
+    final style = AppTextStyles.labelSmall.copyWith(
+      color: SankofaGameTheme.mutedGold,
+    );
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        if (reward.cowries > 0)
+          CowrieAmount(
+            amount: reward.cowries,
+            iconSize: 18,
+            style: style,
+          ),
+        if (lines.isNotEmpty)
+          Text(
+            lines.join(' · '),
+            style: style,
+          ),
+        if (reward.cowries <= 0 && lines.isEmpty)
+          Text(
+            'Permanent unlock',
+            style: style,
+          ),
+      ],
     );
   }
 }

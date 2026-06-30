@@ -137,7 +137,7 @@ No available matching pair
 
 ## Next Level, Replay, Final Level
 
-The normal win screen offers `NEXT LEVEL` when the completed level id is below 50 and not a chapter endpoint. Levels 10, 20, 30, 40, and 50 route to `/chapter-complete/<levelId>`.
+The normal win screen offers `NEXT LEVEL` when the completed level id is below the final campaign level and not a chapter endpoint. Every 10th level routes to `/chapter-complete/<levelId>`, with level 200 showing campaign completion.
 
 Loss replay uses `RETRY` and relaunches the same level in normal progression mode. Developer results offer retry and next test-level actions without saving progress.
 

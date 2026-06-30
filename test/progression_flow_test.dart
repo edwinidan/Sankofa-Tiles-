@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sankofa_tiles/core/constants/level_data.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/models/game_launch_config.dart';
@@ -60,9 +61,9 @@ void main() {
     await storage.init();
     final progress = ProgressService(storage);
 
-    await progress.saveLevelResult(50, 10000, 3);
+    await progress.saveLevelResult(kFinalCampaignLevelId, 10000, 3);
 
-    expect(progress.highestCompletedLevel, 50);
+    expect(progress.highestCompletedLevel, kFinalCampaignLevelId);
     expect(progress.hasCompletedAllLevels, isTrue);
     expect(progress.nextUnfinishedLevelId, isNull);
   });

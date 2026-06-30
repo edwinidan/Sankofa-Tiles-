@@ -6,8 +6,10 @@ import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/models/tile_model.dart';
 
 void main() {
-  test('all 50 boards fit supported gameplay areas above the tile minimum', () {
-    expect(kLevels, hasLength(50));
+  test(
+      'all campaign boards fit supported gameplay areas above the tile minimum',
+      () {
+    expect(kLevels, hasLength(200));
 
     for (final level in kLevels) {
       final geometry = BoardLayoutGeometry.fromPositions(level.layout);

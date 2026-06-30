@@ -57,6 +57,11 @@ class GameNotifier extends StateNotifier<GameState> {
   })  : _reverseSolvedAttempts = reverseSolvedAttempts,
         super(GameState.initial());
 
+  @visibleForTesting
+  void replaceStateForTesting(GameState testState) {
+    state = testState;
+  }
+
   HapticIntensity get _hapticIntensity =>
       _ref.read(settingsProvider).hapticIntensity;
 
@@ -403,9 +408,13 @@ class GameNotifier extends StateNotifier<GameState> {
       'Strategic' => 0.22,
       'Advanced' => 0.26,
       'Master' => 0.30,
+      'Expert' => 0.32,
+      'Elder' => 0.34,
+      'Legendary' => 0.35,
       _ => 0.18,
     };
-    final progressionBonus = ((levelDef.id - 1) / 100).clamp(0.0, 0.07);
+    final progressionBonus =
+        ((levelDef.id - 1) / kFinalCampaignLevelId).clamp(0.0, 0.07);
     return (base + progressionBonus).clamp(0.10, 0.35);
   }
 
@@ -624,11 +633,13 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  void useHint() {
-    if (state.status != GameStatus.playing) return;
+  bool useHint() {
+    if (state.status != GameStatus.playing) return false;
 
     final pairs = _findRevealedMatchingPairs(state.tiles);
-    if (pairs.isEmpty) return;
+    if (pairs.isEmpty) {
+      return _hintPeekableTiles();
+    }
 
     _audio.playHint();
 
@@ -678,10 +689,11 @@ class GameNotifier extends StateNotifier<GameState> {
       }).toList();
       state = state.copyWith(tiles: cleared);
     });
+    return true;
   }
 
-  void shuffleRemaining() {
-    _shuffleRemaining();
+  bool shuffleRemaining() {
+    return _shuffleRemaining();
   }
 
   bool useOpenPath() {
@@ -900,6 +912,59 @@ class GameNotifier extends StateNotifier<GameState> {
     return BoardSolver.findAvailableMatchingPairs(tiles)
         .where((pair) => pair.first.isRevealed && pair.second.isRevealed)
         .toList();
+  }
+
+  bool _hintPeekableTiles() {
+    final peekable = BoardSolver.getFreeTiles(state.tiles)
+        .where((tile) => tile.isCovered)
+        .toList();
+    if (peekable.isEmpty) return false;
+
+    final pair = _findPeekableMatchingPair(peekable);
+    final hintedIds = pair != null
+        ? {pair.first.uid, pair.second.uid}
+        : peekable.take(2).map((tile) => tile.uid).toSet();
+
+    _audio.playHint();
+    final hintedTiles = state.tiles.map((tile) {
+      if (hintedIds.contains(tile.uid)) {
+        return tile.copyWith(isHinted: true);
+      }
+      return tile;
+    }).toList();
+
+    state = state.copyWith(
+      tiles: hintedTiles,
+      hintsUsed: state.hintsUsed + 1,
+    );
+    if (!_isDeveloperTest) {
+      AnalyticsService.logHintUsed(state.levelId, state.difficulty.name);
+    }
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      final cleared = state.tiles.map((tile) {
+        if (hintedIds.contains(tile.uid)) {
+          return tile.copyWith(isHinted: false);
+        }
+        return tile;
+      }).toList();
+      state = state.copyWith(tiles: cleared);
+    });
+    return true;
+  }
+
+  TilePair? _findPeekableMatchingPair(List<TileModel> peekable) {
+    for (var i = 0; i < peekable.length; i++) {
+      for (var j = i + 1; j < peekable.length; j++) {
+        final first = peekable[i];
+        final second = peekable[j];
+        if (first.def.id == second.def.id) {
+          return (first: first, second: second);
+        }
+      }
+    }
+    return null;
   }
 
   List<TileModel> _hidePeekedTiles(

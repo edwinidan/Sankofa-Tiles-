@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/chapter_data.dart';
 import '../../core/constants/level_data.dart';
+import '../../core/constants/tile_data.dart';
 import '../../core/economy/economy_models.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
@@ -18,6 +19,7 @@ import '../../providers/monetization_provider.dart';
 import '../../core/monetization/monetization_models.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/adinkra_divider.dart';
+import '../../widgets/cowrie_icon.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -43,7 +45,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   late final AudioService _audioService;
   int _stars = 0;
   bool _resultHandled = false;
+  bool _unlockRevealInProgress = false;
   RewardGrantSummary? _rewardSummary;
+  final Set<String> _shownUnlockRevealIds = {};
 
   @override
   void initState() {
@@ -102,6 +106,46 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     if (mounted) {
       setState(() => _rewardSummary = rewardSummary);
+      _scheduleUnlockReveal(rewardSummary.unlockedSymbols);
+    }
+  }
+
+  void _scheduleUnlockReveal(List<String> unlockedSymbols) {
+    if (unlockedSymbols.isEmpty || _unlockRevealInProgress) return;
+    final revealIds = [
+      for (final id in unlockedSymbols)
+        if (_shownUnlockRevealIds.add(id)) id,
+    ];
+    if (revealIds.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_showUnlockRevealQueue(revealIds));
+    });
+  }
+
+  Future<void> _showUnlockRevealQueue(List<String> tileIds) async {
+    if (_unlockRevealInProgress) return;
+    _unlockRevealInProgress = true;
+    try {
+      for (var index = 0; index < tileIds.length; index++) {
+        if (!mounted) return;
+        final tile = _tileById(tileIds[index]);
+        if (tile == null) continue;
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            return _UnlockRevealDialog(
+              tile: tile,
+              currentIndex: index + 1,
+              totalCount: tileIds.length,
+            );
+          },
+        );
+      }
+    } finally {
+      _unlockRevealInProgress = false;
     }
   }
 
@@ -172,6 +216,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       ),
     );
   }
+}
+
+TileDefinition? _tileById(String id) {
+  for (final tile in kAllTiles) {
+    if (tile.id == id) return tile;
+  }
+  return null;
 }
 
 class _WinContent extends StatelessWidget {
@@ -363,27 +414,173 @@ class _RewardReveal extends StatelessWidget {
     }
 
     final lines = [
-      if (summary!.cowries > 0) '+${summary!.cowries} Cowries',
       for (final entry in summary!.boosters.entries)
         '+${entry.value} ${entry.key.label}',
       if (summary!.newBest) 'New best result',
       if (summary!.chapterCompleted) 'Chapter reward unlocked',
-      for (final symbol in summary!.unlockedSymbols) 'New symbol: $symbol',
+      if (summary!.unlockedSymbols.isNotEmpty)
+        summary!.unlockedSymbols.length == 1
+            ? 'New symbol added to Collection'
+            : '${summary!.unlockedSymbols.length} new symbols added to Collection',
       for (final achievement in summary!.achievements)
         'Achievement: $achievement',
-      'Balance: ${summary!.updatedBalance} Cowries',
     ];
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
-      child: Text(
-        lines.join('\n'),
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: SankofaGameTheme.parchmentLight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (summary!.cowries > 0)
+            CowrieAmount(
+              amount: summary!.cowries,
+              prefix: '+',
+              iconSize: 22,
+              mainAxisAlignment: MainAxisAlignment.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: SankofaGameTheme.parchmentLight,
+              ),
+            ),
+          if (summary!.cowries > 0 && lines.isNotEmpty)
+            const SizedBox(height: 6),
+          if (lines.isNotEmpty)
+            Text(
+              lines.join('\n'),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: SankofaGameTheme.parchmentLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          if (lines.isNotEmpty) const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Balance: ',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
+              CowrieAmount(
+                amount: summary!.updatedBalance,
+                iconSize: 22,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnlockRevealDialog extends StatelessWidget {
+  const _UnlockRevealDialog({
+    required this.tile,
+    required this.currentIndex,
+    required this.totalCount,
+  });
+
+  final TileDefinition tile;
+  final int currentIndex;
+  final int totalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final countLabel = totalCount > 1 ? ' $currentIndex of $totalCount' : '';
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Semantics(
+        label: 'New Adinkra symbol unlocked: ${tile.name}. ${tile.meaning}',
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: SankofaGameTheme.appParchmentPanelDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'New Symbol Unlocked$countLabel',
+                style: AppTextStyles.archiveTitleLarge.copyWith(
+                  color: SankofaGameTheme.mutedGold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              _UnlockRevealImage(tile: tile),
+              const SizedBox(height: 16),
+              Text(
+                tile.name,
+                style: AppTextStyles.archiveDisplayMedium.copyWith(
+                  color: SankofaGameTheme.darkText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                tile.meaning,
+                style: AppTextStyles.archiveBodyMedium.copyWith(
+                  color: SankofaGameTheme.mutedGold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              KenteButton(
+                label: currentIndex == totalCount ? 'CONTINUE' : 'NEXT SYMBOL',
+                icon: currentIndex == totalCount
+                    ? Icons.check
+                    : Icons.arrow_forward,
+                width: double.infinity,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
         ),
-        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+class _UnlockRevealImage extends StatelessWidget {
+  const _UnlockRevealImage({required this.tile});
+
+  final TileDefinition tile;
+
+  @override
+  Widget build(BuildContext context) {
+    final assetPath = tile.assetPath;
+    if (assetPath != null) {
+      return Image.asset(
+        assetPath,
+        width: 144,
+        height: 144,
+        fit: BoxFit.contain,
+      );
+    }
+
+    return Container(
+      width: 132,
+      height: 132,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: SankofaGameTheme.parchmentLight,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.6),
+          width: 2,
+        ),
+      ),
+      child: Text(
+        tile.symbol,
+        style: AppTextStyles.archiveDisplayLarge.copyWith(
+          color: SankofaGameTheme.darkText,
+        ),
       ),
     );
   }

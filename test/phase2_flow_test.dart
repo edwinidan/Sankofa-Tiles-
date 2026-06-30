@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sankofa_tiles/core/constants/tile_unlock_data.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/models/game_launch_config.dart';
@@ -123,7 +124,11 @@ void main() {
 
   testWidgets('chapter-complete result routes to milestone screen',
       (tester) async {
-    final storage = await _storage({'completed_9': true});
+    final storage = await _storage({
+      'completed_9': true,
+      for (final tileId in tileIdsUnlockedThroughLevel(10))
+        'collection_unlocked_$tileId': true,
+    });
     final router = GoRouter(
       initialLocation: '/result',
       routes: [

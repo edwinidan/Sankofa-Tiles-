@@ -80,7 +80,7 @@ App launched by returning player
 → HomeScreen PLAY button:
   → progressProvider.nextUnfinishedLevelId computes from highestCompletedLevel
   → If level 5 completed → navigates to /game/6
-  → If all 50 levels completed → shows "All Levels Completed" snackbar
+  → If all 200 levels completed → shows "All Levels Completed" snackbar
 
 Progress is determined by:
   - highest_completed_level integer in SharedPreferences
@@ -404,7 +404,7 @@ Gating:
 | Settings Screen | Full screen | Home SETTINGS | App configuration | Back→previous screen | Complete |
 | In-Game Settings Sheet | Modal bottom sheet | Game screen gear icon | Quick settings during play | Close→resume game | Complete |
 | Tile Preview Screen | Full screen | Home TILE PREVIEW | Symbol reference gallery | Back→Home | Complete |
-| Developer Level Tester | Full screen | Settings (debug only) | Test all 50 levels | Back→Settings, tap card→Game | Complete |
+| Developer Level Tester | Full screen | Settings (debug only) | Test all 200 levels | Back→Settings, tap card→Game | Complete |
 | Pause Overlay | Centered dialog overlay | Game pause button | Pause game | Resume, Quit to Menu | Complete |
 | Quit Dialog | AlertDialog | Game back button | Confirm leaving game | Stay (resume), Leave (quit) | Complete |
 | Load Failed Overlay | Centered dialog overlay | Board generation failure | Show error, offer retry | Try Again, Back to Levels | Complete |
@@ -484,7 +484,7 @@ The following experience gaps were identified by comparing the current implement
 ### Post-Game
 10. **No win celebration animation** — Lottie directory empty. Win shows static stars with scale animation only.
 11. **No reward summary beyond stars** — No "New symbol unlocked," "Chapter complete," or collectible display.
-12. **No "All Levels Complete" celebration** — Text message only, no fanfare for completing 50 levels.
+12. **No "All Levels Complete" celebration** — Text message only, no fanfare for completing 200 levels.
 
 ### Resilience
 13. **No offline handling** — App works offline (no network permission declared), but no indication to user that analytics/crashlytics are unavailable.
@@ -575,4 +575,4 @@ flowchart TD
 
 ---
 
-*Last updated: 2026-06-24 — documents current flow of version 1.0.0+3 (50 levels, no timer, linear progression, Firebase integrated).*
+*Last updated: 2026-06-24 — documents current flow of version 1.0.0+3 (200 levels, no timer, linear progression, Firebase integrated).*

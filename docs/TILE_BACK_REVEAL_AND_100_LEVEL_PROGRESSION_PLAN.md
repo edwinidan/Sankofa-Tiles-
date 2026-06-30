@@ -1,7 +1,7 @@
-# Tile Back Reveal and 100-Level Progression Plan
+# Tile Back Reveal and 200-Level Progression Plan
 
 > Project: Adinkra Tiles  
-> Purpose: Track the phased implementation for richer covered tiles, tap-to-reveal gameplay, 100 levels, tile unlocks, collection updates, and post-level unlock popups.
+> Purpose: Track the phased implementation for richer covered tiles, tap-to-reveal gameplay, 200 levels, tile unlocks, collection updates, and post-level unlock popups.
 
 ---
 
@@ -12,7 +12,7 @@ Make gameplay feel closer to a polished Mahjong Blast-style experience:
 - Covered/back-facing tiles use `assets/adinkra tile back tile.png`.
 - Covered tiles visually sit on the board as real tiles, not placeholders.
 - Tapping an eligible covered tile flips it and reveals the Adinkra face tile.
-- The campaign grows to at least 100 levels.
+- The campaign grows to at least 200 levels.
 - New Adinkra symbols unlock as the player progresses.
 - Unlocked symbols appear in the Tile Collection.
 - When a new tile unlocks after a level, the player sees a popup with the tile image, name, and short cultural meaning.
@@ -65,13 +65,13 @@ flutter test
 | Phase 1 | Completed | PNG Tile Back Asset | Covered/back tiles render with the new Adinkra PNG |
 | Phase 2 | Completed | Covered Tile State Model | Game state can distinguish hidden, covered, revealed, matched, and blocked tiles |
 | Phase 3 | Completed | Temporary Peek Reveal | Tapping an eligible back tile flips it face-up only while it is selected or being compared |
-| Phase 4 | Not Started | Peek-Aware Gameplay Logic | Match, mismatch, hint, shuffle, and stuck logic respect temporary face-up state |
-| Phase 5 | Not Started | Board Layout Polish | Levels visually resemble stacked Mahjong boards with clean depth and intentional backs |
-| Phase 6 | Not Started | 100-Level Campaign Expansion | Campaign grows from 50 to at least 100 levels |
-| Phase 7 | Not Started | Progressive Tile Unlock Rules | New symbols unlock at planned level milestones |
-| Phase 8 | Not Started | Collection Integration | Newly unlocked symbols appear in the Tile Collection |
-| Phase 9 | Not Started | Unlock Popup After Level | Result flow shows tile image, name, and short meaning when a new tile unlocks |
-| Phase 10 | Not Started | Balance, QA, and Documentation | Verify difficulty curve, tests, docs, and release readiness |
+| Phase 4 | Completed | Peek-Aware Gameplay Logic | Match, mismatch, hint, shuffle, and stuck logic respect temporary face-up state |
+| Phase 5 | Completed | Board Layout Polish | Levels visually resemble stacked Mahjong boards with clean depth and intentional backs |
+| Phase 6 | Completed | 200-Level Campaign Expansion | Campaign grows from 50 to 200 levels |
+| Phase 7 | Completed | Progressive Tile Unlock Rules | New symbols unlock at planned level milestones |
+| Phase 8 | Completed | Collection Integration | Newly unlocked symbols appear in the Tile Collection |
+| Phase 9 | Completed | Unlock Popup After Level | Result flow shows tile image, name, and short meaning when a new tile unlocks |
+| Phase 10 | Completed | Balance, QA, and Documentation | Verify difficulty curve, tests, docs, and release readiness |
 
 ---
 
@@ -203,7 +203,19 @@ This makes back tiles feel like a memory mechanic instead of a permanent reveal.
 
 ## Phase 4 — Peek-Aware Gameplay Logic
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+
+- Free face-up tiles remain selectable normally.
+- Free covered tiles can peek/select, deselect back to covered, match correctly, or hide again after a wrong match.
+- Blocked covered tiles remain untappable until Mahjong free-tile rules make them eligible.
+- Hints prefer currently revealed available pairs.
+- If no revealed pair exists, hints can highlight eligible covered tiles without flipping or permanently revealing them.
+- Shuffle preserves covered/revealed identity for unmatched tiles and resets any temporary peek back to covered.
+- Stuck detection no longer fails the board while eligible covered tiles can still be peeked.
+- Hint and Shuffle now report whether they were actually used so boosters can be refunded on no-op attempts.
+- Added `test/phase4_peek_gameplay_test.dart` for deselect, correct match, wrong match, blocked covered tiles, hint fallback, shuffle preservation, and stuck detection.
 
 ### Scope
 
@@ -236,7 +248,15 @@ This makes back tiles feel like a memory mechanic instead of a permanent reveal.
 
 ## Phase 5 — Board Layout Polish
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+
+- Capped all campaign layouts down to a cleaner **3 layers max** (matching Mahjong Blast's controlled stack depth).
+- Capped maximum row widths to **7 tiles max** and base row counts to **7 rows max** on Layer 0 to ensure boards fit perfectly within the 304x390 compact phone viewport.
+- Redistributed layout density into clearer base, middle, and top rows instead of tall piles.
+- Checked and passed all board geometry, minimum tile sizes (>= 44px), and opening layout solvability tests.
+- Updated final-level layer count assertions in tests to enforce the 3-layer cap.
 
 ### Scope
 
@@ -254,13 +274,23 @@ This makes back tiles feel like a memory mechanic instead of a permanent reveal.
 
 ---
 
-## Phase 6 — 100-Level Campaign Expansion
+## Phase 6 — 200-Level Campaign Expansion
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+
+- Expanded `kLevels` from 50 to 200 sequential campaign levels.
+- Added fifteen new 10-level chapters after level 50, ending with Sankofa Forever.
+- Reused the polished Phase 5 layout archetypes for the new levels, with higher symbol pools and later difficulty categories.
+- Added campaign-level constants for final level, campaign count, and maximum stars so UI/economy logic no longer assumes level 50.
+- Updated chapter milestone routing so level 50 is a normal chapter completion and level 200 is campaign completion.
+- Updated Home progress display, complete-campaign achievement logic, current docs, and tests.
+- Verified all 200 levels fit supported phone board areas and generate solvable boards.
 
 ### Scope
 
-- Expand `kLevels` from 50 to at least 100 levels.
+- Expand `kLevels` from 50 to at least 200 levels.
 - Reuse existing layout patterns where appropriate.
 - Add new layout variants only when needed to avoid repetition.
 - Preserve chapter pacing and unlock requirements.
@@ -279,7 +309,7 @@ This makes back tiles feel like a memory mechanic instead of a permanent reveal.
 
 ### Acceptance Criteria
 
-- At least 100 campaign levels are playable.
+- At least 200 campaign levels are playable.
 - The app does not treat level 50 as the final campaign level.
 - Chapter milestones are updated for the larger campaign.
 - Developer level tester can launch the new levels.
@@ -288,7 +318,19 @@ This makes back tiles feel like a memory mechanic instead of a permanent reveal.
 
 ## Phase 7 — Progressive Tile Unlock Rules
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+
+- Added a deterministic unlock table in `lib/core/constants/tile_unlock_data.dart`.
+- Starter symbols unlock at Level 1.
+- Common symbols unlock steadily from Levels 2-80.
+- Advanced symbols unlock from Levels 81-150.
+- Rare final symbols unlock from Levels 151-200.
+- Level reward grants now use the unlock table instead of incidental board symbol order.
+- Existing progress backfills collection unlocks from the same unlock table.
+- Replays do not duplicate unlock rewards because already-unlocked symbols are skipped.
+- Added tests for one unlock rule per symbol, campaign pacing, backfill behavior, reward idempotency, and unlock-source labels.
 
 ### Scope
 
@@ -301,8 +343,9 @@ This makes back tiles feel like a memory mechanic instead of a permanent reveal.
 
 ```text
 Levels 1-10: starter symbols
-Levels 11-50: steady symbol unlocks
-Levels 51-100: advanced and rarer symbols
+Levels 11-80: steady common symbol unlocks
+Levels 81-150: advanced symbols
+Levels 151-200: rare and final archive symbols
 Milestone levels: guaranteed special unlocks
 ```
 
@@ -317,7 +360,15 @@ Milestone levels: guaranteed special unlocks
 
 ## Phase 8 — Collection Integration
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+
+- Confirmed the Tile Collection is driven by `economyProvider` unlock state.
+- Locked symbols show a mystery tile-back state instead of full details.
+- Unlocked symbols show the tile image, name, meaning, and unlock source.
+- Level reward grants refresh economy state, so newly unlocked symbols appear without restarting the app.
+- Added `test/tile_collection_integration_test.dart` to verify a newly unlocked Level 1 symbol appears immediately in the collection.
 
 ### Scope
 
@@ -335,7 +386,15 @@ Milestone levels: guaranteed special unlocks
 
 ## Phase 9 — Unlock Popup After Level
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+
+- Result rewards now queue new collection unlocks and show a modal reveal card for each newly unlocked symbol.
+- Reveal cards include the tile image, tile name, short meaning, progress count for multi-unlock levels, and a clear continue action.
+- Already-unlocked symbols do not repeat the popup because the flow only uses `RewardGrantSummary.unlockedSymbols`.
+- The normal result summary now describes collection additions without exposing raw tile ids.
+- Added `test/result_unlock_reveal_test.dart` for first-clear reveal behavior and replay/already-unlocked no-repeat behavior.
 
 ### Scope
 
@@ -369,11 +428,17 @@ Win level
 
 ## Phase 10 — Balance, QA, and Documentation
 
-**Status:** Not Started
+**Status:** Completed
+
+**Implementation Notes:**
+- Verified that all unit tests, integration tests, and analytical coverage tests pass cleanly.
+- Verified that board layout generators scale difficulty and produce solvable boards up to level 200.
+- Updated project documentation files ([GAME_FLOW.md](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/docs/GAME_FLOW.md), [SANKOFA_TILES_APP_CONTEXT.md](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/docs/SANKOFA_TILES_APP_CONTEXT.md), and [tile-arrangement-research.md](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/docs/tile-arrangement-research.md)) to reflect the new campaign scale of 200 levels instead of the outdated 50 levels limit.
+- Confirmed that code formatting (`dart format .`) and static analysis (`flutter analyze`) are fully compliant and error-free.
 
 ### Scope
 
-- Verify 100-level difficulty curve.
+- Verify 200-level difficulty curve.
 - Verify unlock pacing feels rewarding.
 - Verify tile-back reveal mechanic does not make levels too slow or confusing.
 - Update project docs that mention 50 levels or old tile-back behavior.
@@ -394,7 +459,7 @@ Win level
   - view popup
   - see tile in collection
   - continue beyond level 50
-  - complete level 100
+  - complete level 200
 
 ---
 
@@ -410,8 +475,4 @@ Win level
 
 ## Current Next Step
 
-Start with Phase 4:
-
-```text
-Tune hints, shuffle, stuck detection, and boosters around temporary peek tiles.
-```
+All phases of the **Tile Back Reveal and 200-Level Progression Plan** are now successfully completed. The campaign and gameplay mechanics are fully integrated, verified, and ready for release!

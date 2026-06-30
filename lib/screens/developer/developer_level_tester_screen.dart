@@ -222,25 +222,6 @@ class _DeveloperLevelCard extends StatelessWidget {
   }
 }
 
-extension on _DeveloperLevelCard {
-  BoardLayoutGeometry get _geometry =>
-      BoardLayoutGeometry.fromPositions(level.layout);
-
-  BoardFit get _compactFit => _geometry.fit(
-        availableWidth: kRequiredBoardViewports.first.width,
-        availableHeight: kRequiredBoardViewports.first.height,
-      );
-
-  bool get _fitsAllViewports => kRequiredBoardViewports.every((viewport) {
-        return _geometry
-            .fit(
-              availableWidth: viewport.width,
-              availableHeight: viewport.height,
-            )
-            .fitsSafely;
-      });
-}
-
 class _InfoLine extends StatelessWidget {
   const _InfoLine({required this.label, required this.value});
 
