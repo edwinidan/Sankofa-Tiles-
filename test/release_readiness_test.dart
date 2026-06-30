@@ -55,12 +55,81 @@ void main() {
     expect(iosInfo, isNot(contains('UIInterfaceOrientationLandscape')));
   });
 
-  test('banner ads and live ad SDK are not present in this sandbox build', () {
+  test('AdMob app and unit IDs are centrally configured and guarded', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    final monetization = File('lib/core/monetization/monetization_config.dart')
+    final manifest =
+        File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    final adIds = File('lib/core/ads/ad_ids.dart').readAsStringSync();
+    final gameDock = File('lib/screens/game/widgets/game_control_dock.dart')
         .readAsStringSync();
+    final resultScreen =
+        File('lib/screens/result/result_screen.dart').readAsStringSync();
 
-    expect(pubspec, isNot(contains('google_mobile_ads')));
-    expect(monetization, isNot(contains('banner')));
+    expect(pubspec, contains('google_mobile_ads'));
+    expect(
+      manifest,
+      contains('com.google.android.gms.ads.APPLICATION_ID'),
+    );
+    expect(manifest, contains('ca-app-pub-5484820744037011~7670775878'));
+    expect(adIds, contains('USE_PRODUCTION_ADS'));
+    expect(adIds, contains('kReleaseMode && useProductionAds'));
+    expect(adIds, contains('_testAndroidRewarded'));
+    expect(adIds, contains('_testAndroidInterstitial'));
+    expect(adIds, contains("androidAppId.contains('~')"));
+    expect(adIds, contains("id != null && id.contains('/')"));
+    expect(gameDock, isNot(contains('ca-app-pub-')));
+    expect(resultScreen, isNot(contains('ca-app-pub-')));
+  });
+
+  test('interstitial call site passes real tutorial and first-session state',
+      () {
+    final resultScreen =
+        File('lib/screens/result/result_screen.dart').readAsStringSync();
+
+    // The call site must pass explicit tutorialActive and isFirstSession
+    // based on real storage state, not defaults.
+    expect(
+      resultScreen,
+      contains('tutorialActive:'),
+      reason: 'tutorialActive must be explicitly passed',
+    );
+    expect(
+      resultScreen,
+      contains('isFirstSession:'),
+      reason: 'isFirstSession must be explicitly passed',
+    );
+    expect(
+      resultScreen,
+      contains('isTutorialComplete()'),
+      reason: 'Tutorial state must be read from storage',
+    );
+    expect(
+      resultScreen,
+      contains('isFirstSessionCompleted()'),
+      reason: 'First-session state must be read from storage',
+    );
+  });
+
+  test('first-session storage key exists', () {
+    final storage =
+        File('lib/core/utils/storage_service.dart').readAsStringSync();
+
+    expect(storage, contains('first_session_completed'));
+    expect(storage, contains('isFirstSessionCompleted'));
+    expect(storage, contains('setFirstSessionCompleted'));
+  });
+
+  test('retry assistance UX wording is clear about restart', () {
+    final resultScreen =
+        File('lib/screens/result/result_screen.dart').readAsStringSync();
+
+    // Must not claim the player continues the same board
+    expect(resultScreen, isNot(contains('Continue playing')));
+    expect(resultScreen, isNot(contains('Resume game')));
+
+    // Must communicate retry with assistance
+    expect(resultScreen, contains('Retry with help'));
+    expect(resultScreen, contains('retry this level'));
+    expect(resultScreen, contains('WATCH AD & RETRY'));
   });
 }

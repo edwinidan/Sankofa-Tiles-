@@ -15,6 +15,9 @@
         <meta-data
             android:name="google_analytics_adid_collection_enabled"
             android:value="false" />
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-5484820744037011~7670775878" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

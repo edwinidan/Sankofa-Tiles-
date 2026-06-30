@@ -8,6 +8,8 @@ final progressProvider = Provider<ProgressService>((ref) {
   return ProgressService(storage);
 });
 
+const int kHideHowToPlayAfterCompletedLevel = 3;
+
 class ProgressService {
   final dynamic _storage;
 
@@ -51,6 +53,9 @@ class ProgressService {
 
   bool get hasCompletedAllLevels =>
       kLevels.isNotEmpty && highestCompletedLevel >= kLevels.length;
+
+  bool get shouldShowHowToPlayPrompt =>
+      highestCompletedLevel < kHideHowToPlayAfterCompletedLevel;
 
   int get totalStars =>
       kLevels.fold(0, (sum, level) => sum + getStars(level.id));

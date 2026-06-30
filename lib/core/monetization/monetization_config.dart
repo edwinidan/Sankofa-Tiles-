@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../ads/ad_ids.dart';
 import '../economy/economy_models.dart';
 import 'monetization_models.dart';
 
@@ -23,17 +24,11 @@ class MonetizationConfig {
   static const Duration rewardedAdCooldown = Duration(minutes: 2);
 
   static String adUnitId(RewardedPlacement placement) {
-    final prefix = environment == MonetizationEnvironment.sandbox
-        ? 'test-rewarded'
-        : 'configured-rewarded';
-    return '$prefix-${placement.name}';
+    return AdIds.rewardedAdUnitId(placement) ?? 'unavailable';
   }
 
   static String interstitialAdUnitId(InterstitialPlacement placement) {
-    final prefix = environment == MonetizationEnvironment.sandbox
-        ? 'test-interstitial'
-        : 'configured-interstitial';
-    return '$prefix-${placement.name}';
+    return AdIds.interstitialAdUnitId(placement) ?? 'unavailable';
   }
 
   static List<ShopProduct> get products => [

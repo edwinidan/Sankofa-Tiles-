@@ -9,6 +9,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../core/utils/haptic_service.dart';
+import '../../providers/admob_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/sankofa_background.dart';
@@ -24,6 +25,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final privacyOptionsRequired = ref.watch(privacyOptionsRequiredProvider);
 
     return PopScope(
       canPop: false,
@@ -107,6 +109,13 @@ class SettingsScreen extends ConsumerWidget {
                 description: 'Learn how your data is collected and used',
                 onTap: () => _openPrivacyPolicy(context),
               ),
+              if (privacyOptionsRequired.valueOrNull ?? false)
+                _LinkTile(
+                  icon: Icons.tune_outlined,
+                  label: 'Privacy choices',
+                  description: 'Update your advertising privacy choices',
+                  onTap: () => _openPrivacyChoices(context, ref),
+                ),
               if (developerToolsEnabled) ...[
                 const SizedBox(height: 16),
                 const AdinkraDivider(),
@@ -143,6 +152,19 @@ class SettingsScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Unable to open the privacy policy. Please try again.'),
+      ),
+    );
+  }
+
+  Future<void> _openPrivacyChoices(BuildContext context, WidgetRef ref) async {
+    final shown =
+        await ref.read(consentServiceProvider).showPrivacyOptionsForm();
+    ref.invalidate(privacyOptionsRequiredProvider);
+    if (shown || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Unable to open privacy choices. Please try again.'),
       ),
     );
   }

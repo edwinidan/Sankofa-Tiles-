@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
+import '../ads/admob_service.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/sankofa_game_theme.dart';
 import '../utils/crash_reporting_service.dart';
@@ -104,6 +107,7 @@ class AppStartupController extends ChangeNotifier {
 Future<StorageService> defaultStartupStorageLoader() async {
   final storage = StorageService();
   await storage.init();
+  unawaited(AdMobService.shared.initialize());
   return storage;
 }
 

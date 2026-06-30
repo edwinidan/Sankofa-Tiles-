@@ -10,6 +10,7 @@ import '../../core/utils/haptic_service.dart';
 import '../../core/utils/audio_service.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../providers/game_provider.dart';
+import '../../providers/progress_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -181,6 +182,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
+    final showHowToPlay = ref.watch(progressProvider).shouldShowHowToPlayPrompt;
     if (!_reportedReadyFrame && gameState.status == GameStatus.playing) {
       _reportedReadyFrame = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -272,6 +274,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             onResume: () =>
                                 ref.read(gameProvider.notifier).resumeGame(),
                             onRestart: _confirmRestart,
+                            showHowToPlay: showHowToPlay,
                             onHowToPlay: _openTutorial,
                             onQuit: _confirmQuit,
                           )
@@ -582,12 +585,14 @@ class _SheetHapticTile extends StatelessWidget {
 class _PausedOverlay extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onRestart;
+  final bool showHowToPlay;
   final VoidCallback onHowToPlay;
   final VoidCallback onQuit;
 
   const _PausedOverlay({
     required this.onResume,
     required this.onRestart,
+    required this.showHowToPlay,
     required this.onHowToPlay,
     required this.onQuit,
   });
@@ -628,13 +633,14 @@ class _PausedOverlay extends StatelessWidget {
             const SizedBox(height: 12),
             const _PauseSettingsControls(),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: onHowToPlay,
-              child: Text(
-                'How to Play',
-                style: AppTextStyles.archiveBodyMedium,
+            if (showHowToPlay)
+              TextButton(
+                onPressed: onHowToPlay,
+                child: Text(
+                  'How to Play',
+                  style: AppTextStyles.archiveBodyMedium,
+                ),
               ),
-            ),
             TextButton(
               onPressed: onQuit,
               child: Text(

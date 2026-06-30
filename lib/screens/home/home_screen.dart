@@ -19,6 +19,9 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(progressProvider);
+    final showHowToPlay = progress.shouldShowHowToPlayPrompt;
+
     return Scaffold(
       backgroundColor: SankofaGameTheme.backgroundTop,
       body: SankofaBackground(
@@ -81,13 +84,16 @@ class HomeScreen extends ConsumerWidget {
                                 width: double.infinity,
                                 onTap: () => context.push('/journey'),
                               ),
-                              const SizedBox(height: 12),
-                              KenteButton(
-                                label: 'HOW TO PLAY',
-                                icon: Icons.help_outline,
-                                width: double.infinity,
-                                onTap: () => context.push('/tutorial?replay=1'),
-                              ),
+                              if (showHowToPlay) ...[
+                                const SizedBox(height: 12),
+                                KenteButton(
+                                  label: 'HOW TO PLAY',
+                                  icon: Icons.help_outline,
+                                  width: double.infinity,
+                                  onTap: () =>
+                                      context.push('/tutorial?replay=1'),
+                                ),
+                              ],
                               const SizedBox(height: 12),
                               KenteButton(
                                 label: 'SETTINGS',

@@ -37,6 +37,7 @@ class StorageService {
       'monetization_last_interstitial_millis';
   static const _keyLastRewardedAdMillis =
       'monetization_last_rewarded_ad_millis';
+  static const _keyFirstSessionCompleted = 'first_session_completed';
   static const _campaignProgressSchemaVersion = 3;
 
   late SharedPreferences _prefs;
@@ -319,6 +320,14 @@ class StorageService {
           _prefs.getBool(key) == true)
       .map((key) => key.substring(_prefixAchievementClaimed.length))
       .toSet();
+
+  // First-session tracking
+  // The first session ends when the player completes their first level.
+  // Until that point, interstitials are suppressed.
+  bool isFirstSessionCompleted() =>
+      _prefs.getBool(_keyFirstSessionCompleted) ?? false;
+  Future<void> setFirstSessionCompleted() async =>
+      _prefs.setBool(_keyFirstSessionCompleted, true);
 
   // Reset
   Future<void> resetAllProgress() async {

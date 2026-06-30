@@ -185,6 +185,19 @@ class _RecordingStorage extends StorageService {
   Future<void> setLastRewardedAdAt(DateTime value) async {
     lastRewardedAdAt = value;
   }
+
+  bool _firstSessionCompleted = false;
+
+  @override
+  bool isFirstSessionCompleted() => _firstSessionCompleted;
+
+  @override
+  Future<void> setFirstSessionCompleted() async {
+    _firstSessionCompleted = true;
+  }
+
+  @override
+  bool isTutorialComplete() => true;
 }
 
 void main() {

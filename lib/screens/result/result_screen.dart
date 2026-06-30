@@ -18,6 +18,7 @@ import '../../providers/economy_provider.dart';
 import '../../providers/monetization_provider.dart';
 import '../../core/monetization/monetization_models.dart';
 import '../../providers/progress_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/cowrie_icon.dart';
 import '../../widgets/kente_button.dart';
@@ -100,9 +101,20 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           widget.gameState.score,
           _stars,
         );
+
+    // Mark first session as completed after the very first level save.
+    // This ensures the first completed level is protected from interstitials.
+    final storage = ref.read(storageServiceProvider);
+    if (!storage.isFirstSessionCompleted()) {
+      await storage.setFirstSessionCompleted();
+    }
+
     await ref
         .read(monetizationProvider.notifier)
-        .recordLevelWinAndMaybeShowInterstitial();
+        .recordLevelWinAndMaybeShowInterstitial(
+          tutorialActive: !storage.isTutorialComplete(),
+          isFirstSession: !storage.isFirstSessionCompleted(),
+        );
 
     if (mounted) {
       setState(() => _rewardSummary = rewardSummary);
@@ -677,7 +689,7 @@ class _LoseContent extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           if (!launchConfig.isDeveloperTest) ...[
-            const _RetryAssistReward(),
+            _RetryAssistReward(levelId: gameState.levelId),
             const SizedBox(height: 10),
           ],
           if (launchConfig.isDeveloperTest)
@@ -707,26 +719,89 @@ class _LoseContent extends StatelessWidget {
   }
 }
 
-class _RetryAssistReward extends ConsumerWidget {
-  const _RetryAssistReward();
+class _RetryAssistReward extends ConsumerStatefulWidget {
+  const _RetryAssistReward({required this.levelId});
+
+  final int levelId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return KenteButton(
-      label: 'GET RETRY SHUFFLE',
-      icon: Icons.ondemand_video_outlined,
+  ConsumerState<_RetryAssistReward> createState() => _RetryAssistRewardState();
+}
+
+class _RetryAssistRewardState extends ConsumerState<_RetryAssistReward> {
+  bool _isLoading = false;
+  bool _rewardGranted = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_rewardGranted) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
       width: double.infinity,
-      onTap: () async {
-        final messenger = ScaffoldMessenger.of(context);
-        final result =
-            await ref.read(monetizationProvider.notifier).completeRewardedAd(
-                  placement: RewardedPlacement.retryAssistance,
-                );
-        messenger.showSnackBar(
-          SnackBar(content: Text(result.message)),
-        );
-      },
+      padding: const EdgeInsets.all(14),
+      decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
+      child: Column(
+        children: [
+          Text(
+            'Retry with help',
+            style: AppTextStyles.archiveTitleLarge.copyWith(
+              color: SankofaGameTheme.parchmentLight,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Watch an ad to retry this level with one free Shuffle.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: SankofaGameTheme.mutedLightText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          KenteButton(
+            label: _isLoading ? 'LOADING…' : 'WATCH AD & RETRY',
+            icon: _isLoading
+                ? Icons.hourglass_top
+                : Icons.ondemand_video_outlined,
+            width: double.infinity,
+            onTap: _isLoading ? null : _onTap,
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _onTap() async {
+    if (_isLoading || _rewardGranted) return;
+    setState(() => _isLoading = true);
+
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final result =
+        await ref.read(monetizationProvider.notifier).completeRewardedAd(
+              placement: RewardedPlacement.retryAssistance,
+            );
+
+    if (!mounted) return;
+
+    if (result.completed) {
+      setState(() => _rewardGranted = true);
+      AnalyticsService.logLevelRetried(widget.levelId);
+      router.go(
+        '/game/${widget.levelId}',
+        extra: GameLaunchConfig(
+          levelId: widget.levelId,
+          launchMode: GameLaunchMode.normalProgression,
+        ),
+      );
+    } else {
+      setState(() => _isLoading = false);
+      messenger.showSnackBar(
+        SnackBar(content: Text(result.message)),
+      );
+    }
   }
 }
 

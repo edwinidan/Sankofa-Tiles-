@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/ads/admob_service.dart';
 import '../core/monetization/monetization_models.dart';
 import '../core/monetization/monetization_service.dart';
 import '../core/utils/analytics_service.dart';
+import 'admob_provider.dart';
 import 'economy_provider.dart';
 import 'settings_provider.dart';
 
@@ -15,13 +17,16 @@ final monetizationServiceProvider = Provider<MonetizationService>((ref) {
 final monetizationProvider =
     StateNotifierProvider<MonetizationNotifier, MonetizationState>((ref) {
   final service = ref.watch(monetizationServiceProvider);
-  return MonetizationNotifier(service, ref);
+  final adMobService = ref.watch(adMobServiceProvider);
+  return MonetizationNotifier(service, adMobService, ref);
 });
 
 class MonetizationNotifier extends StateNotifier<MonetizationState> {
-  MonetizationNotifier(this._service, this._ref) : super(_service.loadState());
+  MonetizationNotifier(this._service, this._adMobService, this._ref)
+      : super(_service.loadState());
 
   final MonetizationService _service;
+  final AdMobService _adMobService;
   final Ref _ref;
 
   void refresh() {
@@ -107,12 +112,13 @@ class MonetizationNotifier extends StateNotifier<MonetizationState> {
     bool completed = true,
   }) async {
     AnalyticsService.logRewardedAdRequested(placement.name);
+    final adCompleted = await _adMobService.showRewardedAd(placement);
     final result = await _service.completeRewardedAd(
       placement: placement,
       callbackId:
           'rewarded:${placement.name}:${DateTime.now().microsecondsSinceEpoch}',
       baseCowries: baseCowries,
-      completed: completed,
+      completed: completed && adCompleted,
     );
     if (result.status == PurchaseStatus.success) {
       AnalyticsService.logRewardedAdCompleted(placement.name);
@@ -134,16 +140,36 @@ class MonetizationNotifier extends StateNotifier<MonetizationState> {
     bool afterLoss = false,
   }) async {
     await _service.recordLevelCompletedForInterstitial();
-    final decision = await _service.markInterstitialShown(
+    final decision = _service.interstitialDecision(
       placement: InterstitialPlacement.afterCompletedLevels,
       isFirstSession: isFirstSession,
       tutorialActive: tutorialActive,
       afterLoss: afterLoss,
     );
     if (decision.canShow) {
-      AnalyticsService.logInterstitialShown(
-        InterstitialPlacement.afterCompletedLevels.name,
+      final shown = await _adMobService.showInterstitialAd(
+        InterstitialPlacement.afterCompletedLevels,
       );
+      if (shown) {
+        await _service.markInterstitialShown(
+          placement: InterstitialPlacement.afterCompletedLevels,
+          isFirstSession: isFirstSession,
+          tutorialActive: tutorialActive,
+          afterLoss: afterLoss,
+        );
+        AnalyticsService.logInterstitialShown(
+          InterstitialPlacement.afterCompletedLevels.name,
+        );
+      } else {
+        AnalyticsService.logInterstitialSkipped(
+          InterstitialPlacement.afterCompletedLevels.name,
+          'ad_unavailable',
+        );
+        return const InterstitialDecision(
+          canShow: false,
+          reason: 'ad_unavailable',
+        );
+      }
     } else {
       AnalyticsService.logInterstitialSkipped(
         InterstitialPlacement.afterCompletedLevels.name,
