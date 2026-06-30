@@ -15,6 +15,7 @@ import 'package:sankofa_tiles/screens/home/home_screen.dart';
 import 'package:sankofa_tiles/screens/pre_level/pre_level_screen.dart';
 import 'package:sankofa_tiles/screens/result/result_screen.dart';
 import 'package:sankofa_tiles/screens/tutorial/tutorial_screen.dart';
+import 'package:sankofa_tiles/screens/game/widgets/tile_widget.dart';
 
 Future<StorageService> _storage(Map<String, Object> values) async {
   SharedPreferences.setMockInitialValues(values);
@@ -55,6 +56,7 @@ Widget _routerApp({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  kRunningTests = true;
 
   test('tutorial completion persists', () async {
     final storage = await _storage({});

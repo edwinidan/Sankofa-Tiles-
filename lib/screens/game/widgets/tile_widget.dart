@@ -12,6 +12,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/sankofa_game_theme.dart';
 import '../../../widgets/tile_back.dart';
 
+bool kRunningTests = false;
+
 const _kDefaultTileW = 64.0;
 const _kDefaultTileH = 85.0;
 const _kEdgeH = 5.0;
@@ -70,7 +72,10 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     _hintController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+    );
+    if (widget.tile.isHinted && !kRunningTests) {
+      _hintController.repeat(reverse: true);
+    }
     _glowOpacity = Tween<double>(begin: 0.0, end: 0.55).animate(
       CurvedAnimation(parent: _hintController, curve: Curves.easeInOut),
     );
@@ -102,6 +107,13 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     // Snap-click when tile lifts (selection confirmed)
     if (widget.tile.isSelected && !oldWidget.tile.isSelected) {
       HapticService.selectionClick(ref.read(settingsProvider).hapticIntensity);
+    }
+    if (widget.tile.isHinted && !oldWidget.tile.isHinted) {
+      if (!kRunningTests) {
+        _hintController.repeat(reverse: true);
+      }
+    } else if (!widget.tile.isHinted && oldWidget.tile.isHinted) {
+      _hintController.stop();
     }
   }
 

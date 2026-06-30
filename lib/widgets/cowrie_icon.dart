@@ -60,13 +60,17 @@ class CowrieAmount extends StatelessWidget {
       children: [
         CowrieIcon(size: iconSize),
         const SizedBox(width: 8),
-        Text(
-          '$prefix$amount $label',
-          style: style ??
-              AppTextStyles.bodyMedium.copyWith(
-                color: SankofaGameTheme.parchmentLight,
-              ),
-          textAlign: textAlign,
+        Flexible(
+          child: Text(
+            '$prefix$amount $label',
+            style: style ??
+                AppTextStyles.bodyMedium.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+            textAlign: textAlign,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
