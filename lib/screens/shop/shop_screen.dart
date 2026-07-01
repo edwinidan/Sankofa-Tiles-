@@ -166,11 +166,18 @@ class _SectionTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Temporarily filter out payment-related tabs ('Remove Ads' and 'Restore')
+    // while the in-app purchase and billing configurations are not fully implemented.
+    // Simply remove this filter or restore the original loop to re-enable them.
+    final displayedSections = ShopSection.values.where((section) =>
+        section != ShopSection.removeAds &&
+        section != ShopSection.restorePurchases);
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (final section in ShopSection.values)
+        for (final section in displayedSections)
           ChoiceChip(
             label: Text(section.label),
             selected: selected == section,

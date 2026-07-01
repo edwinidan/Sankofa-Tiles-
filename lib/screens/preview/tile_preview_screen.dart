@@ -18,7 +18,81 @@ class TilePreviewScreen extends ConsumerStatefulWidget {
 }
 
 class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
-  int _selectedIndex = kAllTiles.indexWhere((t) => t.id == 'gye_nyame');
+  static const _thumbnailWidth = 58.0;
+  static const _thumbnailSpacing = 8.0;
+  static const _thumbnailHorizontalPadding = 12.0;
+
+  late final PageController _previewController;
+  late final ScrollController _thumbnailController;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialIndex = kAllTiles.indexWhere((t) => t.id == 'gye_nyame');
+    _selectedIndex = initialIndex >= 0 ? initialIndex : 0;
+    _previewController = PageController(initialPage: _selectedIndex);
+    _thumbnailController = ScrollController();
+    _scrollSelectedThumbnailIntoView();
+  }
+
+  @override
+  void dispose() {
+    _previewController.dispose();
+    _thumbnailController.dispose();
+    super.dispose();
+  }
+
+  void _selectTile(int index, {bool animatePreview = true}) {
+    if (index == _selectedIndex) {
+      _scrollSelectedThumbnailIntoView();
+      return;
+    }
+
+    setState(() => _selectedIndex = index);
+    _scrollSelectedThumbnailIntoView();
+
+    if (animatePreview && _previewController.hasClients) {
+      _previewController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _scrollSelectedThumbnailIntoView() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_thumbnailController.hasClients) return;
+
+      final viewportWidth = _thumbnailController.position.viewportDimension;
+      final currentOffset = _thumbnailController.offset;
+      final itemStart = _thumbnailHorizontalPadding +
+          _selectedIndex * (_thumbnailWidth + _thumbnailSpacing);
+      final itemEnd = itemStart + _thumbnailWidth;
+
+      double? targetOffset;
+      if (itemStart < currentOffset) {
+        targetOffset = itemStart - _thumbnailHorizontalPadding;
+      } else if (itemEnd > currentOffset + viewportWidth) {
+        targetOffset = itemEnd - viewportWidth + _thumbnailHorizontalPadding;
+      }
+
+      if (targetOffset == null) return;
+
+      final clampedOffset = targetOffset
+          .clamp(
+            _thumbnailController.position.minScrollExtent,
+            _thumbnailController.position.maxScrollExtent,
+          )
+          .toDouble();
+      _thumbnailController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +100,6 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
     final economy = ref.watch(economyProvider);
     final service = ref.read(economyServiceProvider);
     final unlocked = economy.unlockedCollectionIds.contains(def.id);
-    final tile = TileModel(def: def, row: 0, col: 0);
-    final assetPath = def.assetPath;
 
     return Scaffold(
       backgroundColor: SankofaGameTheme.backgroundTop,
@@ -54,32 +126,51 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
           child: Column(
             children: [
               Expanded(
-                child: Center(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                    padding: const EdgeInsets.all(22),
-                    decoration: SankofaGameTheme.appParchmentPanelDecoration,
-                    child: unlocked && assetPath != null
-                        ? Image.asset(
-                            assetPath,
-                            width: 180,
-                            height: 180,
-                            fit: BoxFit.contain,
-                          )
-                        : unlocked
-                            ? TileWidget(
-                                tile: tile,
-                                width: 128,
-                                height: 170,
-                                showSuitCode: false,
-                                forceHideName: true,
+                child: PageView.builder(
+                  key: const ValueKey('tile-preview-page-view'),
+                  controller: _previewController,
+                  itemCount: kAllTiles.length,
+                  onPageChanged: (index) =>
+                      _selectTile(index, animatePreview: false),
+                  itemBuilder: (context, index) {
+                    final previewDef = kAllTiles[index];
+                    final previewUnlocked =
+                        economy.unlockedCollectionIds.contains(previewDef.id);
+                    final previewTile =
+                        TileModel(def: previewDef, row: 0, col: 0);
+                    final previewAssetPath = previewDef.assetPath;
+
+                    return Center(
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+                        padding: const EdgeInsets.all(22),
+                        decoration:
+                            SankofaGameTheme.appParchmentPanelDecoration,
+                        child: previewUnlocked && previewAssetPath != null
+                            ? Image.asset(
+                                previewAssetPath,
+                                width: 180,
+                                height: 180,
+                                fit: BoxFit.contain,
                               )
-                            : const _LockedCollectionTile(
-                                width: 128,
-                                height: 170,
-                                lockSize: 38,
-                              ),
-                  ),
+                            : previewUnlocked
+                                ? IgnorePointer(
+                                    child: TileWidget(
+                                      tile: previewTile,
+                                      width: 128,
+                                      height: 170,
+                                      showSuitCode: false,
+                                      forceHideName: true,
+                                    ),
+                                  )
+                                : const _LockedCollectionTile(
+                                    width: 128,
+                                    height: 170,
+                                    lockSize: 38,
+                                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
               Container(
@@ -131,6 +222,7 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                   ),
                 ),
                 child: ListView.separated(
+                  controller: _thumbnailController,
                   scrollDirection: Axis.horizontal,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -142,37 +234,47 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                     final tileUnlocked =
                         economy.unlockedCollectionIds.contains(t.id);
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedIndex = index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: isSelected
-                              ? Border.all(
-                                  color: SankofaGameTheme.antiqueGold,
-                                  width: 2.5,
-                                )
-                              : Border.all(
-                                  color: Colors.transparent,
-                                  width: 2.5,
-                                ),
+                      key: ValueKey('tile-preview-thumbnail-${t.id}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _selectTile(index),
+                      child: SizedBox(
+                        width: _thumbnailWidth,
+                        height: double.infinity,
+                        child: Center(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: isSelected
+                                  ? Border.all(
+                                      color: SankofaGameTheme.antiqueGold,
+                                      width: 2.5,
+                                    )
+                                  : Border.all(
+                                      color: Colors.transparent,
+                                      width: 2.5,
+                                    ),
+                            ),
+                            child: IgnorePointer(
+                              child: tileUnlocked
+                                  ? TileWidget(
+                                      tile: TileModel(def: t, row: 0, col: 0),
+                                      width: isSelected ? 50 : 44,
+                                      height: isSelected ? 66 : 58,
+                                    )
+                                  : SizedBox(
+                                      width: isSelected ? 50 : 44,
+                                      height: isSelected ? 66 : 58,
+                                      child: _LockedCollectionTile(
+                                        width: isSelected ? 50 : 44,
+                                        height: isSelected ? 66 : 58,
+                                        lockSize: isSelected ? 18 : 16,
+                                      ),
+                                    ),
+                            ),
+                          ),
                         ),
-                        child: tileUnlocked
-                            ? TileWidget(
-                                tile: TileModel(def: t, row: 0, col: 0),
-                                width: isSelected ? 50 : 44,
-                                height: isSelected ? 66 : 58,
-                              )
-                            : SizedBox(
-                                width: isSelected ? 50 : 44,
-                                height: isSelected ? 66 : 58,
-                                child: _LockedCollectionTile(
-                                  width: isSelected ? 50 : 44,
-                                  height: isSelected ? 66 : 58,
-                                  lockSize: isSelected ? 18 : 16,
-                                ),
-                              ),
                       ),
                     );
                   },

@@ -120,7 +120,7 @@ void main() {
       _scopedApp(storage: storage, child: const PreLevelScreen(levelId: 1)),
     );
 
-    expect(find.text('First Symbols'), findsWidgets);
+    expect(find.text('Accra'), findsWidgets);
     expect(find.text('PLAY'), findsOneWidget);
   });
 
@@ -170,6 +170,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Chapter Complete'), findsOneWidget);
-    expect(find.text('First Symbols'), findsOneWidget);
+    expect(find.text('Accra'), findsOneWidget);
   });
 }

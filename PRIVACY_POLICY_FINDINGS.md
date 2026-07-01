@@ -1,6 +1,6 @@
 # Privacy Policy Findings — Adinkra Tiles (Sankofa Tiles)
 
-This document catalogs every privacy-relevant aspect of the codebase as of 2026-06-06, so you can draft an accurate privacy policy. Each section covers what data is collected, how it's stored, which third parties see it, and whether the user can control or delete it.
+This document catalogs every privacy-relevant aspect of the codebase as of 2026-07-01, so you can draft an accurate privacy policy. Each section covers what data is collected, how it's stored, which third parties see it, and whether the user can control or delete it.
 
 ---
 
@@ -113,6 +113,20 @@ All data stored by SharedPreferences lives **only on the device**. It is never u
 
 The app uses Google Fonts (`cinzel` and `nunito` font families) via the `google_fonts` package. On first launch, this package downloads font files from `fonts.googleapis.com` and caches them locally. No user data is sent during this request; Google may receive standard HTTP information (IP address, User-Agent) as part of serving the font files.
 
+### 2.5 Google Mobile Ads (AdMob)
+
+**SDK:** `google_mobile_ads` v9.0.0
+
+The app integrates the Google Mobile Ads SDK to display interstitial and rewarded ads. To request, serve, and measure ads, the SDK automatically collects and shares certain user and device data with Google and its advertising partners:
+
+- **Device or other identifiers:** Device-specific hardware identifiers (like screen resolution, OS version, and brand) are transmitted. The Google Advertising ID (`AD_ID`) is used for ad personalization and capping, although the app currently contains manifest configurations that attempt to opt-out/disable it (see Section 4).
+- **Approximate location:** Coarse location derived from IP address (country, state, city) is sent to target geographically relevant ads.
+- **App activity / interactions:** The SDK tracks user interaction with ads (such as impressions, clicks, and video completion status) to calculate ad revenue and prevent fraud.
+- **App info and performance:** Diagnostic information, SDK latency, load times, and performance analytics are collected to monitor ad health.
+
+**Consent Management (GDPR/EEA/UK compliance):**
+The app integrates the Google User Messaging Platform (UMP) SDK (via `ConsentService`) to present users in the EEA/UK with a consent dialogue. Users can choose whether to allow personalized ads, non-personalized ads, or deny consent entirely. Privacy choices can be updated at any time via the in-game settings.
+
 ---
 
 ## 3. Data NOT Collected
@@ -122,7 +136,7 @@ The following are explicitly **not** collected or accessed by this app:
 - **No user accounts or authentication** — no login, sign-up, email, or password
 - **No personal identifiers** — no name, phone number, address, or date of birth
 - **No precise location** — no GPS or fine-location permission
-- **No advertising ID in the current code** — Phase 4 adds SDK-neutral sandbox/test ad flows but no `google_mobile_ads` or AdMob SDK yet.
+- **Advertising ID usage:** The app now includes the `google_mobile_ads` SDK, which uses the Android Advertising ID (`AD_ID`) for ad personalization, subject to user consent and OS level settings. *Note: The app's manifest currently includes tags to remove `AD_ID` permissions (see Section 4.1).*
 - **No live billing SDK in the current code** — Phase 4 adds local sandbox purchase states and entitlement handling but no RevenueCat or `in_app_purchase` plugin yet.
 - **No photos, media, or files** — no camera, microphone, photo library, or file system access
 - **No contacts or calendars**
@@ -136,12 +150,22 @@ The following are explicitly **not** collected or accessed by this app:
 
 ### 4.1 Android
 
-The app requests **no runtime permissions**. The `AndroidManifest.xml` contains:
+The app requests the following permissions, which may be declared either explicitly in the manifest or merged automatically by third-party SDKs:
+- `android.permission.INTERNET` (merged automatically by Firebase and Google Mobile Ads SDKs) — required to download fonts, send analytics/crashes, and fetch ads.
+
+**Special Manifest Directives for Advertising ID:**
+The `AndroidManifest.xml` explicitly includes rules to **remove** the standard Advertising ID permissions:
+- `com.google.android.gms.permission.AD_ID` with `tools:node="remove"`
+- `android.permission.ACCESS_ADSERVICES_AD_ID` with `tools:node="remove"`
+- Metadata flag `google_analytics_adid_collection_enabled` is set to `false`.
+
+These directives prevent the app (including Firebase Analytics and Google Mobile Ads) from accessing the hardware Advertising ID on Android 12+ devices, limiting ad delivery to non-personalized or contextual ads unless these nodes are restored.
+
+The manifest also declares:
 - `android.intent.action.MAIN` / `LAUNCHER` — standard launcher activity
 - `ACTION_PROCESS_TEXT` — Flutter engine text processing (not user-initiated)
 - Firebase Google Services plugin (for Analytics + Crashlytics)
-
-**No** `INTERNET` permission is declared explicitly, but the Firebase SDK and Google Fonts require network access at runtime.
+- `com.google.android.gms.ads.APPLICATION_ID` — metadata to identify your AdMob app ID.
 
 ### 4.2 iOS
 
@@ -166,6 +190,7 @@ The app is a PWA (`manifest.json`): `"display": "standalone"`, no special permis
 | Google Firebase Analytics | Gameplay analytics & usage metrics | Level progress events, screen views, app-instance ID, coarse device info, IP-based approximate location | `https://firebase.google.com/support/privacy` |
 | Google Firebase Crashlytics | Crash reporting & stability monitoring | Stack traces, device/OS info, non-fatal error reports | `https://firebase.google.com/support/privacy` |
 | Google Fonts | Font file delivery | HTTP request metadata (IP, User-Agent) at font download time | `https://policies.google.com/privacy` |
+| Google AdMob | Ad serving and monetization | Device/Advertising ID, approximate location, ad interaction events, performance diagnostics | `https://policies.google.com/privacy` |
 
 ---
 
@@ -201,20 +226,12 @@ The app provides **no in-app mechanism to request deletion** of Firebase-collect
 
 ## 8. Monetization Status
 
-Phase 4 adds a local, SDK-neutral monetization layer:
+The app now implements a live ad monetization flow alongside a local sandbox shop layer:
 
-- Shop screen and product catalog.
-- Sandbox purchase, restore, cancellation, failure, offline, and already-owned states.
-- Local Remove Ads entitlement.
-- Rewarded-ad style voluntary rewards using test/sandbox callbacks.
-- Interstitial frequency eligibility state.
-
-The code still does **not** include live AdMob, Google Mobile Ads, RevenueCat, or platform billing SDKs. If those SDKs are added before release, the privacy policy must be updated to disclose:
-
-- Advertising ID usage (AdMob)
-- Purchase history collection
-- RevenueCat's data handling practices
-- Consent requirements and ad personalization settings
+- **Google Mobile Ads (AdMob) Integration:** Live SDK integration (`google_mobile_ads` v9.0.0) is configured. Interstitial ads are shown at key gameplay transitions, and Rewarded ads are shown for opt-in rewards (e.g., getting hints or continuing level attempts).
+- **Consent Collection (UMP):** Fully integrated via Google's User Messaging Platform (UMP) SDK to collect and manage user consent in GDPR-applicable jurisdictions.
+- **Local Sandbox Shop & Entitlements:** Local implementation for purchase states, item inventory (Cowries, Boosters), and a "Remove Ads" entitlement.
+- **Note on Billing SDK:** The code does **not** yet contain live store billing APIs (such as `in_app_purchase` or RevenueCat). If a live billing SDK is added in the future, the privacy policy must be updated to disclose purchase history collection and the respective payment provider's policies.
 
 ---
 
@@ -223,16 +240,17 @@ The code still does **not** include live AdMob, Google Mobile Ads, RevenueCat, o
 Based on the findings above, your privacy policy must at minimum disclose:
 
 1. **Data controller identity** — your name/company and contact information
-2. **Firebase Analytics** — what gameplay events are tracked, that an app-instance ID and coarse device/location data is collected automatically by Google
-3. **Firebase Crashlytics** — that crash reports including stack traces and device info are sent to Google
-4. **Google Fonts** — that font files are fetched from Google servers on first launch
-5. **Local storage** — that game progress and preferences are stored on-device only
-6. **No account/personal data** — that the app does not require registration or collect personal identifiers
-7. **Data retention periods** — for Firebase Analytics (14 months default) and Crashlytics (90 days default)
-8. **User controls** — the in-app "Reset All Progress" option and that uninstalling deletes all local data
-9. **Children's privacy** — a clear statement about whether the app targets children and what measures are in place
-10. **Third-party links** — links to Google's privacy policies
-11. **Monetization status** — that the current code has sandbox monetization state but no live ad or billing SDK; update this before any production release with real ads or purchases.
+2. **Google AdMob (Advertising)** — that the app displays ads using Google AdMob, which collects and shares Device IDs, advertising ID (AD_ID), approximate location, and ad interaction history to personalize ads and measure performance.
+3. **User Consent and Privacy Settings** — mention that users in the EEA/UK can customize or revoke their consent choices at any time using the in-game Privacy Options menu.
+4. **Firebase Analytics** — what gameplay events are tracked, and that an app-instance ID and coarse device/location data is collected automatically by Google.
+5. **Firebase Crashlytics** — that crash reports including stack traces and device info are sent to Google.
+6. **Google Fonts** — that font files are fetched from Google servers on first launch.
+7. **Local storage** — that game progress and preferences are stored on-device only.
+8. **No account/personal data** — that the app does not require registration or collect personal identifiers.
+9. **Data retention periods** — for Firebase Analytics (14 months default), Crashlytics (90 days default), and standard Google advertising data retention profiles.
+10. **User controls** — the in-app "Reset All Progress" option, the "Privacy Options" form trigger (for ad consent), and that uninstalling deletes all local data.
+11. **Children's privacy** — a clear statement about whether the app targets children and what measures are in place (under COPPA, UK AADC, GDPR, etc.). If you serve ads, ensure they are configured correctly for children if your app is directed at minors.
+12. **Third-party links** — links to Google's privacy policies and AdMob's partner network policies.
 
 ---
 
@@ -242,16 +260,21 @@ Based on the findings above, your privacy policy must at minimum disclose:
 |---|---|
 | `pubspec.yaml` | All third-party SDK dependencies |
 | `lib/main.dart` | Firebase + Crashlytics initialization, error handlers |
-| `lib/core/utils/analytics_service.dart` | All analytics event definitions |
+| `lib/core/startup/app_startup.dart` | Startup sequence including AdMob and consent checks |
+| `lib/core/ads/admob_service.dart` | AdMob initialization, loading, and display logic for interstitial and rewarded ads |
+| `lib/core/ads/consent_service.dart` | Consent gatherer using Google User Messaging Platform (UMP) |
+| `lib/core/ads/ad_ids.dart` | Test and production AdMob App ID and Ad Unit IDs |
+| `lib/providers/admob_provider.dart` | Riverpod providers for the AdMob services |
+| `lib/core/utils/analytics_service.dart` | All analytics event definitions (including ad placement events) |
 | `lib/core/utils/crash_reporting_service.dart` | Non-fatal error reporting |
-| `lib/core/utils/storage_service.dart` | All SharedPreferences keys and what they store |
+| `lib/core/utils/storage_service.dart` | All SharedPreferences keys and what they store (including ad limits/cooldown states) |
 | `lib/core/utils/audio_service.dart` | Audio playback (no data collection; Crashlytics on failure) |
 | `lib/core/theme/app_text_styles.dart` | Google Fonts usage (Cinzel, Nunito) |
-| `android/app/src/main/AndroidManifest.xml` | Android permissions declared |
+| `android/app/src/main/AndroidManifest.xml` | Android permissions and AdMob App ID declarations |
 | `android/app/google-services.json` | Firebase project configuration |
 | `ios/Runner/Info.plist` | iOS permissions and configuration |
 | `macos/Runner/DebugProfile.entitlements` | macOS network entitlement (debug only) |
 | `web/index.html` | Web app configuration (PWA) |
 | `web/manifest.json` | PWA manifest |
 | `docs/FIREBASE_TRACKING_NOTES.md` | Internal tracking notes |
-| `sankofa_tiles_project_plan.md` | Future monetization plans (not yet implemented) |
+| `sankofa_tiles_project_plan.md` | Future monetization plans |

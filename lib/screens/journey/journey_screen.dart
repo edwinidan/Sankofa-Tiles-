@@ -24,7 +24,7 @@ class JourneyScreen extends ConsumerWidget {
         backgroundColor: SankofaGameTheme.backgroundTop,
         foregroundColor: SankofaGameTheme.parchmentLight,
         title: Text(
-          'Grand Archive',
+          'Ghana Journey',
           style: AppTextStyles.displaySmall.copyWith(
             color: SankofaGameTheme.antiqueGold,
           ),
@@ -89,6 +89,13 @@ class _ChapterCard extends ConsumerWidget {
             '$completed/10 complete · $chapterStars stars',
             style: AppTextStyles.bodySmall.copyWith(
               color: SankofaGameTheme.mutedLightText,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            chapter.meaning,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: SankofaGameTheme.parchmentLight,
             ),
           ),
           const SizedBox(height: 12),

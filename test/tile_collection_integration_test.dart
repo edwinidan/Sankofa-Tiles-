@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
 import 'package:sankofa_tiles/providers/economy_provider.dart';
@@ -66,5 +67,48 @@ void main() {
     expect(find.text('Undiscovered Symbol'), findsNothing);
     expect(find.text('Except God'), findsOneWidget);
     expect(find.text('Unlocked at Level 1'), findsOneWidget);
+  });
+
+  testWidgets('preview swipes and thumbnail taps share selected tile',
+      (tester) async {
+    final initialIndex = kAllTiles.indexWhere((tile) => tile.id == 'gye_nyame');
+    final nextTile = kAllTiles[initialIndex + 1];
+    final storage = await _storage({
+      'collection_unlocked_gye_nyame': true,
+      'collection_unlocked_${nextTile.id}': true,
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+        ],
+        child: const MaterialApp(
+          home: TilePreviewScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gye Nyame'), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const ValueKey('tile-preview-page-view')),
+      const Offset(-500, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(nextTile.name), findsOneWidget);
+    expect(find.text('Gye Nyame'), findsNothing);
+
+    final gyeNyameThumbnail =
+        find.byKey(const ValueKey('tile-preview-thumbnail-gye_nyame'));
+    await tester.ensureVisible(gyeNyameThumbnail);
+    await tester.pumpAndSettle();
+    await tester.tap(gyeNyameThumbnail);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gye Nyame'), findsOneWidget);
+    expect(find.text(nextTile.name), findsNothing);
   });
 }
