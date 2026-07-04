@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/sankofa_game_theme.dart';
 import '../../../core/economy/economy_models.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/monetization/monetization_models.dart';
 import '../../../models/game_state.dart';
 import '../../../providers/economy_provider.dart';
 import '../../../providers/game_provider.dart';
 import '../../../providers/monetization_provider.dart';
+import '../../../widgets/kente_button.dart';
 
 class GameControlDock extends ConsumerWidget {
   const GameControlDock({super.key});
@@ -40,11 +42,19 @@ class GameControlDock extends ConsumerWidget {
                       ? () async {
                           final messenger = ScaffoldMessenger.of(context);
                           if (economy.boosterCount(BoosterType.hint) <= 0) {
+                            final confirmed =
+                                await _showRewardedBoosterConfirmation(
+                              context,
+                              title: 'No Hints Left',
+                              body: 'Watch a short ad to receive 1 free Hint?',
+                            );
+                            if (!context.mounted || !confirmed) return;
                             final result = await ref
                                 .read(monetizationProvider.notifier)
                                 .completeRewardedAd(
                                   placement: RewardedPlacement.freeHint,
                                 );
+                            if (!context.mounted) return;
                             if (!result.completed) {
                               messenger.showSnackBar(
                                 SnackBar(content: Text(result.message)),
@@ -74,12 +84,21 @@ class GameControlDock extends ConsumerWidget {
                       ? () async {
                           final messenger = ScaffoldMessenger.of(context);
                           if (economy.boosterCount(BoosterType.shuffle) <= 0) {
+                            final confirmed =
+                                await _showRewardedBoosterConfirmation(
+                              context,
+                              title: 'No Shuffles Left',
+                              body:
+                                  'Watch a short ad to receive 1 free Shuffle?',
+                            );
+                            if (!context.mounted || !confirmed) return;
                             final result = await ref
                                 .read(monetizationProvider.notifier)
                                 .completeRewardedAd(
                                   placement:
                                       RewardedPlacement.freeRescueShuffle,
                                 );
+                            if (!context.mounted) return;
                             if (!result.completed) {
                               messenger.showSnackBar(
                                 SnackBar(content: Text(result.message)),
@@ -142,6 +161,68 @@ class GameControlDock extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<bool> _showRewardedBoosterConfirmation(
+  BuildContext context, {
+  required String title,
+  required String body,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: SankofaGameTheme.appParchmentPanelDecoration,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.archiveTitleLarge.copyWith(
+                  color: SankofaGameTheme.darkText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                body,
+                style: AppTextStyles.archiveBodyMedium.copyWith(
+                  color: SankofaGameTheme.mutedGold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: KenteButton(
+                      label: 'Cancel',
+                      icon: Icons.close,
+                      onTap: () => Navigator.of(dialogContext).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: KenteButton(
+                      label: 'Watch Ad',
+                      icon: Icons.ondemand_video_outlined,
+                      onTap: () => Navigator.of(dialogContext).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+  return confirmed ?? false;
 }
 
 class _ControlButton extends StatefulWidget {

@@ -139,7 +139,23 @@ class MonetizationNotifier extends StateNotifier<MonetizationState> {
     bool tutorialActive = false,
     bool afterLoss = false,
   }) async {
+    await recordCompletedLevelForInterstitial();
+    return maybeShowCompletedLevelInterstitial(
+      isFirstSession: isFirstSession,
+      tutorialActive: tutorialActive,
+      afterLoss: afterLoss,
+    );
+  }
+
+  Future<void> recordCompletedLevelForInterstitial() async {
     await _service.recordLevelCompletedForInterstitial();
+  }
+
+  Future<InterstitialDecision> maybeShowCompletedLevelInterstitial({
+    bool isFirstSession = false,
+    bool tutorialActive = false,
+    bool afterLoss = false,
+  }) async {
     final decision = _service.interstitialDecision(
       placement: InterstitialPlacement.afterCompletedLevels,
       isFirstSession: isFirstSession,

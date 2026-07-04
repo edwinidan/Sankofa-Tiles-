@@ -49,6 +49,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   bool _unlockRevealInProgress = false;
   RewardGrantSummary? _rewardSummary;
   final Set<String> _shownUnlockRevealIds = {};
+  Future<void>? _saveResultFuture;
+  bool _isFirstSessionCompletion = false;
+  bool _tutorialActiveAtCompletion = false;
+  bool _primaryActionInProgress = false;
 
   @override
   void initState() {
@@ -62,7 +66,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     if (widget.gameState.status == GameStatus.won) {
-      unawaited(_saveResult());
+      _saveResultFuture = _saveResult();
+      unawaited(_saveResultFuture);
     }
 
     _controller.forward();
@@ -102,23 +107,48 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           _stars,
         );
 
-    // Mark first session as completed after the very first level save.
-    // This ensures the first completed level is protected from interstitials.
     final storage = ref.read(storageServiceProvider);
+    _isFirstSessionCompletion = !storage.isFirstSessionCompleted();
+    _tutorialActiveAtCompletion = !storage.isTutorialComplete();
+
+    await ref
+        .read(monetizationProvider.notifier)
+        .recordCompletedLevelForInterstitial();
+
+    // Mark first session as completed after recording this result, while
+    // retaining the original first-session value for the continue action.
     if (!storage.isFirstSessionCompleted()) {
       await storage.setFirstSessionCompleted();
     }
 
-    await ref
-        .read(monetizationProvider.notifier)
-        .recordLevelWinAndMaybeShowInterstitial(
-          tutorialActive: !storage.isTutorialComplete(),
-          isFirstSession: !storage.isFirstSessionCompleted(),
-        );
-
     if (mounted) {
       setState(() => _rewardSummary = rewardSummary);
       _scheduleUnlockReveal(rewardSummary.unlockedSymbols);
+    }
+  }
+
+  Future<void> _continueAfterInterstitial(
+    FutureOr<void> Function() navigate,
+  ) async {
+    if (_primaryActionInProgress) return;
+    _primaryActionInProgress = true;
+
+    try {
+      await _saveResultFuture;
+      if (widget.gameState.status == GameStatus.won &&
+          !widget.launchConfig.isDeveloperTest) {
+        await ref
+            .read(monetizationProvider.notifier)
+            .maybeShowCompletedLevelInterstitial(
+              tutorialActive: _tutorialActiveAtCompletion,
+              isFirstSession: _isFirstSessionCompletion,
+            );
+      }
+
+      if (!mounted) return;
+      await navigate();
+    } finally {
+      _primaryActionInProgress = false;
     }
   }
 
@@ -211,6 +241,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                                   rewardSummary: _rewardSummary,
                                   scaleAnim: _scaleAnim,
                                   launchConfig: widget.launchConfig,
+                                  onBeforePrimaryNavigation:
+                                      _continueAfterInterstitial,
                                 )
                               : _LoseContent(
                                   gameState: widget.gameState,
@@ -244,6 +276,8 @@ class _WinContent extends StatelessWidget {
   final RewardGrantSummary? rewardSummary;
   final Animation<double> scaleAnim;
   final GameLaunchConfig launchConfig;
+  final Future<void> Function(FutureOr<void> Function() navigate)
+      onBeforePrimaryNavigation;
 
   const _WinContent({
     required this.gameState,
@@ -252,6 +286,7 @@ class _WinContent extends StatelessWidget {
     required this.rewardSummary,
     required this.scaleAnim,
     required this.launchConfig,
+    required this.onBeforePrimaryNavigation,
   });
 
   @override
@@ -366,19 +401,20 @@ class _WinContent extends StatelessWidget {
               primaryLabel:
                   gameState.levelId == kLevels.last.id ? 'FINISH' : 'CONTINUE',
               primaryIcon: Icons.auto_awesome,
-              onPrimary: () =>
-                  context.go('/chapter-complete/${gameState.levelId}'),
+              onPrimary: () => onBeforePrimaryNavigation(
+                () => context.go('/chapter-complete/${gameState.levelId}'),
+              ),
               levelId: gameState.levelId,
             )
           else if (gameState.levelId < kLevels.last.id)
             _ResultActions(
               primaryLabel: 'NEXT LEVEL',
               primaryIcon: Icons.arrow_forward,
-              onPrimary: () {
+              onPrimary: () => onBeforePrimaryNavigation(() {
                 final nextLevelId = gameState.levelId + 1;
                 AnalyticsService.logNextGamePressed(nextLevelId);
                 context.go('/level/$nextLevelId');
-              },
+              }),
               levelId: gameState.levelId,
             )
           else ...[
@@ -394,7 +430,7 @@ class _WinContent extends StatelessWidget {
               label: 'RETURN HOME',
               icon: Icons.home_outlined,
               width: double.infinity,
-              onTap: () => context.go('/'),
+              onTap: () => onBeforePrimaryNavigation(() => context.go('/')),
             ),
           ],
         ],
@@ -815,7 +851,7 @@ class _ResultActions extends StatelessWidget {
 
   final String primaryLabel;
   final IconData primaryIcon;
-  final VoidCallback onPrimary;
+  final FutureOr<void> Function() onPrimary;
   final int levelId;
 
   @override
