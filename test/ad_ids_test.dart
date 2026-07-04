@@ -68,6 +68,35 @@ void main() {
     }
   });
 
+  test('new Android rewarded production placements are configured', () {
+    final source = File('lib/core/ads/ad_ids.dart').readAsStringSync();
+    const expectedMappings = {
+      'RewardedPlacement.doubleCompletionCowries':
+          '_androidRewardedDoubleCompletionCowries',
+      'RewardedPlacement.freeRescueShuffle':
+          '_androidRewardedFreeRescueShuffle',
+      'RewardedPlacement.bonusDailyChest': '_androidRewardedBonusDailyChest',
+      'RewardedPlacement.smallShopReward': '_androidRewardedSmallShopReward',
+    };
+    const expectedIds = [
+      'ca-app-pub-5484820744037011/2775600473',
+      'ca-app-pub-5484820744037011/1462518800',
+      'ca-app-pub-5484820744037011/4557666995',
+      'ca-app-pub-5484820744037011/4777158847',
+    ];
+
+    for (final entry in expectedMappings.entries) {
+      expect(
+        RegExp('${entry.key}\\s*=>\\s*${entry.value}').hasMatch(source),
+        isTrue,
+        reason: '${entry.key} should map to ${entry.value}, not null',
+      );
+    }
+    for (final id in expectedIds) {
+      expect(source, contains(id));
+    }
+  });
+
   test('unsupported interstitial placements return null in production', () {
     // Verify that placements without configured production IDs
     // would return null when production ads ARE enabled.

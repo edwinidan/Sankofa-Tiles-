@@ -16,6 +16,14 @@ class AdIds {
       'ca-app-pub-5484820744037011/7155770551';
   static const String _androidRewardedContinue =
       'ca-app-pub-5484820744037011/4741360208';
+  static const String _androidRewardedDoubleCompletionCowries =
+      'ca-app-pub-5484820744037011/2775600473';
+  static const String _androidRewardedFreeRescueShuffle =
+      'ca-app-pub-5484820744037011/1462518800';
+  static const String _androidRewardedBonusDailyChest =
+      'ca-app-pub-5484820744037011/4557666995';
+  static const String _androidRewardedSmallShopReward =
+      'ca-app-pub-5484820744037011/4777158847';
   static const String _androidInterstitialLevelTransition =
       'ca-app-pub-5484820744037011/8600714161';
 
@@ -36,11 +44,11 @@ class AdIds {
     final id = switch (placement) {
       RewardedPlacement.freeHint => _androidRewardedHint,
       RewardedPlacement.retryAssistance => _androidRewardedContinue,
-      RewardedPlacement.doubleCompletionCowries ||
-      RewardedPlacement.freeRescueShuffle ||
-      RewardedPlacement.bonusDailyChest ||
-      RewardedPlacement.smallShopReward =>
-        null,
+      RewardedPlacement.doubleCompletionCowries =>
+        _androidRewardedDoubleCompletionCowries,
+      RewardedPlacement.freeRescueShuffle => _androidRewardedFreeRescueShuffle,
+      RewardedPlacement.bonusDailyChest => _androidRewardedBonusDailyChest,
+      RewardedPlacement.smallShopReward => _androidRewardedSmallShopReward,
     };
     return _validAdUnitId(id) ? id : null;
   }
@@ -63,6 +71,10 @@ class AdIds {
       androidAppId.contains('~') &&
       _validAdUnitId(_androidRewardedHint) &&
       _validAdUnitId(_androidRewardedContinue) &&
+      _validAdUnitId(_androidRewardedDoubleCompletionCowries) &&
+      _validAdUnitId(_androidRewardedFreeRescueShuffle) &&
+      _validAdUnitId(_androidRewardedBonusDailyChest) &&
+      _validAdUnitId(_androidRewardedSmallShopReward) &&
       _validAdUnitId(_androidInterstitialLevelTransition) &&
       _validAdUnitId(_testAndroidRewarded) &&
       _validAdUnitId(_testAndroidInterstitial);
