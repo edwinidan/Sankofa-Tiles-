@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'crash_reporting_service.dart';
 
-class AudioService {
+class AudioService with WidgetsBindingObserver {
   static final AudioContext _sfxAudioContext = AudioContext(
     android: const AudioContextAndroid(
       contentType: AndroidContentType.sonification,
@@ -30,8 +30,8 @@ class AudioService {
     ),
   );
 
-  final List<AudioPlayer> _sfxPlayers = List.generate(4, (_) => AudioPlayer());
-  final AudioPlayer _musicPlayer = AudioPlayer();
+  final List<AudioPlayer> _sfxPlayers;
+  final AudioPlayer _musicPlayer;
   final Map<String, DateTime> _lastSfxPlayedAt = {};
 
   bool _soundEnabled;
@@ -45,9 +45,15 @@ class AudioService {
     bool sound = true,
     bool music = true,
     double musicVolume = 0.7,
+    @visibleForTesting AudioPlayer? musicPlayer,
+    @visibleForTesting List<AudioPlayer>? sfxPlayers,
   })  : _soundEnabled = sound,
         _musicEnabled = music,
-        _musicVolume = musicVolume.clamp(0.0, 1.0);
+        _musicVolume = musicVolume.clamp(0.0, 1.0),
+        _musicPlayer = musicPlayer ?? AudioPlayer(),
+        _sfxPlayers = sfxPlayers ?? List.generate(4, (_) => AudioPlayer()) {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   void setSoundEnabled(bool val) => _soundEnabled = val;
 
@@ -195,7 +201,36 @@ class AudioService {
     }
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      if (_backgroundMusicPlaying) {
+        _musicPlayer.pause().catchError((error, stackTrace) {
+          debugPrint('[AudioService] Lifecycle pause error: $error');
+          CrashReportingService.recordNonFatal(
+            error,
+            stackTrace,
+            reason: 'Background music lifecycle pause failed',
+          );
+        });
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (_backgroundMusicRequested && _musicEnabled) {
+        _musicPlayer.resume().catchError((error, stackTrace) {
+          debugPrint('[AudioService] Lifecycle resume error: $error');
+          CrashReportingService.recordNonFatal(
+            error,
+            stackTrace,
+            reason: 'Background music lifecycle resume failed',
+          );
+        });
+        _backgroundMusicPlaying = true;
+      }
+    }
+  }
+
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final player in _sfxPlayers) {
       unawaited(
         player.dispose().catchError(

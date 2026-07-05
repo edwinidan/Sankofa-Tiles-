@@ -110,6 +110,22 @@ void main() {
     );
   });
 
+  test('interstitial ads are preloaded and not loaded synchronously on show',
+      () {
+    final adMobService =
+        File('lib/core/ads/admob_service.dart').readAsStringSync();
+
+    expect(adMobService, contains('preloadInterstitialAd'));
+    expect(adMobService, contains('_interstitialAds'));
+    expect(adMobService, contains('_takeReadyInterstitial'));
+    expect(adMobService, contains('unawaited(_loadInterstitialAd'));
+    expect(
+      adMobService,
+      contains('if (ad == null) {\n      unawaited(_loadInterstitialAd'),
+      reason: 'An unavailable interstitial should trigger background preload.',
+    );
+  });
+
   test('first-session storage key exists', () {
     final storage =
         File('lib/core/utils/storage_service.dart').readAsStringSync();

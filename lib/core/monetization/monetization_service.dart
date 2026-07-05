@@ -47,6 +47,10 @@ class MonetizationService {
       products: _productsAvailable ? MonetizationConfig.products : const [],
       entitlementIds: _storage.getMonetizationEntitlementIds(),
       ownedProductIds: _storage.getMonetizationPurchaseIds(),
+      rewardedAvailability: {
+        for (final placement in RewardedPlacement.values)
+          placement: rewardedAdAvailability(placement),
+      },
       purchaseStatus:
           _productsAvailable ? PurchaseStatus.idle : PurchaseStatus.unavailable,
       lastMessage:
@@ -183,8 +187,10 @@ class MonetizationService {
   Future<RewardedAdResult> completeRewardedAd({
     required RewardedPlacement placement,
     required String callbackId,
+    String? claimKey,
     int baseCowries = 0,
     bool completed = true,
+    DateTime? now,
   }) async {
     if (_offline) {
       return const RewardedAdResult(
@@ -192,16 +198,27 @@ class MonetizationService {
         message: 'Ad unavailable while offline.',
       );
     }
-    if (!completed) {
-      return const RewardedAdResult(
-        status: PurchaseStatus.cancelled,
-        message: 'Ad was not completed.',
-      );
-    }
     if (_storage.hasMonetizationCallback(callbackId)) {
       return const RewardedAdResult(
         status: PurchaseStatus.alreadyOwned,
         message: 'Reward already granted.',
+      );
+    }
+    final availability = rewardedAdAvailability(
+      placement,
+      claimKey: claimKey,
+      now: now,
+    );
+    if (!availability.canRequest) {
+      return RewardedAdResult(
+        status: PurchaseStatus.unavailable,
+        message: _limitMessage(placement, availability.reason),
+      );
+    }
+    if (!completed) {
+      return const RewardedAdResult(
+        status: PurchaseStatus.cancelled,
+        message: 'Ad was not completed.',
       );
     }
 
@@ -215,12 +232,152 @@ class MonetizationService {
       transactionId: 'rewarded:$callbackId',
     );
     await _storage.recordMonetizationCallback(callbackId);
+    await _recordRewardedClaim(
+      placement,
+      claimKey: claimKey,
+      now: now,
+    );
     await _storage.setLastRewardedAdAt(DateTime.now());
     return RewardedAdResult(
       status: PurchaseStatus.success,
       summary: reward,
       message: '${placement.label} reward granted.',
     );
+  }
+
+  RewardedAdAvailability rewardedAdAvailability(
+    RewardedPlacement placement, {
+    String? claimKey,
+    DateTime? now,
+  }) {
+    final dateKey = _dateKey(now ?? DateTime.now());
+    return switch (placement) {
+      RewardedPlacement.bonusDailyChest => _dailyAvailability(
+          placement,
+          dateKey,
+          limit: MonetizationConfig.bonusDailyChestDailyLimit,
+          availableLabel: 'Watch Ad',
+          limitLabel: 'Already Claimed',
+          limitReason: 'daily_bonus_already_claimed',
+        ),
+      RewardedPlacement.smallShopReward => _dailyAvailability(
+          placement,
+          dateKey,
+          limit: MonetizationConfig.smallShopRewardDailyLimit,
+          availableLabel: 'Watch Ad',
+          limitLabel: 'Daily Limit Reached',
+          limitReason: 'daily_limit_reached',
+        ),
+      RewardedPlacement.doubleCompletionCowries => _claimAvailability(
+          claimKey,
+          availableLabel: 'Watch Ad',
+          limitLabel: 'Already Claimed',
+          limitReason: 'double_cowries_already_claimed',
+        ),
+      RewardedPlacement.retryAssistance => _claimAvailability(
+          claimKey,
+          availableLabel: 'Watch Ad',
+          limitLabel: 'Already Claimed',
+          limitReason: 'retry_assistance_already_used',
+        ),
+      RewardedPlacement.freeHint ||
+      RewardedPlacement.freeRescueShuffle =>
+        const RewardedAdAvailability(
+          canRequest: true,
+          label: 'Watch Ad',
+        ),
+    };
+  }
+
+  RewardedAdAvailability _dailyAvailability(
+    RewardedPlacement placement,
+    String dateKey, {
+    required int limit,
+    required String availableLabel,
+    required String limitLabel,
+    required String limitReason,
+  }) {
+    final used = _storage.getRewardedDailyClaimCount(placement.name, dateKey);
+    final remaining = (limit - used).clamp(0, limit);
+    if (remaining <= 0) {
+      return RewardedAdAvailability(
+        canRequest: false,
+        label: limitLabel,
+        remaining: 0,
+        limit: limit,
+        reason: limitReason,
+      );
+    }
+    return RewardedAdAvailability(
+      canRequest: true,
+      label: availableLabel,
+      remaining: remaining,
+      limit: limit,
+    );
+  }
+
+  RewardedAdAvailability _claimAvailability(
+    String? claimKey, {
+    required String availableLabel,
+    required String limitLabel,
+    required String limitReason,
+  }) {
+    if (claimKey != null && _storage.hasRewardedClaim(claimKey)) {
+      return RewardedAdAvailability(
+        canRequest: false,
+        label: limitLabel,
+        reason: limitReason,
+      );
+    }
+    return RewardedAdAvailability(canRequest: true, label: availableLabel);
+  }
+
+  Future<void> _recordRewardedClaim(
+    RewardedPlacement placement, {
+    String? claimKey,
+    DateTime? now,
+  }) async {
+    final timestamp = now ?? DateTime.now();
+    switch (placement) {
+      case RewardedPlacement.bonusDailyChest:
+      case RewardedPlacement.smallShopReward:
+        final dateKey = _dateKey(timestamp);
+        await _storage.setRewardedDailyClaimCount(
+          placement.name,
+          dateKey,
+          _storage.getRewardedDailyClaimCount(placement.name, dateKey) + 1,
+        );
+        break;
+      case RewardedPlacement.doubleCompletionCowries:
+      case RewardedPlacement.retryAssistance:
+        if (claimKey != null) {
+          await _storage.recordRewardedClaim(claimKey);
+        }
+        break;
+      case RewardedPlacement.freeHint:
+      case RewardedPlacement.freeRescueShuffle:
+        break;
+    }
+  }
+
+  String _limitMessage(RewardedPlacement placement, String? reason) {
+    return switch (reason) {
+      'daily_bonus_already_claimed' =>
+        'Daily Bonus Chest already claimed today.',
+      'daily_limit_reached' => 'Daily limit reached for this reward.',
+      'double_cowries_already_claimed' =>
+        'Cowries already doubled for this result.',
+      'retry_assistance_already_used' =>
+        'Retry Assistance already used for this attempt.',
+      _ => '${placement.label} is unavailable.',
+    };
+  }
+
+  String _dateKey(DateTime date) {
+    final local = date.toLocal();
+    return '${local.year.toString().padLeft(4, '0')}-'
+        '${local.month.toString().padLeft(2, '0')}-'
+        '${local.day.toString().padLeft(2, '0')}';
   }
 
   InterstitialDecision interstitialDecision({

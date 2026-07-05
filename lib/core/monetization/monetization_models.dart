@@ -126,6 +126,7 @@ class MonetizationState {
     required this.products,
     required this.entitlementIds,
     required this.ownedProductIds,
+    this.rewardedAvailability = const {},
     this.purchaseStatus = PurchaseStatus.idle,
     this.activeProductId,
     this.lastMessage,
@@ -137,6 +138,7 @@ class MonetizationState {
   final List<ShopProduct> products;
   final Set<String> entitlementIds;
   final Set<String> ownedProductIds;
+  final Map<RewardedPlacement, RewardedAdAvailability> rewardedAvailability;
   final PurchaseStatus purchaseStatus;
   final String? activeProductId;
   final String? lastMessage;
@@ -151,6 +153,7 @@ class MonetizationState {
     List<ShopProduct>? products,
     Set<String>? entitlementIds,
     Set<String>? ownedProductIds,
+    Map<RewardedPlacement, RewardedAdAvailability>? rewardedAvailability,
     PurchaseStatus? purchaseStatus,
     String? activeProductId,
     String? lastMessage,
@@ -163,6 +166,7 @@ class MonetizationState {
         products: products ?? this.products,
         entitlementIds: entitlementIds ?? this.entitlementIds,
         ownedProductIds: ownedProductIds ?? this.ownedProductIds,
+        rewardedAvailability: rewardedAvailability ?? this.rewardedAvailability,
         purchaseStatus: purchaseStatus ?? this.purchaseStatus,
         activeProductId: clearActiveProductId
             ? null
@@ -171,6 +175,22 @@ class MonetizationState {
         offline: offline ?? this.offline,
         productsLoaded: productsLoaded ?? this.productsLoaded,
       );
+}
+
+class RewardedAdAvailability {
+  const RewardedAdAvailability({
+    required this.canRequest,
+    required this.label,
+    this.remaining,
+    this.limit,
+    this.reason,
+  });
+
+  final bool canRequest;
+  final String label;
+  final int? remaining;
+  final int? limit;
+  final String? reason;
 }
 
 class RewardedAdResult {

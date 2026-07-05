@@ -20,6 +20,8 @@ class MonetizationConfig {
   static const int completedLevelFrequency = 3;
   static const int minimumCompletedLevels = 2;
   static const int sessionInterstitialCap = 2;
+  static const int bonusDailyChestDailyLimit = 1;
+  static const int smallShopRewardDailyLimit = 3;
   static const Duration interstitialCooldown = Duration(minutes: 8);
   static const Duration rewardedAdCooldown = Duration(minutes: 2);
 

@@ -275,11 +275,31 @@ class _ProductCard extends ConsumerWidget {
   }
 }
 
-class _RewardedShopGift extends ConsumerWidget {
+class _RewardedShopGift extends ConsumerStatefulWidget {
   const _RewardedShopGift();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RewardedShopGift> createState() => _RewardedShopGiftState();
+}
+
+class _RewardedShopGiftState extends ConsumerState<_RewardedShopGift> {
+  bool _loading = false;
+  bool _adUnavailable = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final availability = ref
+        .watch(monetizationProvider)
+        .rewardedAvailability[RewardedPlacement.smallShopReward];
+    final remaining = availability?.remaining ?? 3;
+    final limit = availability?.limit ?? 3;
+    final canRequest = availability?.canRequest ?? true;
+    final label = _loading
+        ? 'Loading…'
+        : _adUnavailable
+            ? 'Ad Unavailable'
+            : availability?.label ?? 'Watch Ad';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -301,26 +321,52 @@ class _RewardedShopGift extends ConsumerWidget {
                 color: SankofaGameTheme.parchmentLight,
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              canRequest
+                  ? '$remaining of $limit remaining today'
+                  : 'Daily Limit Reached',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: canRequest
+                    ? SankofaGameTheme.mutedLightText
+                    : SankofaGameTheme.antiqueGold,
+              ),
+            ),
             const SizedBox(height: 12),
             KenteButton(
-              label: 'WATCH',
-              icon: Icons.ondemand_video_outlined,
+              label: label,
+              icon: canRequest && !_adUnavailable
+                  ? Icons.ondemand_video_outlined
+                  : Icons.block,
               width: double.infinity,
-              onTap: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final result = await ref
-                    .read(monetizationProvider.notifier)
-                    .completeRewardedAd(
-                      placement: RewardedPlacement.smallShopReward,
-                    );
-                messenger.showSnackBar(
-                  SnackBar(content: Text(result.message)),
-                );
-              },
+              onTap:
+                  canRequest && !_loading && !_adUnavailable ? _watchAd : null,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _watchAd() async {
+    setState(() {
+      _loading = true;
+      _adUnavailable = false;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    final result =
+        await ref.read(monetizationProvider.notifier).completeRewardedAd(
+              placement: RewardedPlacement.smallShopReward,
+            );
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _adUnavailable = !result.completed &&
+          result.status != PurchaseStatus.unavailable &&
+          result.status != PurchaseStatus.loading;
+    });
+    messenger.showSnackBar(
+      SnackBar(content: Text(result.message)),
     );
   }
 }

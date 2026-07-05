@@ -269,6 +269,16 @@ TileDefinition? _tileById(String id) {
   return null;
 }
 
+String _doubleCowriesClaimKey(GameState state, int stars, int cowries) {
+  return 'double_cowries:${state.levelId}:${state.score}:$stars:$cowries';
+}
+
+String _retryAssistanceClaimKey(GameState state) {
+  final tileKey = state.tiles.map((tile) => tile.uid).toList()..sort();
+  return 'retry_assistance:${state.levelId}:${state.score}:${state.moves}:'
+      '${state.shufflesUsed}:${state.hintsUsed}:${tileKey.join(',')}';
+}
+
 class _WinContent extends StatelessWidget {
   final GameState gameState;
   final int stars;
@@ -387,6 +397,8 @@ class _WinContent extends StatelessWidget {
           if (rewardSummary != null && rewardSummary!.cowries > 0) ...[
             const SizedBox(height: 10),
             _DoubleCowriesReward(
+              gameState: gameState,
+              stars: stars,
               cowries: rewardSummary!.cowries,
             ),
           ],
@@ -634,30 +646,82 @@ class _UnlockRevealImage extends StatelessWidget {
   }
 }
 
-class _DoubleCowriesReward extends ConsumerWidget {
+class _DoubleCowriesReward extends ConsumerStatefulWidget {
   const _DoubleCowriesReward({
+    required this.gameState,
+    required this.stars,
     required this.cowries,
   });
 
+  final GameState gameState;
+  final int stars;
   final int cowries;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DoubleCowriesReward> createState() =>
+      _DoubleCowriesRewardState();
+}
+
+class _DoubleCowriesRewardState extends ConsumerState<_DoubleCowriesReward> {
+  bool _loading = false;
+  bool _rewardGranted = false;
+  bool _adUnavailable = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final claimKey = _doubleCowriesClaimKey(
+      widget.gameState,
+      widget.stars,
+      widget.cowries,
+    );
+    final availability =
+        ref.read(monetizationProvider.notifier).rewardedAdAvailability(
+              RewardedPlacement.doubleCompletionCowries,
+              claimKey: claimKey,
+            );
+    final canRequest = availability.canRequest && !_rewardGranted;
+    final label = _loading
+        ? 'LOADING…'
+        : _adUnavailable
+            ? 'AD UNAVAILABLE'
+            : canRequest
+                ? 'DOUBLE COWRIES'
+                : 'ALREADY CLAIMED';
+
     return KenteButton(
-      label: 'DOUBLE COWRIES',
-      icon: Icons.ondemand_video_outlined,
+      label: label,
+      icon: canRequest && !_adUnavailable
+          ? Icons.ondemand_video_outlined
+          : Icons.check,
       width: double.infinity,
-      onTap: () async {
-        final messenger = ScaffoldMessenger.of(context);
-        final result =
-            await ref.read(monetizationProvider.notifier).completeRewardedAd(
-                  placement: RewardedPlacement.doubleCompletionCowries,
-                  baseCowries: cowries,
-                );
-        messenger.showSnackBar(
-          SnackBar(content: Text(result.message)),
-        );
-      },
+      onTap: canRequest && !_loading && !_adUnavailable
+          ? () => _watchAd(claimKey)
+          : null,
+    );
+  }
+
+  Future<void> _watchAd(String claimKey) async {
+    setState(() {
+      _loading = true;
+      _adUnavailable = false;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    final result =
+        await ref.read(monetizationProvider.notifier).completeRewardedAd(
+              placement: RewardedPlacement.doubleCompletionCowries,
+              claimKey: claimKey,
+              baseCowries: widget.cowries,
+            );
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _rewardGranted = result.completed;
+      _adUnavailable = !result.completed &&
+          result.status != PurchaseStatus.unavailable &&
+          result.status != PurchaseStatus.loading;
+    });
+    messenger.showSnackBar(
+      SnackBar(content: Text(result.message)),
     );
   }
 }
@@ -725,7 +789,7 @@ class _LoseContent extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           if (!launchConfig.isDeveloperTest) ...[
-            _RetryAssistReward(levelId: gameState.levelId),
+            _RetryAssistReward(gameState: gameState),
             const SizedBox(height: 10),
           ],
           if (launchConfig.isDeveloperTest)
@@ -756,9 +820,9 @@ class _LoseContent extends StatelessWidget {
 }
 
 class _RetryAssistReward extends ConsumerStatefulWidget {
-  const _RetryAssistReward({required this.levelId});
+  const _RetryAssistReward({required this.gameState});
 
-  final int levelId;
+  final GameState gameState;
 
   @override
   ConsumerState<_RetryAssistReward> createState() => _RetryAssistRewardState();
@@ -767,12 +831,17 @@ class _RetryAssistReward extends ConsumerStatefulWidget {
 class _RetryAssistRewardState extends ConsumerState<_RetryAssistReward> {
   bool _isLoading = false;
   bool _rewardGranted = false;
+  bool _adUnavailable = false;
 
   @override
   Widget build(BuildContext context) {
-    if (_rewardGranted) {
-      return const SizedBox.shrink();
-    }
+    final claimKey = _retryAssistanceClaimKey(widget.gameState);
+    final availability =
+        ref.read(monetizationProvider.notifier).rewardedAdAvailability(
+              RewardedPlacement.retryAssistance,
+              claimKey: claimKey,
+            );
+    final canRequest = availability.canRequest && !_rewardGranted;
 
     return Container(
       width: double.infinity,
@@ -797,19 +866,29 @@ class _RetryAssistRewardState extends ConsumerState<_RetryAssistReward> {
           ),
           const SizedBox(height: 12),
           KenteButton(
-            label: _isLoading ? 'LOADING…' : 'WATCH AD & RETRY',
+            label: _isLoading
+                ? 'LOADING…'
+                : _adUnavailable
+                    ? 'AD UNAVAILABLE'
+                    : canRequest
+                        ? 'WATCH AD & RETRY'
+                        : 'ALREADY CLAIMED',
             icon: _isLoading
                 ? Icons.hourglass_top
-                : Icons.ondemand_video_outlined,
+                : canRequest && !_adUnavailable
+                    ? Icons.ondemand_video_outlined
+                    : Icons.check,
             width: double.infinity,
-            onTap: _isLoading ? null : _onTap,
+            onTap: canRequest && !_isLoading && !_adUnavailable
+                ? () => _onTap(claimKey)
+                : null,
           ),
         ],
       ),
     );
   }
 
-  Future<void> _onTap() async {
+  Future<void> _onTap(String claimKey) async {
     if (_isLoading || _rewardGranted) return;
     setState(() => _isLoading = true);
 
@@ -818,22 +897,27 @@ class _RetryAssistRewardState extends ConsumerState<_RetryAssistReward> {
     final result =
         await ref.read(monetizationProvider.notifier).completeRewardedAd(
               placement: RewardedPlacement.retryAssistance,
+              claimKey: claimKey,
             );
 
     if (!mounted) return;
 
     if (result.completed) {
       setState(() => _rewardGranted = true);
-      AnalyticsService.logLevelRetried(widget.levelId);
+      AnalyticsService.logLevelRetried(widget.gameState.levelId);
       router.go(
-        '/game/${widget.levelId}',
+        '/game/${widget.gameState.levelId}',
         extra: GameLaunchConfig(
-          levelId: widget.levelId,
+          levelId: widget.gameState.levelId,
           launchMode: GameLaunchMode.normalProgression,
         ),
       );
     } else {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _adUnavailable = result.status != PurchaseStatus.unavailable &&
+            result.status != PurchaseStatus.loading;
+      });
       messenger.showSnackBar(
         SnackBar(content: Text(result.message)),
       );

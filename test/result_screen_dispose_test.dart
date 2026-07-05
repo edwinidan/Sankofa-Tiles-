@@ -33,6 +33,8 @@ class _RecordingStorage extends StorageService {
   final monetizationEntitlements = <String>{};
   final monetizationPurchases = <String>{};
   final monetizationCallbacks = <String>{};
+  final rewardedDailyCounts = <String, int>{};
+  final rewardedClaims = <String>{};
   int interstitialCompletedSinceLast = 0;
   int interstitialSessionCount = 0;
   DateTime? lastInterstitialAt;
@@ -152,6 +154,27 @@ class _RecordingStorage extends StorageService {
   @override
   Future<void> recordMonetizationCallback(String callbackId) async {
     monetizationCallbacks.add(callbackId);
+  }
+
+  @override
+  int getRewardedDailyClaimCount(String placement, String dateKey) =>
+      rewardedDailyCounts['${placement}_$dateKey'] ?? 0;
+
+  @override
+  Future<void> setRewardedDailyClaimCount(
+    String placement,
+    String dateKey,
+    int count,
+  ) async {
+    rewardedDailyCounts['${placement}_$dateKey'] = count;
+  }
+
+  @override
+  bool hasRewardedClaim(String claimKey) => rewardedClaims.contains(claimKey);
+
+  @override
+  Future<void> recordRewardedClaim(String claimKey) async {
+    rewardedClaims.add(claimKey);
   }
 
   @override

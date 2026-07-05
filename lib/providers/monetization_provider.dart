@@ -28,6 +28,7 @@ class MonetizationNotifier extends StateNotifier<MonetizationState> {
   final MonetizationService _service;
   final AdMobService _adMobService;
   final Ref _ref;
+  final Set<RewardedPlacement> _rewardedRequestsInProgress = {};
 
   void refresh() {
     state = _service.loadState().copyWith(
@@ -43,6 +44,16 @@ class MonetizationNotifier extends StateNotifier<MonetizationState> {
 
   void viewProduct(String productId) {
     AnalyticsService.logProductViewed(productId);
+  }
+
+  RewardedAdAvailability rewardedAdAvailability(
+    RewardedPlacement placement, {
+    String? claimKey,
+  }) {
+    return _service.rewardedAdAvailability(
+      placement,
+      claimKey: claimKey,
+    );
   }
 
   Future<PurchaseResult> purchaseProduct(
@@ -108,30 +119,135 @@ class MonetizationNotifier extends StateNotifier<MonetizationState> {
 
   Future<RewardedAdResult> completeRewardedAd({
     required RewardedPlacement placement,
+    String? claimKey,
     int baseCowries = 0,
     bool completed = true,
   }) async {
-    AnalyticsService.logRewardedAdRequested(placement.name);
-    final adCompleted = await _adMobService.showRewardedAd(placement);
-    final result = await _service.completeRewardedAd(
-      placement: placement,
-      callbackId:
-          'rewarded:${placement.name}:${DateTime.now().microsecondsSinceEpoch}',
-      baseCowries: baseCowries,
-      completed: completed && adCompleted,
-    );
-    if (result.status == PurchaseStatus.success) {
-      AnalyticsService.logRewardedAdCompleted(placement.name);
-    } else {
-      AnalyticsService.logRewardedAdFailed(placement.name, result.status.name);
+    if (_rewardedRequestsInProgress.contains(placement)) {
+      AnalyticsService.logRewardedAdRequestBlocked(
+        placement.name,
+        'already_in_progress',
+      );
+      state = state.copyWith(
+        purchaseStatus: PurchaseStatus.loading,
+        lastMessage: '${placement.label} ad is already loading.',
+      );
+      return RewardedAdResult(
+        status: PurchaseStatus.loading,
+        message: '${placement.label} ad is already loading.',
+      );
     }
-    _ref.read(economyProvider.notifier).refresh();
-    state = _service.loadState().copyWith(
-          purchaseStatus: result.status,
-          lastMessage: result.message,
-          clearActiveProductId: true,
+
+    final availability = _service.rewardedAdAvailability(
+      placement,
+      claimKey: claimKey,
+    );
+    if (!availability.canRequest) {
+      _logRewardedLimit(placement, availability.reason);
+      state = _service.loadState().copyWith(
+            purchaseStatus: PurchaseStatus.unavailable,
+            lastMessage: _blockedRewardMessage(placement, availability.reason),
+            clearActiveProductId: true,
+          );
+      return RewardedAdResult(
+        status: PurchaseStatus.unavailable,
+        message: _blockedRewardMessage(placement, availability.reason),
+      );
+    }
+
+    _rewardedRequestsInProgress.add(placement);
+    state = state.copyWith(
+      purchaseStatus: PurchaseStatus.loading,
+      lastMessage: 'Loading ${placement.label} ad...',
+    );
+    AnalyticsService.logRewardedAdRequested(placement.name);
+    try {
+      final adCompleted = await _adMobService.showRewardedAd(placement);
+      final result = await _service.completeRewardedAd(
+        placement: placement,
+        callbackId:
+            'rewarded:${placement.name}:${DateTime.now().microsecondsSinceEpoch}',
+        claimKey: claimKey,
+        baseCowries: baseCowries,
+        completed: completed && adCompleted,
+      );
+      if (result.status == PurchaseStatus.success) {
+        AnalyticsService.logRewardedAdCompleted(placement.name);
+        _logRewardedSuccess(placement);
+      } else {
+        AnalyticsService.logRewardedAdFailed(
+          placement.name,
+          result.status.name,
         );
-    return result;
+        if (result.status == PurchaseStatus.unavailable) {
+          _logRewardedLimit(
+            placement,
+            _service
+                .rewardedAdAvailability(placement, claimKey: claimKey)
+                .reason,
+          );
+        }
+      }
+      _ref.read(economyProvider.notifier).refresh();
+      state = _service.loadState().copyWith(
+            purchaseStatus: result.status,
+            lastMessage: result.message,
+            clearActiveProductId: true,
+          );
+      return result;
+    } finally {
+      _rewardedRequestsInProgress.remove(placement);
+    }
+  }
+
+  void _logRewardedSuccess(RewardedPlacement placement) {
+    if (placement == RewardedPlacement.smallShopReward) {
+      final availability =
+          _service.rewardedAdAvailability(RewardedPlacement.smallShopReward);
+      final limit = availability.limit ?? 0;
+      final remaining = availability.remaining ?? 0;
+      AnalyticsService.logShopGiftClaimCount(limit - remaining, limit);
+    }
+  }
+
+  void _logRewardedLimit(RewardedPlacement placement, String? reason) {
+    AnalyticsService.logRewardedAdLimitReached(
+      placement.name,
+      reason ?? 'unavailable',
+    );
+    switch (placement) {
+      case RewardedPlacement.bonusDailyChest:
+        AnalyticsService.logDailyRewardAdAlreadyClaimed();
+        break;
+      case RewardedPlacement.smallShopReward:
+        final availability =
+            _service.rewardedAdAvailability(RewardedPlacement.smallShopReward);
+        final limit = availability.limit ?? 0;
+        AnalyticsService.logShopGiftClaimCount(limit, limit);
+        break;
+      case RewardedPlacement.doubleCompletionCowries:
+        AnalyticsService.logDoubleCowriesAlreadyClaimed();
+        break;
+      case RewardedPlacement.retryAssistance:
+        AnalyticsService.logRetryAssistanceAlreadyUsed();
+        break;
+      case RewardedPlacement.freeHint:
+      case RewardedPlacement.freeRescueShuffle:
+        break;
+    }
+  }
+
+  String _blockedRewardMessage(RewardedPlacement placement, String? reason) {
+    return switch (reason) {
+      'daily_bonus_already_claimed' =>
+        'Daily Bonus Chest already claimed today.',
+      'daily_limit_reached' => 'Daily limit reached for this reward.',
+      'double_cowries_already_claimed' =>
+        'Cowries already doubled for this result.',
+      'retry_assistance_already_used' =>
+        'Retry Assistance already used for this attempt.',
+      _ => '${placement.label} is unavailable.',
+    };
   }
 
   Future<InterstitialDecision> recordLevelWinAndMaybeShowInterstitial({

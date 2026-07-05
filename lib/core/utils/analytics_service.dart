@@ -157,6 +157,36 @@ class AnalyticsService {
         'reason': reason,
       });
 
+  static void logRewardedAdLimitReached(String placement, String reason) =>
+      _event('rewarded_ad_limit_reached', {
+        'placement': placement,
+        'reason': reason,
+      });
+
+  static void logRewardedAdRequestBlocked(
+    String placement,
+    String reason,
+  ) =>
+      _event('rewarded_ad_request_blocked', {
+        'placement': placement,
+        'reason': reason,
+      });
+
+  static void logDailyRewardAdAlreadyClaimed() =>
+      _event('daily_reward_ad_already_claimed');
+
+  static void logShopGiftClaimCount(int used, int limit) =>
+      _event('shop_gift_claim_count', {
+        'used': used,
+        'limit': limit,
+      });
+
+  static void logDoubleCowriesAlreadyClaimed() =>
+      _event('double_cowries_already_claimed');
+
+  static void logRetryAssistanceAlreadyUsed() =>
+      _event('retry_assistance_already_used');
+
   static void logInterstitialShown(String placement) =>
       _event('interstitial_shown', {'placement': placement});
 

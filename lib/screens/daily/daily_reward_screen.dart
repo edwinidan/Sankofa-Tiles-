@@ -119,28 +119,69 @@ class DailyRewardScreen extends ConsumerWidget {
                         : null,
                   ),
                   const SizedBox(height: 12),
-                  KenteButton(
-                    label: 'BONUS CHEST',
-                    icon: Icons.ondemand_video_outlined,
-                    width: double.infinity,
-                    onTap: () async {
-                      final messenger = ScaffoldMessenger.of(context);
-                      final result = await ref
-                          .read(monetizationProvider.notifier)
-                          .completeRewardedAd(
-                            placement: RewardedPlacement.bonusDailyChest,
-                          );
-                      messenger.showSnackBar(
-                        SnackBar(content: Text(result.message)),
-                      );
-                    },
-                  ),
+                  const _BonusChestButton(),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BonusChestButton extends ConsumerStatefulWidget {
+  const _BonusChestButton();
+
+  @override
+  ConsumerState<_BonusChestButton> createState() => _BonusChestButtonState();
+}
+
+class _BonusChestButtonState extends ConsumerState<_BonusChestButton> {
+  bool _loading = false;
+  bool _adUnavailable = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final availability = ref
+        .watch(monetizationProvider)
+        .rewardedAvailability[RewardedPlacement.bonusDailyChest];
+    final canRequest = availability?.canRequest ?? true;
+    final label = _loading
+        ? 'Loading…'
+        : _adUnavailable
+            ? 'Ad Unavailable'
+            : availability?.label ?? 'Watch Ad';
+
+    return KenteButton(
+      label: label,
+      icon: canRequest && !_adUnavailable
+          ? Icons.ondemand_video_outlined
+          : Icons.check,
+      width: double.infinity,
+      onTap: canRequest && !_loading && !_adUnavailable ? _watchAd : null,
+    );
+  }
+
+  Future<void> _watchAd() async {
+    setState(() {
+      _loading = true;
+      _adUnavailable = false;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    final result =
+        await ref.read(monetizationProvider.notifier).completeRewardedAd(
+              placement: RewardedPlacement.bonusDailyChest,
+            );
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _adUnavailable = !result.completed &&
+          result.status != PurchaseStatus.unavailable &&
+          result.status != PurchaseStatus.loading;
+    });
+    messenger.showSnackBar(
+      SnackBar(content: Text(result.message)),
     );
   }
 }

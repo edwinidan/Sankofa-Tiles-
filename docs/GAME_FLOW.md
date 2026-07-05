@@ -284,12 +284,11 @@ On quit from pause:
     → context.go('/') or context.go('/developer/levels') (depending on launch mode)
 
 App backgrounding:
-  → No explicit handling in game_provider.dart
-  → No auto-pause on lifecycle change detected
+  → Pauses background music via AudioService (WidgetsBindingObserver)
   → Flutter framework handles widget tree preservation
 
 App foregrounding:
-  → No explicit resume handling
+  → Resumes background music via AudioService (WidgetsBindingObserver)
   → Game continues from whatever state was held in memory
 
 Back button (Android) or swipe-back (iOS):
@@ -568,7 +567,7 @@ flowchart TD
 | 9 | Interactive tutorial | First level | Guided first-match with overlay tooltips | High |
 | 10 | Chapter completion screen | After every 10th level | Celebration + chapter summary | Medium |
 | 11 | Grand finale celebration | After level 50 | Full celebration + stats recap + thank you | Medium |
-| 12 | Auto-pause on background | App lifecycle | Pause game when app is backgrounded | Low |
+| 12 | Auto-pause on background | App lifecycle | [Completed] Pause background music when app is backgrounded | Low |
 | 13 | Revive/continue offer | After loss | "Watch ad for one free shuffle" (post-monetization) | High |
 | 14 | Daily reward/challenge | Home screen | Daily engagement mechanic | High |
 | 15 | Shop/power-ups | New route | Buy hint packs, tile themes (post-monetization) | High |

@@ -29,6 +29,8 @@ class StorageService {
   static const _prefixMonetizationEntitlement = 'monetization_entitlement_';
   static const _prefixMonetizationPurchase = 'monetization_purchase_';
   static const _prefixMonetizationCallback = 'monetization_callback_';
+  static const _prefixRewardedDailyCount = 'monetization_rewarded_daily_count_';
+  static const _prefixRewardedClaim = 'monetization_rewarded_claim_';
   static const _keyInterstitialCompletedSinceLast =
       'monetization_interstitial_completed_since_last';
   static const _keyInterstitialSessionCount =
@@ -252,6 +254,26 @@ class StorageService {
       _prefs.getBool('$_prefixMonetizationCallback$callbackId') == true;
   Future<void> recordMonetizationCallback(String callbackId) async =>
       _prefs.setBool('$_prefixMonetizationCallback$callbackId', true);
+
+  int getRewardedDailyClaimCount(String placement, String dateKey) =>
+      (_prefs.getInt('$_prefixRewardedDailyCount${placement}_$dateKey') ?? 0)
+          .clamp(0, 999999);
+
+  Future<void> setRewardedDailyClaimCount(
+    String placement,
+    String dateKey,
+    int count,
+  ) async =>
+      _prefs.setInt(
+        '$_prefixRewardedDailyCount${placement}_$dateKey',
+        count.clamp(0, 999999),
+      );
+
+  bool hasRewardedClaim(String claimKey) =>
+      _prefs.getBool('$_prefixRewardedClaim$claimKey') == true;
+
+  Future<void> recordRewardedClaim(String claimKey) async =>
+      _prefs.setBool('$_prefixRewardedClaim$claimKey', true);
 
   int getInterstitialCompletedSinceLast() =>
       (_prefs.getInt(_keyInterstitialCompletedSinceLast) ?? 0).clamp(0, 999999);

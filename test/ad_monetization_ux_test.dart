@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,12 +19,15 @@ import 'package:sankofa_tiles/providers/admob_provider.dart';
 import 'package:sankofa_tiles/providers/game_provider.dart';
 import 'package:sankofa_tiles/providers/progress_provider.dart';
 import 'package:sankofa_tiles/providers/settings_provider.dart';
+import 'package:sankofa_tiles/screens/daily/daily_reward_screen.dart';
 import 'package:sankofa_tiles/screens/game/widgets/game_control_dock.dart';
 import 'package:sankofa_tiles/screens/result/result_screen.dart';
+import 'package:sankofa_tiles/screens/shop/shop_screen.dart';
 
 class _FakeAdMobService extends AdMobService {
   final rewardedPlacements = <RewardedPlacement>[];
   final interstitialPlacements = <InterstitialPlacement>[];
+  Completer<bool>? rewardedCompleter;
   bool rewardedResult = true;
   bool interstitialResult = false;
 
@@ -35,6 +40,8 @@ class _FakeAdMobService extends AdMobService {
   @override
   Future<bool> showRewardedAd(RewardedPlacement placement) async {
     rewardedPlacements.add(placement);
+    final completer = rewardedCompleter;
+    if (completer != null) return completer.future;
     return rewardedResult;
   }
 
@@ -70,6 +77,8 @@ class _MemoryStorage extends StorageService {
   final monetizationEntitlements = <String>{};
   final monetizationPurchases = <String>{};
   final monetizationCallbacks = <String>{};
+  final rewardedDailyCounts = <String, int>{};
+  final rewardedClaims = <String>{};
   int interstitialCompletedSinceLast = 0;
   int interstitialSessionCount = 0;
   DateTime? lastInterstitialAt;
@@ -207,6 +216,27 @@ class _MemoryStorage extends StorageService {
   @override
   Future<void> recordMonetizationCallback(String callbackId) async {
     monetizationCallbacks.add(callbackId);
+  }
+
+  @override
+  int getRewardedDailyClaimCount(String placement, String dateKey) =>
+      rewardedDailyCounts['${placement}_$dateKey'] ?? 0;
+
+  @override
+  Future<void> setRewardedDailyClaimCount(
+    String placement,
+    String dateKey,
+    int count,
+  ) async {
+    rewardedDailyCounts['${placement}_$dateKey'] = count;
+  }
+
+  @override
+  bool hasRewardedClaim(String claimKey) => rewardedClaims.contains(claimKey);
+
+  @override
+  Future<void> recordRewardedClaim(String claimKey) async {
+    rewardedClaims.add(claimKey);
   }
 
   @override
@@ -375,6 +405,23 @@ Future<void> _pumpResult(
   await tester.pumpAndSettle();
 }
 
+Future<ProviderContainer> _pumpProvidedScreen(
+  WidgetTester tester, {
+  required _MemoryStorage storage,
+  required _FakeAdMobService ads,
+  required Widget child,
+}) async {
+  final container = _container(storage, ads);
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(home: child),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return container;
+}
+
 void main() {
   group('GameControlDock rewarded booster confirmation', () {
     testWidgets('tapping Hint with inventory uses the booster directly',
@@ -442,6 +489,32 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
     });
 
+    testWidgets('Free Hint cannot start overlapping rewarded requests',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService()..rewardedCompleter = Completer<bool>();
+      final container = await _pumpDock(tester, storage: storage, ads: ads);
+      addTearDown(container.dispose);
+
+      await tester.tap(find.bySemanticsLabel('Hint 0'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Hint 0'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pump();
+
+      expect(ads.rewardedPlacements, [RewardedPlacement.freeHint]);
+      expect(storage.getBooster(BoosterType.hint), 0);
+
+      ads.rewardedCompleter!.complete(true);
+      await tester.pumpAndSettle();
+      expect(storage.getBooster(BoosterType.hint), 0);
+      expect(container.read(gameProvider).hintsUsed, 1);
+      await tester.pump(const Duration(seconds: 2));
+    });
+
     testWidgets('tapping Shuffle with inventory uses the booster directly',
         (tester) async {
       final storage = _MemoryStorage()..boosters[BoosterType.shuffle] = 1;
@@ -503,6 +576,31 @@ void main() {
       await tester.pump();
 
       expect(ads.rewardedPlacements, [RewardedPlacement.freeRescueShuffle]);
+      expect(container.read(gameProvider).shufflesUsed, 1);
+    });
+
+    testWidgets('Free Shuffle cannot start overlapping rewarded requests',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService()..rewardedCompleter = Completer<bool>();
+      final container = await _pumpDock(tester, storage: storage, ads: ads);
+      addTearDown(container.dispose);
+
+      await tester.tap(find.bySemanticsLabel('Shuffle 0'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Shuffle 0'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pump();
+
+      expect(ads.rewardedPlacements, [RewardedPlacement.freeRescueShuffle]);
+      expect(storage.getBooster(BoosterType.shuffle), 0);
+
+      ads.rewardedCompleter!.complete(true);
+      await tester.pumpAndSettle();
+      expect(storage.getBooster(BoosterType.shuffle), 0);
       expect(container.read(gameProvider).shufflesUsed, 1);
     });
   });
@@ -571,6 +669,91 @@ void main() {
       expect(ads.interstitialPlacements,
           [InterstitialPlacement.afterCompletedLevels]);
       expect(find.text('Level 4'), findsOneWidget);
+    });
+  });
+
+  group('rewarded daily limit UI states', () {
+    testWidgets('Daily Bonus limit-reached state does not request an ad',
+        (tester) async {
+      final now = DateTime.now();
+      final dateKey = '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      final storage = _MemoryStorage()
+        ..rewardedDailyCounts['bonusDailyChest_$dateKey'] = 1;
+      final ads = _FakeAdMobService();
+      final container = await _pumpProvidedScreen(
+        tester,
+        storage: storage,
+        ads: ads,
+        child: const DailyRewardScreen(),
+      );
+      addTearDown(container.dispose);
+
+      expect(find.text('Already Claimed'), findsOneWidget);
+      await tester.tap(find.text('Already Claimed'), warnIfMissed: false);
+      await tester.pump();
+
+      expect(ads.rewardedPlacements, isEmpty);
+    });
+
+    testWidgets('Shop Gift shows remaining claims and blocks the fourth claim',
+        (tester) async {
+      final now = DateTime.now();
+      final dateKey = '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      final storage = _MemoryStorage()
+        ..rewardedDailyCounts['smallShopReward_$dateKey'] = 1;
+      final ads = _FakeAdMobService();
+      final container = await _pumpProvidedScreen(
+        tester,
+        storage: storage,
+        ads: ads,
+        child: const ShopScreen(),
+      );
+      addTearDown(container.dispose);
+
+      expect(find.text('2 of 3 remaining today'), findsOneWidget);
+
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Daily Limit Reached'), findsNWidgets(2));
+      await tester.tap(
+        find.text('Daily Limit Reached').last,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(ads.rewardedPlacements, [
+        RewardedPlacement.smallShopReward,
+        RewardedPlacement.smallShopReward,
+      ]);
+      expect(storage.getCowries(), 50);
+    });
+
+    testWidgets('reward is granted only after earned callback succeeds',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService()..rewardedCompleter = Completer<bool>();
+      final container = await _pumpProvidedScreen(
+        tester,
+        storage: storage,
+        ads: ads,
+        child: const ShopScreen(),
+      );
+      addTearDown(container.dispose);
+
+      await tester.tap(find.text('Watch Ad'));
+      await tester.pump();
+
+      expect(storage.getCowries(), 0);
+      ads.rewardedCompleter!.complete(true);
+      await tester.pumpAndSettle();
+      expect(storage.getCowries(), 25);
     });
   });
 }

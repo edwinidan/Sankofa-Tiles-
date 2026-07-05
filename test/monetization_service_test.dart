@@ -164,6 +164,138 @@ void main() {
     expect(storage.getCowries(), 25);
   });
 
+  test('Daily Bonus Chest can be claimed once per day and resets next day',
+      () async {
+    final storage = await _storage({});
+    final service = _service(storage);
+    final today = DateTime(2026, 7, 4, 10);
+    final tomorrow = DateTime(2026, 7, 5, 10);
+
+    final first = await service.completeRewardedAd(
+      placement: RewardedPlacement.bonusDailyChest,
+      callbackId: 'daily_bonus_1',
+      now: today,
+    );
+    final second = await service.completeRewardedAd(
+      placement: RewardedPlacement.bonusDailyChest,
+      callbackId: 'daily_bonus_2',
+      now: today,
+    );
+    final nextDay = await service.completeRewardedAd(
+      placement: RewardedPlacement.bonusDailyChest,
+      callbackId: 'daily_bonus_3',
+      now: tomorrow,
+    );
+
+    expect(first.completed, isTrue);
+    expect(second.status, PurchaseStatus.unavailable);
+    expect(nextDay.completed, isTrue);
+    expect(storage.getCowries(), 60);
+    expect(storage.getBooster(BoosterType.hint), 2);
+  });
+
+  test('Shop Gift can be claimed three times per day and resets next day',
+      () async {
+    final storage = await _storage({});
+    final service = _service(storage);
+    final today = DateTime(2026, 7, 4, 10);
+    final tomorrow = DateTime(2026, 7, 5, 10);
+
+    for (var i = 0; i < 3; i++) {
+      final result = await service.completeRewardedAd(
+        placement: RewardedPlacement.smallShopReward,
+        callbackId: 'shop_gift_$i',
+        now: today,
+      );
+      expect(result.completed, isTrue);
+    }
+    final fourth = await service.completeRewardedAd(
+      placement: RewardedPlacement.smallShopReward,
+      callbackId: 'shop_gift_4',
+      now: today,
+    );
+    final nextDay = await service.completeRewardedAd(
+      placement: RewardedPlacement.smallShopReward,
+      callbackId: 'shop_gift_next_day',
+      now: tomorrow,
+    );
+
+    expect(fourth.status, PurchaseStatus.unavailable);
+    expect(nextDay.completed, isTrue);
+    expect(storage.getCowries(), 100);
+  });
+
+  test('Double Cowries cannot be claimed twice for the same result', () async {
+    final storage = await _storage({});
+    final service = _service(storage);
+
+    final first = await service.completeRewardedAd(
+      placement: RewardedPlacement.doubleCompletionCowries,
+      callbackId: 'double_1',
+      claimKey: 'double_cowries:level3:score1500:stars3',
+      baseCowries: 64,
+    );
+    final second = await service.completeRewardedAd(
+      placement: RewardedPlacement.doubleCompletionCowries,
+      callbackId: 'double_2',
+      claimKey: 'double_cowries:level3:score1500:stars3',
+      baseCowries: 64,
+    );
+
+    expect(first.completed, isTrue);
+    expect(second.status, PurchaseStatus.unavailable);
+    expect(storage.getCowries(), 64);
+  });
+
+  test('duplicate earned-reward callbacks do not duplicate Cowries', () async {
+    final storage = await _storage({});
+    final service = _service(storage);
+
+    final first = await service.completeRewardedAd(
+      placement: RewardedPlacement.doubleCompletionCowries,
+      callbackId: 'double_callback',
+      claimKey: 'double_cowries:level4:score2000:stars3',
+      baseCowries: 80,
+    );
+    final duplicate = await service.completeRewardedAd(
+      placement: RewardedPlacement.doubleCompletionCowries,
+      callbackId: 'double_callback',
+      claimKey: 'double_cowries:level4:score2000:stars3',
+      baseCowries: 80,
+    );
+
+    expect(first.completed, isTrue);
+    expect(duplicate.status, PurchaseStatus.alreadyOwned);
+    expect(storage.getCowries(), 80);
+  });
+
+  test('Retry Assistance cannot be used twice for the same failed attempt',
+      () async {
+    final storage = await _storage({});
+    final service = _service(storage);
+
+    final first = await service.completeRewardedAd(
+      placement: RewardedPlacement.retryAssistance,
+      callbackId: 'retry_1',
+      claimKey: 'retry_assistance:attempt_a',
+    );
+    final second = await service.completeRewardedAd(
+      placement: RewardedPlacement.retryAssistance,
+      callbackId: 'retry_2',
+      claimKey: 'retry_assistance:attempt_a',
+    );
+    final freshAttempt = await service.completeRewardedAd(
+      placement: RewardedPlacement.retryAssistance,
+      callbackId: 'retry_3',
+      claimKey: 'retry_assistance:attempt_b',
+    );
+
+    expect(first.completed, isTrue);
+    expect(second.status, PurchaseStatus.unavailable);
+    expect(freshAttempt.completed, isTrue);
+    expect(storage.getBooster(BoosterType.shuffle), 2);
+  });
+
   test('rewarded failure does not grant value', () async {
     final storage = await _storage({});
     final service = _service(storage);
