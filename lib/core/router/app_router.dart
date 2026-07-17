@@ -22,13 +22,17 @@ import '../theme/sankofa_game_theme.dart';
 import '../utils/analytics_service.dart';
 import '../utils/storage_service.dart';
 
-GoRouter createAppRouter(StorageService storage) {
+GoRouter createAppRouter(
+  StorageService storage, {
+  String initialLocation = '/',
+}) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: initialLocation,
     observers: [_AnalyticsNavigatorObserver()],
     redirect: (context, state) {
       // First launch → onboarding
-      if (state.matchedLocation == '/' && !storage.isOnboardingComplete()) {
+      if (state.matchedLocation == '/' &&
+          !storage.hasCompletedEntryDiscovery()) {
         return '/onboarding';
       }
       return null;

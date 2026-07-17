@@ -5,7 +5,7 @@
 **Sankofa Tiles** is a Flutter mobile puzzle game — a Mahjong solitaire tile-matching game themed around Ghanaian Adinkra symbols. Players match pairs of identical tiles on a 3D-layered board following classic Mahjong "free tile" rules. The game targets Android and iOS (portrait only), with a chapter-based campaign, in-game economy (cowries currency + boosters), tile collection unlocks, AdMob ads, and IAP monetization.
 
 - **Package:** `com.sankofatiles.sankofa_tiles`
-- **Version:** 1.0.4+8
+- **Version:** 1.0.5+10
 - **Dart SDK:** >=3.0.0 <4.0.0
 
 ---

@@ -87,6 +87,23 @@ class AnalyticsService {
 
   static void logOnboardingCompleted() => _event('onboarding_completed');
 
+  static void logEntryFlowShown(String flowType) =>
+      _event('entry_flow_shown', {'flow_type': flowType});
+  static void logEntryDiscoveryMatch(int pairsFound) =>
+      _event('entry_discovery_match', {'pairs_found': pairsFound});
+  static void logEntryDiscoveryNoMatch() => _event('entry_discovery_no_match');
+  static void logEntryDiscoverySkipped(String phase) =>
+      _event('entry_discovery_skipped', {'phase': phase});
+  static void logEntryPreferencesCompleted({required bool defaults}) =>
+      _event('entry_preferences_completed', {'used_defaults': defaults});
+  static void logEntryReturningSplashCompleted(
+          {required bool skipped, required bool immediate}) =>
+      _event(
+          skipped
+              ? 'entry_returning_splash_skipped'
+              : 'entry_returning_splash_completed',
+          {'immediate': immediate});
+
   static void logTutorialStarted({required bool replay}) => _event(
         'tutorial_started',
         {'replay': replay},

@@ -16,6 +16,10 @@ class StorageService {
   static const _keyMusicVolume = 'music_volume';
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyTutorialComplete = 'tutorial_complete';
+  static const _keyEntryDiscoveryComplete = 'entry_discovery_complete';
+  static const _keyAnimatedOpeningEnabled = 'animated_opening_enabled';
+  static const _keyReturningSplashImmediateSkips =
+      'returning_splash_immediate_skips';
   static const _keyShowTileNames = 'show_tile_names';
   static const _keyHapticIntensity = 'haptic_intensity';
   static const _keyCampaignProgressSchemaVersion =
@@ -208,6 +212,42 @@ class StorageService {
   bool isTutorialComplete() => _prefs.getBool(_keyTutorialComplete) ?? false;
   Future<void> setTutorialComplete() async =>
       _prefs.setBool(_keyTutorialComplete, true);
+
+  /// Legacy onboarding, tutorial completion, or real progress all identify an
+  /// existing player. This additive check prevents an update from replaying
+  /// discovery for production users.
+  bool hasCompletedEntryDiscovery() =>
+      (_prefs.getBool(_keyEntryDiscoveryComplete) ?? false) ||
+      isOnboardingComplete() ||
+      isTutorialComplete() ||
+      getHighestCompletedLevel() > 0;
+
+  Future<void> setEntryDiscoveryComplete() async {
+    await _prefs.setBool(_keyEntryDiscoveryComplete, true);
+    // Keep the legacy router contract intact without completing the tutorial.
+    await _prefs.setBool(_keyOnboardingComplete, true);
+  }
+
+  bool isAnimatedOpeningEnabled() =>
+      _prefs.getBool(_keyAnimatedOpeningEnabled) ?? true;
+  Future<void> setAnimatedOpeningEnabled(bool value) async {
+    await _prefs.setBool(_keyAnimatedOpeningEnabled, value);
+    if (value) await _prefs.setInt(_keyReturningSplashImmediateSkips, 0);
+  }
+
+  int getReturningSplashImmediateSkipCount() =>
+      _prefs.getInt(_keyReturningSplashImmediateSkips) ?? 0;
+
+  Future<bool> recordReturningSplashCompletion(
+      {required bool immediate}) async {
+    final count = immediate ? getReturningSplashImmediateSkipCount() + 1 : 0;
+    await _prefs.setInt(_keyReturningSplashImmediateSkips, count);
+    if (count >= 3) {
+      await _prefs.setBool(_keyAnimatedOpeningEnabled, false);
+      return true;
+    }
+    return false;
+  }
 
   // Show tile names
   bool isShowTileNames() => _prefs.getBool(_keyShowTileNames) ?? true;

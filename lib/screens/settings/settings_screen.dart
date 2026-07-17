@@ -77,6 +77,13 @@ class SettingsScreen extends ConsumerWidget {
                 selected: settings.hapticIntensity,
                 onChanged: notifier.setHapticIntensity,
               ),
+              _ToggleTile(
+                icon: Icons.auto_awesome_outlined,
+                label: 'Animated Opening',
+                description: 'Show the tile-table reveal on cold launch',
+                value: settings.animatedOpeningEnabled,
+                onChanged: notifier.setAnimatedOpeningEnabled,
+              ),
               const SizedBox(height: 16),
               const AdinkraDivider(),
               const SizedBox(height: 16),

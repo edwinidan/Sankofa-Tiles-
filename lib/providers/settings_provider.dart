@@ -13,6 +13,7 @@ class SettingsState {
   final double musicVolume;
   final bool showTileNames;
   final HapticIntensity hapticIntensity;
+  final bool animatedOpeningEnabled;
 
   const SettingsState({
     required this.soundEnabled,
@@ -20,6 +21,7 @@ class SettingsState {
     required this.musicVolume,
     required this.showTileNames,
     required this.hapticIntensity,
+    required this.animatedOpeningEnabled,
   });
 
   SettingsState copyWith({
@@ -28,6 +30,7 @@ class SettingsState {
     double? musicVolume,
     bool? showTileNames,
     HapticIntensity? hapticIntensity,
+    bool? animatedOpeningEnabled,
   }) =>
       SettingsState(
         soundEnabled: soundEnabled ?? this.soundEnabled,
@@ -35,6 +38,8 @@ class SettingsState {
         musicVolume: musicVolume ?? this.musicVolume,
         showTileNames: showTileNames ?? this.showTileNames,
         hapticIntensity: hapticIntensity ?? this.hapticIntensity,
+        animatedOpeningEnabled:
+            animatedOpeningEnabled ?? this.animatedOpeningEnabled,
       );
 }
 
@@ -48,6 +53,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           musicVolume: _storage.getMusicVolume(),
           showTileNames: _storage.isShowTileNames(),
           hapticIntensity: _storage.getHapticIntensity(),
+          animatedOpeningEnabled: _storage.isAnimatedOpeningEnabled(),
         ));
 
   Future<void> setSoundEnabled(bool val) async {
@@ -74,6 +80,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setHapticIntensity(HapticIntensity intensity) async {
     await _storage.setHapticIntensity(intensity);
     state = state.copyWith(hapticIntensity: intensity);
+  }
+
+  Future<void> setAnimatedOpeningEnabled(bool value) async {
+    await _storage.setAnimatedOpeningEnabled(value);
+    state = state.copyWith(animatedOpeningEnabled: value);
   }
 
   Future<void> resetProgress() async {
