@@ -160,19 +160,23 @@ void main() {
 
     expect(
       state.unlockedCollectionIds,
-      equals(tileIdsUnlockedThroughLevel(5).toSet()),
+      equals({
+        ...tileIdsUnlockedThroughLevel(5),
+        ...legacyV1TileIdsUnlockedThroughLevel(5),
+      }),
     );
   });
 
   test('collection unlock sources come from the unlock rule table', () async {
     final storage = await _storage({});
     final economy = EconomyService(storage);
-    final level200Tile = tileIdsUnlockedAtLevel(200).last;
+    final finalTile =
+        tileIdsUnlockedAtLevel(kCollectionScheduleFinalLevel).last;
 
-    expect(economy.collectionUnlockSource('aban'), 'Unlocked at Level 1');
+    expect(economy.collectionUnlockSource('aban'), 'Starter Collection');
     expect(
-      economy.collectionUnlockSource(level200Tile),
-      'Unlocked at Level 200',
+      economy.collectionUnlockSource(finalTile),
+      'Unlocked at Level 400',
     );
   });
 

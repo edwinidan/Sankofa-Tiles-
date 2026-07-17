@@ -68,6 +68,37 @@ void main() {
     expect(harness.state.status, GameStatus.won);
   });
 
+  test('successful match does not block selecting the next tile', () {
+    final harness = _GameHarness(storage);
+    addTearDown(harness.dispose);
+
+    harness.load([
+      _tile('a1', kAllTiles[0], 0),
+      _tile('a2', kAllTiles[0], 4),
+      _tile('b1', kAllTiles[1], 8),
+      _tile('b2', kAllTiles[1], 12),
+    ]);
+
+    harness.notifier.selectTile('a1');
+    harness.notifier.selectTile('a2');
+
+    expect(harness.tile('a1').isMatched, isTrue);
+    expect(harness.tile('a2').isMatched, isTrue);
+    expect(harness.state.selectedTileUid, isNull);
+    expect(harness.state.score, 100);
+    expect(harness.state.pendingMatchAnimations, hasLength(1));
+    expect(
+      harness.state.animatingMatchedTileIds,
+      containsAll(['a1', 'a2']),
+    );
+
+    harness.notifier.selectTile('b1');
+
+    expect(harness.state.selectedTileUid, 'b1');
+    expect(harness.tile('b1').isSelected, isTrue);
+    expect(harness.state.pendingMatchAnimations, hasLength(1));
+  });
+
   testWidgets('wrong peeked pair returns covered after mismatch feedback',
       (tester) async {
     final harness = _GameHarness(storage);
@@ -127,9 +158,19 @@ void main() {
 
     expect(harness.tile('a1').isHinted, isTrue);
     expect(harness.tile('a2').isHinted, isTrue);
+    expect(harness.tile('a1').isSelected, isFalse);
+    expect(harness.tile('a2').isSelected, isFalse);
+    expect(harness.state.selectedTileUid, isNull);
     expect(harness.tile('b1').isHinted, isFalse);
     expect(harness.tile('b1').visibility, TileVisibility.covered);
     expect(harness.state.hintsUsed, 1);
+
+    harness.notifier.selectTile('a1');
+    harness.notifier.selectTile('a2');
+
+    expect(harness.tile('a1').isMatched, isTrue);
+    expect(harness.tile('a2').isMatched, isTrue);
+    expect(harness.state.moves, 1);
   });
 
   test('hint can clue peekable covered tiles without revealing them', () {

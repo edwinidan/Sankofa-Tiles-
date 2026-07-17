@@ -414,13 +414,13 @@ class GameNotifier extends StateNotifier<GameState> {
       _ => 0.18,
     };
     final progressionBonus =
-        ((levelDef.id - 1) / kFinalCampaignLevelId).clamp(0.0, 0.07);
+        ((levelDef.id - 1) / kImplementedFinalLevelId).clamp(0.0, 0.07);
     return (base + progressionBonus).clamp(0.10, 0.35);
   }
 
   void selectTile(String uid) {
     if (state.status != GameStatus.playing) return;
-    if (state.pendingMatchAnimation != null) return;
+    if (state.animatingMatchedTileIds.contains(uid)) return;
 
     final tile = state.tiles.firstWhere(
       (t) => t.uid == uid,
@@ -570,12 +570,15 @@ class GameNotifier extends StateNotifier<GameState> {
           (row: firstTile.row, col: firstTile.col, layer: firstTile.layer),
           (row: secondTile.row, col: secondTile.col, layer: secondTile.layer),
         ],
-        pendingMatchAnimation: PendingMatchAnimation(
-          id: matchAnimationId,
-          firstTileUid: firstUid,
-          secondTileUid: uid,
-          style: matchAnimationStyle,
-        ),
+        pendingMatchAnimations: [
+          ...state.pendingMatchAnimations,
+          PendingMatchAnimation(
+            id: matchAnimationId,
+            firstTileUid: firstUid,
+            secondTileUid: uid,
+            style: matchAnimationStyle,
+          ),
+        ],
       );
 
       Future.delayed(const Duration(milliseconds: 285), () {
@@ -592,7 +595,9 @@ class GameNotifier extends StateNotifier<GameState> {
         if (!mounted) return;
         state = state.copyWith(
           pendingScorePops: const [],
-          clearPendingMatchAnimation: true,
+          pendingMatchAnimations: state.pendingMatchAnimations
+              .where((animation) => animation.id != matchAnimationId)
+              .toList(),
         );
       });
     } else {

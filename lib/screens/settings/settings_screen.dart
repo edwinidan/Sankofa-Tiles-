@@ -13,6 +13,7 @@ import '../../providers/admob_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/sankofa_background.dart';
+import 'widgets/settings_banner_ad.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -131,6 +132,7 @@ class SettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 _ResetTile(onReset: () => _confirmReset(context, ref)),
               ],
+              const SettingsBannerAd(),
             ],
           ),
         ),

@@ -59,6 +59,7 @@ void main() {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final manifest =
         File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    final iosInfo = File('ios/Runner/Info.plist').readAsStringSync();
     final adIds = File('lib/core/ads/ad_ids.dart').readAsStringSync();
     final gameDock = File('lib/screens/game/widgets/game_control_dock.dart')
         .readAsStringSync();
@@ -71,8 +72,10 @@ void main() {
       contains('com.google.android.gms.ads.APPLICATION_ID'),
     );
     expect(manifest, contains('ca-app-pub-5484820744037011~7670775878'));
+    expect(iosInfo, contains('GADApplicationIdentifier'));
+    expect(iosInfo, contains('ca-app-pub-5484820744037011~2607546687'));
     expect(adIds, contains('USE_PRODUCTION_ADS'));
-    expect(adIds, contains('kReleaseMode && useProductionAds'));
+    expect(adIds, contains('kReleaseMode || useProductionAds'));
     expect(adIds, contains('_testAndroidRewarded'));
     expect(adIds, contains('_testAndroidInterstitial'));
     expect(adIds, contains("androidAppId.contains('~')"));

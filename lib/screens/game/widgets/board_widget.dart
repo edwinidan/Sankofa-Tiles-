@@ -14,16 +14,34 @@ import 'tile_widget.dart';
 @visibleForTesting
 bool shouldRenderBoardTile(
   TileModel tile,
-  PendingMatchAnimation? matchAnimation,
+  List<PendingMatchAnimation> matchAnimations,
 ) {
   if (tile.isHidden) return false;
   if (!tile.isMatched) return true;
-  return tile.uid == matchAnimation?.firstTileUid ||
-      tile.uid == matchAnimation?.secondTileUid;
+  return matchAnimations.any((animation) => animation.containsTile(tile.uid));
+}
+
+PendingMatchAnimation? _matchAnimationForTile(
+  TileModel tile,
+  List<PendingMatchAnimation> matchAnimations,
+) {
+  for (final animation in matchAnimations) {
+    if (animation.containsTile(tile.uid)) return animation;
+  }
+  return null;
 }
 
 class BoardWidget extends ConsumerStatefulWidget {
-  const BoardWidget({super.key});
+  const BoardWidget({
+    super.key,
+    this.previewState,
+    this.animateEntrance = true,
+  });
+
+  /// Developer/golden rendering hook. Gameplay leaves this null and continues
+  /// to watch [gameProvider] exactly as before.
+  final GameState? previewState;
+  final bool animateEntrance;
 
   @override
   ConsumerState<BoardWidget> createState() => _BoardWidgetState();
@@ -34,12 +52,9 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
 
   int _visualPriority(
     TileModel tile,
-    PendingMatchAnimation? matchAnimation,
+    List<PendingMatchAnimation> matchAnimations,
   ) {
-    if (tile.uid == matchAnimation?.firstTileUid ||
-        tile.uid == matchAnimation?.secondTileUid) {
-      return 3;
-    }
+    if (_matchAnimationForTile(tile, matchAnimations) != null) return 3;
     if (tile.uid == _pressedTileUid) return 2;
     if (tile.isSelected) return 1;
     return 0;
@@ -47,14 +62,15 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final gameState = ref.watch(gameProvider);
+    final GameState gameState =
+        widget.previewState ?? ref.watch<GameState>(gameProvider);
     final levelDef = getLevelById(gameState.levelId);
     if (levelDef == null || gameState.status == GameStatus.idle) {
       return const SizedBox.shrink();
     }
 
     final freeUids = gameState.freeTileUids;
-    final matchAnimation = gameState.pendingMatchAnimation;
+    final matchAnimations = gameState.pendingMatchAnimations;
     final indexedTiles = gameState.tiles.indexed.toList()
       ..sort((a, b) {
         final layerComparison = a.$2.layer.compareTo(b.$2.layer);
@@ -63,13 +79,13 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
       });
     final baseOrder = indexedTiles
         .map((entry) => entry.$2)
-        .where((tile) => shouldRenderBoardTile(tile, matchAnimation))
+        .where((tile) => shouldRenderBoardTile(tile, matchAnimations))
         .toList();
     final sortedTiles = [
-      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 0),
-      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 1),
-      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 2),
-      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimation) == 3),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimations) == 0),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimations) == 1),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimations) == 2),
+      ...baseOrder.where((tile) => _visualPriority(tile, matchAnimations) == 3),
     ];
 
     return LayoutBuilder(
@@ -101,39 +117,32 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
           );
         }
 
-        final firstMatchTile = matchAnimation == null
-            ? null
-            : gameState.tiles.firstWhere(
-                (tile) => tile.uid == matchAnimation.firstTileUid,
-              );
-        final secondMatchTile = matchAnimation == null
-            ? null
-            : gameState.tiles.firstWhere(
-                (tile) => tile.uid == matchAnimation.secondTileUid,
-              );
-        final firstMatchOffset = firstMatchTile == null
-            ? null
-            : tileOffset(
-                firstMatchTile.row,
-                firstMatchTile.col,
-                firstMatchTile.layer,
-              );
-        final secondMatchOffset = secondMatchTile == null
-            ? null
-            : tileOffset(
-                secondMatchTile.row,
-                secondMatchTile.col,
-                secondMatchTile.layer,
-              );
-        final collisionOffset =
-            firstMatchOffset == null || secondMatchOffset == null
-                ? null
-                : matchAnimation!.style == MatchAnimationStyle.secondHitsFirst
-                    ? firstMatchOffset
-                    : Offset(
-                        (firstMatchOffset.dx + secondMatchOffset.dx) / 2,
-                        (firstMatchOffset.dy + secondMatchOffset.dy) / 2,
-                      );
+        TileModel? tileForUid(String uid) {
+          for (final tile in gameState.tiles) {
+            if (tile.uid == uid) return tile;
+          }
+          return null;
+        }
+
+        Offset? offsetForUid(String uid) {
+          final tile = tileForUid(uid);
+          if (tile == null) return null;
+          return tileOffset(tile.row, tile.col, tile.layer);
+        }
+
+        Offset? collisionOffsetFor(PendingMatchAnimation animation) {
+          final firstMatchOffset = offsetForUid(animation.firstTileUid);
+          final secondMatchOffset = offsetForUid(animation.secondTileUid);
+          if (firstMatchOffset == null || secondMatchOffset == null) {
+            return null;
+          }
+          return animation.style == MatchAnimationStyle.secondHitsFirst
+              ? firstMatchOffset
+              : Offset(
+                  (firstMatchOffset.dx + secondMatchOffset.dx) / 2,
+                  (firstMatchOffset.dy + secondMatchOffset.dy) / 2,
+                );
+        }
 
         Widget board = SizedBox(
           width: constraints.maxWidth,
@@ -146,12 +155,17 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                 final tile = entry.value;
                 final offset = tileOffset(tile.row, tile.col, tile.layer);
                 final isAvail = freeUids.contains(tile.uid);
+                final matchAnimation =
+                    _matchAnimationForTile(tile, matchAnimations);
                 final isFirstMatchTile =
                     tile.uid == matchAnimation?.firstTileUid;
                 final isSecondMatchTile =
                     tile.uid == matchAnimation?.secondTileUid;
                 final isCoordinatedMatch =
                     isFirstMatchTile || isSecondMatchTile;
+                final collisionOffset = matchAnimation == null
+                    ? null
+                    : collisionOffsetFor(matchAnimation);
 
                 Widget child = TileWidget(
                   tile: tile,
@@ -159,6 +173,7 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   height: tileH,
                   isAvailable: isAvail,
                   isCoordinatedMatch: isCoordinatedMatch,
+                  isHinted: tile.isHinted,
                   onPressChanged: (isPressed) {
                     setState(() {
                       _pressedTileUid = isPressed ? tile.uid : null;
@@ -170,11 +185,16 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   child = IgnorePointer(child: child);
                 }
 
-                if (isCoordinatedMatch && collisionOffset != null) {
+                final activeMatchAnimation = matchAnimation;
+                if (activeMatchAnimation != null && collisionOffset != null) {
                   var target = collisionOffset;
-                  if (matchAnimation!.style ==
+                  if (activeMatchAnimation.style ==
                       MatchAnimationStyle.directCollision) {
-                    final direction = secondMatchOffset! - firstMatchOffset!;
+                    final firstMatchOffset =
+                        offsetForUid(activeMatchAnimation.firstTileUid)!;
+                    final secondMatchOffset =
+                        offsetForUid(activeMatchAnimation.secondTileUid)!;
+                    final direction = secondMatchOffset - firstMatchOffset;
                     final distance = direction.distance;
                     final unit = distance == 0
                         ? const Offset(1, 0)
@@ -188,7 +208,7 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   final rotation = (isFirstMatchTile ? 1.0 : -1.0) * pi / 28;
                   child = TweenAnimationBuilder<double>(
                     key: ValueKey(
-                      'match_${matchAnimation.id}_${tile.uid}',
+                      'match_${activeMatchAnimation.id}_${tile.uid}',
                     ),
                     tween: Tween(begin: 0, end: 1),
                     duration: const Duration(milliseconds: 300),
@@ -206,7 +226,7 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   );
                 }
 
-                if (!isCoordinatedMatch) {
+                if (!isCoordinatedMatch && widget.animateEntrance) {
                   child = child
                       .animate(delay: (index * 25).ms)
                       .fadeIn(duration: 300.ms)
@@ -226,24 +246,28 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                   child: child,
                 );
               }),
-              if (collisionOffset != null)
-                _MatchBurstOverlay(
-                  key: ValueKey('burst_${matchAnimation!.id}'),
-                  x: collisionOffset.dx,
-                  y: collisionOffset.dy,
-                  tileW: tileW,
-                  tileH: tileH,
-                  startDelay: const Duration(milliseconds: 285),
-                ),
-              if (collisionOffset != null)
-                _ScorePopOverlay(
-                  key: ValueKey('pop_${matchAnimation!.id}'),
-                  x: collisionOffset.dx,
-                  y: collisionOffset.dy,
-                  tileW: tileW,
-                  tileH: tileH,
-                  startDelay: const Duration(milliseconds: 315),
-                ),
+              for (final matchAnimation in matchAnimations)
+                if (collisionOffsetFor(matchAnimation)
+                    case final collisionOffset?)
+                  _MatchBurstOverlay(
+                    key: ValueKey('burst_${matchAnimation.id}'),
+                    x: collisionOffset.dx,
+                    y: collisionOffset.dy,
+                    tileW: tileW,
+                    tileH: tileH,
+                    startDelay: const Duration(milliseconds: 285),
+                  ),
+              for (final matchAnimation in matchAnimations)
+                if (collisionOffsetFor(matchAnimation)
+                    case final collisionOffset?)
+                  _ScorePopOverlay(
+                    key: ValueKey('pop_${matchAnimation.id}'),
+                    x: collisionOffset.dx,
+                    y: collisionOffset.dy,
+                    tileW: tileW,
+                    tileH: tileH,
+                    startDelay: const Duration(milliseconds: 315),
+                  ),
               if (gameState.status == GameStatus.won)
                 Positioned(
                   left: boardLeft,

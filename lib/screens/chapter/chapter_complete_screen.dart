@@ -24,7 +24,7 @@ class ChapterCompleteScreen extends ConsumerWidget {
       0,
       (sum, level) => sum + progress.getStars(level.id),
     );
-    final campaignComplete = completedLevelId >= kFinalCampaignLevelId;
+    final campaignComplete = completedLevelId >= kImplementedFinalLevelId;
     final nextLevelId = campaignComplete ? null : completedLevelId + 1;
 
     return Scaffold(

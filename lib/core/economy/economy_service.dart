@@ -272,8 +272,8 @@ class EconomyService {
       'chapter_complete' => isChapterFinalLevel(state.levelId),
       'discover_20_symbols' => _storage.getUnlockedCollectionIds().length >= 20,
       'earn_50_stars' => totalStars >= 50,
-      'complete_campaign' => completed >= kFinalCampaignLevelId ||
-          state.levelId >= kFinalCampaignLevelId,
+      'complete_campaign' => completed >= kImplementedFinalLevelId ||
+          state.levelId >= kImplementedFinalLevelId,
       _ => false,
     };
   }
@@ -291,6 +291,7 @@ class EconomyService {
   String collectionUnlockSource(String tileId) {
     final levelId = unlockLevelForTileId(tileId);
     if (levelId != null) {
+      if (levelId == 0) return 'Starter Collection';
       return 'Unlocked at Level $levelId';
     }
     return 'Unlocked through the Grand Archive';

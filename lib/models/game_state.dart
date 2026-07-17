@@ -19,6 +19,8 @@ class PendingMatchAnimation {
     required this.secondTileUid,
     required this.style,
   });
+
+  bool containsTile(String uid) => uid == firstTileUid || uid == secondTileUid;
 }
 
 class GameState {
@@ -34,7 +36,7 @@ class GameState {
   final int levelId;
 
   final List<({int row, int col, int layer})> pendingScorePops;
-  final PendingMatchAnimation? pendingMatchAnimation;
+  final List<PendingMatchAnimation> pendingMatchAnimations;
   final int currentStreak;
   final int bestStreak;
   final int shufflesUsed;
@@ -51,7 +53,7 @@ class GameState {
     this.selectedTileUid,
     this.loadError,
     this.pendingScorePops = const [],
-    this.pendingMatchAnimation,
+    this.pendingMatchAnimations = const [],
     this.currentStreak = 0,
     this.bestStreak = 0,
     this.shufflesUsed = 0,
@@ -60,6 +62,13 @@ class GameState {
   int get remainingPairs => tiles.where((t) => !t.isMatched).length ~/ 2;
 
   bool get hasWon => tiles.isNotEmpty && tiles.every((t) => t.isMatched);
+
+  Set<String> get animatingMatchedTileIds => {
+        for (final animation in pendingMatchAnimations) ...[
+          animation.firstTileUid,
+          animation.secondTileUid,
+        ],
+      };
 
   Set<String> get availableTileUids {
     return BoardSolver.getFreeTiles(tiles)
@@ -102,8 +111,7 @@ class GameState {
     bool clearLoadError = false,
     int? levelId,
     List<({int row, int col, int layer})>? pendingScorePops,
-    PendingMatchAnimation? pendingMatchAnimation,
-    bool clearPendingMatchAnimation = false,
+    List<PendingMatchAnimation>? pendingMatchAnimations,
     int? currentStreak,
     int? bestStreak,
     int? shufflesUsed,
@@ -122,9 +130,8 @@ class GameState {
         loadError: clearLoadError ? null : (loadError ?? this.loadError),
         levelId: levelId ?? this.levelId,
         pendingScorePops: pendingScorePops ?? this.pendingScorePops,
-        pendingMatchAnimation: clearPendingMatchAnimation
-            ? null
-            : (pendingMatchAnimation ?? this.pendingMatchAnimation),
+        pendingMatchAnimations:
+            pendingMatchAnimations ?? this.pendingMatchAnimations,
         currentStreak: currentStreak ?? this.currentStreak,
         bestStreak: bestStreak ?? this.bestStreak,
         shufflesUsed: shufflesUsed ?? this.shufflesUsed,

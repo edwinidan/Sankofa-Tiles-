@@ -1,13 +1,14 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sankofa_tiles/core/ads/ad_ids.dart';
 import 'package:sankofa_tiles/core/monetization/monetization_models.dart';
 
 void main() {
   test('production ads are disabled in test builds', () {
-    // In test/debug builds, productionAdsEnabled must be false.
-    // This proves debug and profile builds never serve production ads.
+    // In test/debug builds, productionAdsEnabled must be false unless the
+    // explicit USE_PRODUCTION_ADS override is supplied.
     expect(AdIds.productionAdsEnabled, isFalse);
     expect(AdIds.useProductionAds, isFalse);
   });
@@ -68,33 +69,113 @@ void main() {
     }
   });
 
+  test('settings banner ad unit ID resolves for supported platforms', () {
+    final id = AdIds.bannerAdUnitId(BannerPlacement.settingsBottom);
+
+    if (AdIds.isSupportedPlatform) {
+      expect(id, isNotNull);
+      expect(id, contains('ca-app-pub-3940256099942544'));
+    } else {
+      expect(id, isNull);
+    }
+  });
+
   test('new Android rewarded production placements are configured', () {
-    final source = File('lib/core/ads/ad_ids.dart').readAsStringSync();
     const expectedMappings = {
-      'RewardedPlacement.doubleCompletionCowries':
-          '_androidRewardedDoubleCompletionCowries',
-      'RewardedPlacement.freeRescueShuffle':
-          '_androidRewardedFreeRescueShuffle',
-      'RewardedPlacement.bonusDailyChest': '_androidRewardedBonusDailyChest',
-      'RewardedPlacement.smallShopReward': '_androidRewardedSmallShopReward',
+      RewardedPlacement.freeHint: 'ca-app-pub-5484820744037011/7155770551',
+      RewardedPlacement.retryAssistance:
+          'ca-app-pub-5484820744037011/4741360208',
+      RewardedPlacement.doubleCompletionCowries:
+          'ca-app-pub-5484820744037011/2775600473',
+      RewardedPlacement.freeRescueShuffle:
+          'ca-app-pub-5484820744037011/1462518800',
+      RewardedPlacement.bonusDailyChest:
+          'ca-app-pub-5484820744037011/4557666995',
+      RewardedPlacement.smallShopReward:
+          'ca-app-pub-5484820744037011/4777158847',
     };
-    const expectedIds = [
-      'ca-app-pub-5484820744037011/2775600473',
-      'ca-app-pub-5484820744037011/1462518800',
-      'ca-app-pub-5484820744037011/4557666995',
-      'ca-app-pub-5484820744037011/4777158847',
-    ];
 
     for (final entry in expectedMappings.entries) {
       expect(
-        RegExp('${entry.key}\\s*=>\\s*${entry.value}').hasMatch(source),
-        isTrue,
-        reason: '${entry.key} should map to ${entry.value}, not null',
+        AdIds.rewardedAdUnitIdForPlatform(
+          entry.key,
+          TargetPlatform.android,
+          useProductionIds: true,
+        ),
+        entry.value,
       );
     }
-    for (final id in expectedIds) {
-      expect(source, contains(id));
+  });
+
+  test('iOS rewarded production placements are configured', () {
+    const expectedMappings = {
+      RewardedPlacement.freeHint: 'ca-app-pub-5484820744037011/9228795350',
+      RewardedPlacement.retryAssistance:
+          'ca-app-pub-5484820744037011/4164170939',
+      RewardedPlacement.doubleCompletionCowries:
+          'ca-app-pub-5484820744037011/8151517400',
+      RewardedPlacement.freeRescueShuffle:
+          'ca-app-pub-5484820744037011/9356787868',
+      RewardedPlacement.bonusDailyChest:
+          'ca-app-pub-5484820744037011/8137251130',
+      RewardedPlacement.smallShopReward:
+          'ca-app-pub-5484820744037011/8081410819',
+    };
+
+    for (final entry in expectedMappings.entries) {
+      expect(
+        AdIds.rewardedAdUnitIdForPlatform(
+          entry.key,
+          TargetPlatform.iOS,
+          useProductionIds: true,
+        ),
+        entry.value,
+      );
     }
+  });
+
+  test('Android interstitial production placement is configured', () {
+    expect(
+      AdIds.interstitialAdUnitIdForPlatform(
+        InterstitialPlacement.afterCompletedLevels,
+        TargetPlatform.android,
+        useProductionIds: true,
+      ),
+      'ca-app-pub-5484820744037011/8600714161',
+    );
+  });
+
+  test('iOS interstitial production placement is configured', () {
+    expect(
+      AdIds.interstitialAdUnitIdForPlatform(
+        InterstitialPlacement.afterCompletedLevels,
+        TargetPlatform.iOS,
+        useProductionIds: true,
+      ),
+      'ca-app-pub-5484820744037011/5477252602',
+    );
+  });
+
+  test('Android settings banner production placement is configured', () {
+    expect(
+      AdIds.bannerAdUnitIdForPlatform(
+        BannerPlacement.settingsBottom,
+        TargetPlatform.android,
+        useProductionIds: true,
+      ),
+      'ca-app-pub-5484820744037011/4876698366',
+    );
+  });
+
+  test('iOS settings banner production placement is configured', () {
+    expect(
+      AdIds.bannerAdUnitIdForPlatform(
+        BannerPlacement.settingsBottom,
+        TargetPlatform.iOS,
+        useProductionIds: true,
+      ),
+      'ca-app-pub-5484820744037011/5646819163',
+    );
   });
 
   test('unsupported interstitial placements return null in production', () {
@@ -113,13 +194,57 @@ void main() {
     );
   });
 
-  test('a normal release build without USE_PRODUCTION_ADS still uses test IDs',
-      () {
-    // useProductionAds defaults to false and we cannot set kReleaseMode
-    // in tests. This verifies the default is false, proving that even a
-    // release build without the dart-define flag uses test IDs.
+  test('debug and development builds still use Google test IDs', () {
     expect(AdIds.useProductionAds, isFalse);
     expect(AdIds.productionAdsEnabled, isFalse);
+    expect(
+      AdIds.rewardedAdUnitIdForPlatform(
+        RewardedPlacement.freeHint,
+        TargetPlatform.android,
+        useProductionIds: false,
+      ),
+      'ca-app-pub-3940256099942544/5224354917',
+    );
+    expect(
+      AdIds.rewardedAdUnitIdForPlatform(
+        RewardedPlacement.freeHint,
+        TargetPlatform.iOS,
+        useProductionIds: false,
+      ),
+      'ca-app-pub-3940256099942544/1712485313',
+    );
+    expect(
+      AdIds.interstitialAdUnitIdForPlatform(
+        InterstitialPlacement.afterCompletedLevels,
+        TargetPlatform.android,
+        useProductionIds: false,
+      ),
+      'ca-app-pub-3940256099942544/1033173712',
+    );
+    expect(
+      AdIds.interstitialAdUnitIdForPlatform(
+        InterstitialPlacement.afterCompletedLevels,
+        TargetPlatform.iOS,
+        useProductionIds: false,
+      ),
+      'ca-app-pub-3940256099942544/4411468910',
+    );
+    expect(
+      AdIds.bannerAdUnitIdForPlatform(
+        BannerPlacement.settingsBottom,
+        TargetPlatform.android,
+        useProductionIds: false,
+      ),
+      'ca-app-pub-3940256099942544/6300978111',
+    );
+    expect(
+      AdIds.bannerAdUnitIdForPlatform(
+        BannerPlacement.settingsBottom,
+        TargetPlatform.iOS,
+        useProductionIds: false,
+      ),
+      'ca-app-pub-3940256099942544/2934735716',
+    );
   });
 
   test('no ad-unit IDs are hardcoded in widget files', () {
@@ -143,10 +268,47 @@ void main() {
     }
   });
 
-  test('Android production IDs are platform-gated', () {
-    // isSupportedPlatform checks for Android only; iOS returns null
-    final source = File('lib/core/ads/ad_ids.dart').readAsStringSync();
-    expect(source, contains('TargetPlatform.android'));
-    expect(source, contains('!kIsWeb'));
+  test('web and unsupported platforms return null', () {
+    for (final platform in [
+      TargetPlatform.fuchsia,
+      TargetPlatform.linux,
+      TargetPlatform.macOS,
+      TargetPlatform.windows,
+    ]) {
+      expect(
+        AdIds.rewardedAdUnitIdForPlatform(
+          RewardedPlacement.freeHint,
+          platform,
+          useProductionIds: true,
+        ),
+        isNull,
+      );
+      expect(
+        AdIds.interstitialAdUnitIdForPlatform(
+          InterstitialPlacement.afterCompletedLevels,
+          platform,
+          useProductionIds: true,
+        ),
+        isNull,
+      );
+      expect(
+        AdIds.bannerAdUnitIdForPlatform(
+          BannerPlacement.settingsBottom,
+          platform,
+          useProductionIds: true,
+        ),
+        isNull,
+      );
+    }
+
+    expect(
+      AdIds.rewardedAdUnitIdForPlatform(
+        RewardedPlacement.freeHint,
+        TargetPlatform.android,
+        isWeb: true,
+        useProductionIds: true,
+      ),
+      isNull,
+    );
   });
 }

@@ -31,7 +31,7 @@ class HintOverlay extends StatelessWidget {
                 Text('Hint Active', style: AppTextStyles.displaySmall),
                 const SizedBox(height: 8),
                 Text(
-                  'Matching tiles are glowing green.',
+                  'Matching tiles are lifted for a moment.',
                   style: AppTextStyles.bodyMedium,
                   textAlign: TextAlign.center,
                 ),

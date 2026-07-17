@@ -16,7 +16,7 @@ Future<StorageService> _storage(Map<String, Object> values) async {
   return storage;
 }
 
-const _wonLevelOne = GameState(
+const _wonUnlockLevel = GameState(
   tiles: [],
   status: GameStatus.won,
   difficulty: DifficultyMode.normal,
@@ -24,7 +24,7 @@ const _wonLevelOne = GameState(
   moves: 12,
   hintsUsed: 0,
   secondsElapsed: 30,
-  levelId: 1,
+  levelId: 4,
   bestStreak: 5,
   shufflesUsed: 0,
 );
@@ -48,25 +48,27 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Undiscovered Symbol'), findsOneWidget);
-    expect(find.text('Gye Nyame'), findsNothing);
+    expect(find.text('Gye Nyame'), findsOneWidget);
     expect(find.bySemanticsLabel('Locked Adinkra symbol'), findsWidgets);
 
     final context = tester.element(find.byType(TilePreviewScreen));
     final container = ProviderScope.containerOf(context);
     final summary =
         await container.read(economyProvider.notifier).grantLevelRewards(
-              gameState: _wonLevelOne,
+              gameState: _wonUnlockLevel,
               previousStars: 0,
               wasCompleted: false,
             );
     await tester.pump();
 
-    expect(summary.unlockedSymbols, contains('gye_nyame'));
-    expect(find.text('Gye Nyame'), findsOneWidget);
+    expect(summary.unlockedSymbols, contains('nea_onnim'));
+    await tester
+        .tap(find.byKey(const ValueKey('tile-preview-thumbnail-nea_onnim')));
+    await tester.pumpAndSettle();
+    expect(find.text('Nea Onnim'), findsOneWidget);
     expect(find.text('Undiscovered Symbol'), findsNothing);
-    expect(find.text('Except God'), findsOneWidget);
-    expect(find.text('Unlocked at Level 1'), findsOneWidget);
+    expect(find.text('He who does not know'), findsOneWidget);
+    expect(find.text('Unlocked at Level 4'), findsOneWidget);
   });
 
   testWidgets('preview swipes and thumbnail taps share selected tile',

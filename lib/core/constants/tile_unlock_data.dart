@@ -1,101 +1,91 @@
 import 'tile_data.dart';
 
-class TileUnlockRule {
-  final String tileId;
-  final int levelId;
+enum UnlockRewardType { starter, ordinary }
 
-  const TileUnlockRule({
+class TileUnlockMilestone {
+  final int completedLevel;
+  final String tileId;
+  final UnlockRewardType rewardType;
+
+  const TileUnlockMilestone({
+    required this.completedLevel,
     required this.tileId,
-    required this.levelId,
+    required this.rewardType,
   });
 }
 
+/// Planning horizon only; it does not make missing campaign levels playable.
+const int kCollectionScheduleFinalLevel = 400;
 const int kStarterTileUnlockCount = 10;
-const int kCommonTileUnlockEndIndex = 50;
-const int kAdvancedTileUnlockEndIndex = 80;
-const int kFinalCampaignUnlockLevel = 200;
 
-final List<TileUnlockRule> kTileUnlockRules = _buildTileUnlockRules();
+final List<String> kStarterTileIds =
+    List.unmodifiable(kTileIds.take(kStarterTileUnlockCount));
 
-List<String> tileIdsUnlockedAtLevel(int levelId) {
-  return [
-    for (final rule in kTileUnlockRules)
-      if (rule.levelId == levelId) rule.tileId,
-  ];
-}
+/// Each non-starter collectible occurs exactly once, from Level 4 through
+/// Level 400 at an average cadence of approximately one face per 4.6 levels.
+final List<TileUnlockMilestone> kTileUnlockMilestones =
+    List.unmodifiable(_buildTileUnlockMilestones());
 
-List<String> tileIdsUnlockedThroughLevel(int completedLevelId) {
-  return [
-    for (final rule in kTileUnlockRules)
-      if (rule.levelId <= completedLevelId) rule.tileId,
-  ];
-}
+List<String> tileIdsUnlockedAtLevel(int levelId) => [
+      for (final milestone in kTileUnlockMilestones)
+        if (milestone.completedLevel == levelId) milestone.tileId,
+    ];
+
+List<String> tileIdsUnlockedThroughLevel(int completedLevelId) => [
+      ...kStarterTileIds,
+      for (final milestone in kTileUnlockMilestones)
+        if (milestone.completedLevel <= completedLevelId) milestone.tileId,
+    ];
 
 int? unlockLevelForTileId(String tileId) {
-  for (final rule in kTileUnlockRules) {
-    if (rule.tileId == tileId) return rule.levelId;
+  if (kStarterTileIds.contains(tileId)) return 0;
+  for (final milestone in kTileUnlockMilestones) {
+    if (milestone.tileId == tileId) return milestone.completedLevel;
   }
   return null;
 }
 
-List<TileUnlockRule> _buildTileUnlockRules() {
-  final rules = <TileUnlockRule>[];
-
-  for (final tileId in kTileIds.take(kStarterTileUnlockCount)) {
-    rules.add(TileUnlockRule(tileId: tileId, levelId: 1));
-  }
-
-  _addSpreadUnlocks(
-    rules,
-    tileIds: kTileIds.sublist(
-      kStarterTileUnlockCount,
-      kCommonTileUnlockEndIndex,
-    ),
-    firstLevel: 2,
-    lastLevel: 80,
-  );
-
-  _addSpreadUnlocks(
-    rules,
-    tileIds: kTileIds.sublist(
-      kCommonTileUnlockEndIndex,
-      kAdvancedTileUnlockEndIndex,
-    ),
-    firstLevel: 81,
-    lastLevel: 150,
-  );
-
-  _addSpreadUnlocks(
-    rules,
-    tileIds: kTileIds.sublist(kAdvancedTileUnlockEndIndex),
-    firstLevel: 151,
-    lastLevel: kFinalCampaignUnlockLevel,
-  );
-
-  rules.sort((a, b) {
-    final levelCompare = a.levelId.compareTo(b.levelId);
-    if (levelCompare != 0) return levelCompare;
-    return kTileIds.indexOf(a.tileId).compareTo(kTileIds.indexOf(b.tileId));
-  });
-
-  return List.unmodifiable(rules);
+List<TileUnlockMilestone> _buildTileUnlockMilestones() {
+  final laterIds = kTileIds.skip(kStarterTileUnlockCount).toList();
+  const firstLevel = 4;
+  const span = kCollectionScheduleFinalLevel - firstLevel;
+  return [
+    for (var index = 0; index < laterIds.length; index++)
+      TileUnlockMilestone(
+        completedLevel:
+            firstLevel + (index * span / (laterIds.length - 1)).round(),
+        tileId: laterIds[index],
+        rewardType: UnlockRewardType.ordinary,
+      ),
+  ];
 }
 
-void _addSpreadUnlocks(
-  List<TileUnlockRule> rules, {
-  required List<String> tileIds,
-  required int firstLevel,
-  required int lastLevel,
-}) {
-  if (tileIds.isEmpty) return;
-  if (tileIds.length == 1) {
-    rules.add(TileUnlockRule(tileId: tileIds.single, levelId: firstLevel));
-    return;
-  }
+/// Frozen version-1 entitlement calculation used only by migration. Never
+/// alter it when the live schedule changes: old earnings are permanent.
+List<String> legacyV1TileIdsUnlockedThroughLevel(int completedLevelId) {
+  final rules = <({String tileId, int levelId})>[
+    for (final tileId in kTileIds.take(10)) (tileId: tileId, levelId: 1),
+    ..._legacySpread(kTileIds.sublist(10, 50), 2, 80),
+    ..._legacySpread(kTileIds.sublist(50, 80), 81, 150),
+    ..._legacySpread(kTileIds.sublist(80), 151, 200),
+  ];
+  return [
+    for (final rule in rules)
+      if (rule.levelId <= completedLevelId) rule.tileId,
+  ];
+}
 
+List<({String tileId, int levelId})> _legacySpread(
+  List<String> tileIds,
+  int firstLevel,
+  int lastLevel,
+) {
   final span = lastLevel - firstLevel;
-  for (var index = 0; index < tileIds.length; index++) {
-    final level = firstLevel + (index * span / (tileIds.length - 1)).round();
-    rules.add(TileUnlockRule(tileId: tileIds[index], levelId: level));
-  }
+  return [
+    for (var index = 0; index < tileIds.length; index++)
+      (
+        tileId: tileIds[index],
+        levelId: firstLevel + (index * span / (tileIds.length - 1)).round(),
+      ),
+  ];
 }

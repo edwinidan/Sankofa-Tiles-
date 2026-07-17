@@ -74,6 +74,10 @@ enum InterstitialPlacement {
   beforeNewChapter,
 }
 
+enum BannerPlacement {
+  settingsBottom,
+}
+
 class MonetizationReward {
   const MonetizationReward({
     this.cowries = 0,

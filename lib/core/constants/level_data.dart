@@ -1,4 +1,6 @@
 import 'layout_data.dart';
+import 'batch_b_layout_data.dart';
+import 'chapter2_layout_data.dart';
 import 'tile_data.dart';
 
 class SymbolCopyPlan {
@@ -224,87 +226,98 @@ List<LevelDefinition> _extendedCampaignLevels() {
 }
 
 final List<LevelDefinition> kLevels = [
-  _level(1, 'First Symbols', 'Accra', compactDiamondLayout, 7, 'Novice'),
-  _level(2, 'New Roots', 'Accra', beginnerBridgeLayout, 8, 'Novice'),
-  _level(3, 'Side Paths', 'Accra', firstCrossLayout, 9, 'Novice'),
-  _level(4, 'Small Turtle', 'Accra', smallTurtleLayout, 10, 'Novice'),
-  _level(5, 'Shrine Steps', 'Accra', smallShrineLayout, 11, 'Novice'),
-  _level(6, 'Open Courtyard', 'Accra', openCourtyardLayout, 12, 'Novice'),
-  _level(7, 'River Lesson', 'Accra', riverPathLayout, 12, 'Novice'),
-  _level(8, 'Wisdom House', 'Accra', wisdomHouseLayout, 13, 'Novice'),
-  _level(9, 'Gathering Wings', 'Accra', gatheringWingsLayout, 14, 'Novice'),
-  _level(10, 'Elder Bridge', 'Accra', elderBridgeLayout, 15, 'Novice'),
-  _level(
-      11, 'Heritage Turtle', 'Kumasi', heritageTurtleLayout, 16, 'Apprentice',
+  _level(1, 'First Symbols', 'Accra', earlyOpenDiamond01Layout, 7, 'Novice'),
+  _level(2, 'New Roots', 'Accra', earlyOpenDiamond02Layout, 8, 'Novice'),
+  _level(3, 'Side Paths', 'Accra', earlyBridge01Layout, 9, 'Novice'),
+  _level(4, 'Small Turtle', 'Accra', earlyShrine01Layout, 10, 'Novice'),
+  _level(5, 'Shrine Steps', 'Accra', earlyLayeredDiamond01Layout, 11, 'Novice'),
+  _level(6, 'Open Courtyard', 'Accra', batchBOpenCourtyard01, 12, 'Novice'),
+  _level(7, 'River Lesson', 'Accra', batchBRiverPath01, 12, 'Novice'),
+  _level(8, 'Wisdom Gate', 'Accra', batchBTempleGate01, 13, 'Novice'),
+  _level(9, 'Gathering Wings', 'Accra', batchBGatheringWings01, 14, 'Novice'),
+  _level(10, 'Elder Bridge', 'Accra', batchBTwinBridge01, 15, 'Novice'),
+  _level(11, 'Heritage Turtle', 'Kumasi', batchBSmallTurtle01, 16, 'Apprentice',
       symbolStart: 8),
-  _level(12, 'Butterfly Path', 'Kumasi', butterflyLayout, 17, 'Apprentice',
+  _level(12, 'Butterfly Path', 'Kumasi', batchBButterfly01, 17, 'Apprentice',
       symbolStart: 10),
-  _level(13, 'Temple Steps', 'Kumasi', templeStepsLayout, 18, 'Apprentice',
+  _level(13, 'Temple Steps', 'Kumasi', batchBShrineSteps01, 18, 'Apprentice',
       symbolStart: 12),
-  _level(
-      14, 'Wisdom Staircase', 'Kumasi', wisdomStaircaseLayout, 18, 'Apprentice',
+  _level(14, 'Wisdom Staircase', 'Kumasi', batchBWisdomStaircase01, 18,
+      'Apprentice',
       symbolStart: 14),
-  _level(15, 'Ancestral Crown', 'Kumasi', crownLayout, 19, 'Apprentice',
+  _level(15, 'Ancestral Crown', 'Kumasi', batchBCrown01, 19, 'Apprentice',
       symbolStart: 16),
-  _level(16, 'Sacred Grove', 'Kumasi', sacredGroveLayout, 20, 'Apprentice',
+  _level(16, 'Sacred Grove', 'Kumasi', batchBOpenRing01, 20, 'Apprentice',
       symbolStart: 18),
-  _level(17, 'Golden Stool', 'Kumasi', royalStoolLayout, 21, 'Apprentice',
+  _level(17, 'Golden Stool', 'Kumasi', batchBRoyalStool01, 21, 'Apprentice',
       symbolStart: 20),
-  _level(18, 'Ancestral Gate', 'Kumasi', ancestralGateLayout, 22, 'Apprentice',
+  _level(
+      18, 'Ancestral Gate', 'Kumasi', batchBAncestralGate01, 22, 'Apprentice',
       symbolStart: 22),
-  _level(19, 'Twin Houses', 'Kumasi', twinTowersLayout, 23, 'Apprentice',
+  _level(19, 'Twin Houses', 'Kumasi', batchBTwinTowers01, 23, 'Apprentice',
       symbolStart: 24),
-  _level(
-      20, 'Raised Courtyard', 'Kumasi', raisedCourtyardLayout, 24, 'Apprentice',
+  _level(20, 'Raised Courtyard', 'Kumasi', batchBRaisedCourtyard01, 24,
+      'Apprentice',
       symbolStart: 26),
-  _level(21, 'Split Islands', 'Sekondi-Takoradi', splitIslandsLayout, 25,
-      'Strategic',
+  _level(21, 'Grand Turtle', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[0].layout, 25, 'Strategic',
       symbolStart: 28),
-  _level(
-      22, 'Fortress Gate', 'Sekondi-Takoradi', fortressLayout, 26, 'Strategic',
+  _level(22, 'Split Islands', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[1].layout, 26, 'Strategic',
       symbolStart: 30),
-  _level(23, 'Hidden Center', 'Sekondi-Takoradi', hiddenCenterLayout, 27,
-      'Strategic',
+  _level(23, 'Royal Assembly', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[2].layout, 27, 'Strategic',
       symbolStart: 32),
-  _level(24, 'Festival Archive', 'Sekondi-Takoradi', festivalArchiveLayout, 28,
-      'Strategic',
+  _level(24, 'Winding Path', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[3].layout, 28, 'Strategic',
       symbolStart: 34),
-  _level(25, 'Layered Courtyard', 'Sekondi-Takoradi', layeredCourtyardLayout,
-      29, 'Strategic',
+  _level(25, 'Ancestral Mask', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[4].layout, 29, 'Strategic',
       symbolStart: 36),
-  _level(26, 'Winding Path', 'Sekondi-Takoradi', windingPathLayoutA, 24,
-      'Strategic',
+  _level(26, 'Fortress Spirits', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[5].layout, 24, 'Strategic',
       symbolStart: 38),
-  _level(27, 'Grand Turtle', 'Sekondi-Takoradi', grandTurtleLayout, 30,
-      'Strategic',
+  _level(27, 'Hidden Center', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[6].layout, 30, 'Strategic',
       symbolStart: 40),
-  _level(28, 'Layered Shrine', 'Sekondi-Takoradi', layeredShrineLayout, 31,
-      'Strategic',
+  _level(28, 'Butterfly Path', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[7].layout, 31, 'Strategic',
       symbolStart: 42),
-  _level(29, 'Many Peaks', 'Sekondi-Takoradi', multiPeakLayout, 32, 'Strategic',
+  _level(29, 'Golden Foundation', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[8].layout, 32, 'Strategic',
       symbolStart: 44),
-  _level(30, 'Complex Fortress', 'Sekondi-Takoradi', complexFortressLayout, 33,
-      'Strategic',
+  _level(30, 'Sacred Crossing', 'Sekondi-Takoradi',
+      kChapter2LayoutCandidates[9].layout, 33, 'Strategic',
       symbolStart: 46),
-  _level(31, 'Sacred Bridge', 'Obuasi', sacredBridgeLayout, 34, 'Advanced',
+  _level(31, 'Path of Renewal', 'Obuasi', kChapter2LayoutCandidates[10].layout,
+      34, 'Advanced',
       symbolStart: 48),
-  _level(32, 'Crown Trial', 'Obuasi', ancestralCrownLayout, 35, 'Advanced',
+  _level(32, 'Hidden Wisdom', 'Obuasi', kChapter2LayoutCandidates[11].layout,
+      35, 'Advanced',
       symbolStart: 50),
-  _level(33, 'Treasury Gate', 'Obuasi', grandTreasuryLayout, 36, 'Advanced',
+  _level(33, 'Gathered Emblem', 'Obuasi', kChapter2LayoutCandidates[12].layout,
+      36, 'Advanced',
       symbolStart: 52),
-  _level(34, 'Temple Complex', 'Obuasi', templeComplexLayout, 37, 'Advanced',
+  _level(34, 'Elders Assembly', 'Obuasi', kChapter2LayoutCandidates[13].layout,
+      37, 'Advanced',
       symbolStart: 54),
-  _level(35, 'Living Archive', 'Obuasi', finalArchiveLayout, 38, 'Advanced',
+  _level(35, 'Sacred Grove', 'Obuasi', kChapter2LayoutCandidates[14].layout, 38,
+      'Advanced',
       symbolStart: 56),
-  _level(36, 'Royal Crossing', 'Obuasi', sacredBridgeLayout, 36, 'Advanced',
+  _level(36, 'Fortress Gate', 'Obuasi', kChapter2LayoutCandidates[15].layout,
+      36, 'Advanced',
       symbolStart: 58),
-  _level(37, 'Elders Assembly', 'Obuasi', complexFortressLayout, 38, 'Advanced',
+  _level(37, 'Steadfast Spirits', 'Obuasi',
+      kChapter2LayoutCandidates[16].layout, 38, 'Advanced',
       symbolStart: 60),
-  _level(38, 'Path of Renewal', 'Obuasi', layeredShrineLayout, 38, 'Advanced',
+  _level(38, 'Twin Shrines', 'Obuasi', kChapter2LayoutCandidates[17].layout, 38,
+      'Advanced',
       symbolStart: 62),
-  _level(39, 'Steadfast Spirits', 'Obuasi', multiPeakLayout, 39, 'Advanced',
+  _level(39, 'Ancestral Pillar', 'Obuasi', kChapter2LayoutCandidates[18].layout,
+      39, 'Advanced',
       symbolStart: 64),
-  _level(40, 'Ancestral Trial', 'Obuasi', ancestralCrownLayout, 40, 'Advanced',
+  _level(40, 'Ancestral Trial', 'Obuasi', kChapter2LayoutCandidates[19].layout,
+      40, 'Advanced',
       symbolStart: 66),
   _level(41, 'Grand Treasury', 'Ho', grandTreasuryLayout, 42, 'Master',
       symbolStart: 68),
@@ -329,9 +342,19 @@ final List<LevelDefinition> kLevels = [
   ..._extendedCampaignLevels(),
 ];
 
-int get kCampaignLevelCount => kLevels.length;
-int get kFinalCampaignLevelId => kLevels.last.id;
-int get kMaximumCampaignStars => kCampaignLevelCount * 3;
+/// Long-term target. Never use this to index [kLevels] or render level cards.
+const int kPlannedCampaignLevelCount = 400;
+const int kPlannedChapterCount = 20;
+const int kPlannedLevelsPerChapter = 20;
+
+int get kImplementedCampaignLevelCount => kLevels.length;
+int get kImplementedFinalLevelId => kLevels.last.id;
+int get kImplementedMaximumCampaignStars => kImplementedCampaignLevelCount * 3;
+
+// Backwards-compatible derived names for existing callers.
+int get kCampaignLevelCount => kImplementedCampaignLevelCount;
+int get kFinalCampaignLevelId => kImplementedFinalLevelId;
+int get kMaximumCampaignStars => kImplementedMaximumCampaignStars;
 
 LevelDefinition? getLevelById(int id) {
   try {

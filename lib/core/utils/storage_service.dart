@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/level_data.dart';
+import '../constants/tile_unlock_data.dart';
 import '../economy/economy_models.dart';
 import '../../models/level_model.dart';
 import 'crash_reporting_service.dart';
@@ -40,7 +41,7 @@ class StorageService {
   static const _keyLastRewardedAdMillis =
       'monetization_last_rewarded_ad_millis';
   static const _keyFirstSessionCompleted = 'first_session_completed';
-  static const _campaignProgressSchemaVersion = 3;
+  static const _campaignProgressSchemaVersion = 4;
 
   late SharedPreferences _prefs;
 
@@ -98,6 +99,19 @@ class StorageService {
         for (var levelId = 1; levelId <= migratedHighest; levelId++) {
           await _prefs.setBool('$_prefixCompleted$levelId', true);
         }
+      }
+    }
+
+    if (currentVersion < 4) {
+      // Additive union migration. Existing flags are never cleared, while
+      // legacy entitlements and the true starter set are made explicit.
+      final highestCompleted = getHighestCompletedLevel();
+      final retainedIds = <String>{
+        ...kStarterTileIds,
+        ...legacyV1TileIdsUnlockedThroughLevel(highestCompleted),
+      };
+      for (final tileId in retainedIds) {
+        await _prefs.setBool('$_prefixCollectionUnlocked$tileId', true);
       }
     }
 

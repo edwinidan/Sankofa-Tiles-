@@ -177,6 +177,59 @@ class AdMobService {
     return completed.future;
   }
 
+  Future<BannerAd?> loadAnchoredAdaptiveBannerAd({
+    required BannerPlacement placement,
+    required int width,
+  }) async {
+    final adUnitId = AdIds.bannerAdUnitId(placement);
+    if (adUnitId == null || width <= 0 || !await initialize()) return null;
+
+    final size = await _anchoredAdaptiveBannerSize(width);
+    final loaded = Completer<BannerAd?>();
+    late final BannerAd ad;
+    ad = BannerAd(
+      adUnitId: adUnitId,
+      size: size,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (loadedAd) {
+          if (!loaded.isCompleted) loaded.complete(loadedAd as BannerAd);
+        },
+        onAdFailedToLoad: (failedAd, error) {
+          failedAd.dispose();
+          CrashReportingService.recordNonFatal(
+            Exception('Banner ad failed to load: ${error.code}'),
+            StackTrace.current,
+            reason: 'Banner ad load failed for ${placement.name}',
+          );
+          if (!loaded.isCompleted) loaded.complete(null);
+        },
+      ),
+    );
+
+    try {
+      await ad.load();
+    } catch (error, stackTrace) {
+      ad.dispose();
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Banner ad load failed for ${placement.name}',
+      );
+      if (!loaded.isCompleted) loaded.complete(null);
+    }
+    return loaded.future;
+  }
+
+  Future<AdSize> _anchoredAdaptiveBannerSize(int width) async {
+    try {
+      return await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width) ??
+          AdSize.banner;
+    } catch (_) {
+      return AdSize.banner;
+    }
+  }
+
   InterstitialAd? _takeReadyInterstitial(InterstitialPlacement placement) {
     final ad = _interstitialAds.remove(placement);
     final loadedAt = _interstitialLoadedAt.remove(placement);

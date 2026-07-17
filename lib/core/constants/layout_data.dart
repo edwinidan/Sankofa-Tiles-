@@ -808,7 +808,223 @@ final finalArchiveLayout = namedLayout(
   ]),
 );
 
+// ---------------------------------------------------------------------------
+// Pilot layout: polished symmetrical diamond with half-tile bridging.
+// Uses odd integer coordinates so upper-layer tiles sit halfway between
+// lower-layer tiles. Layer 1 bridging tiles are spaced with step=4 (15,19,23)
+// to prevent same-layer side-blocking. Narrow enough to fit all viewports.
+// 28 tiles, 14 pairs, 3 layers.
+// ---------------------------------------------------------------------------
+final pilotSmallDiamondLayout = namedLayout(
+  'pilotSmallDiamond',
+  'Pilot Small Diamond',
+  () {
+    final builder = TileLayoutBuilder();
+
+    // Layer 0 — diamond base (17 tiles)
+    // Row 0: 5 tiles at the crown
+    for (final col in const [14, 16, 18, 20, 22]) {
+      builder.add(TilePosition(0, col, 0));
+    }
+    // Row 2: 7 tiles — widest row
+    for (final col in const [12, 14, 16, 18, 20, 22, 24]) {
+      builder.add(TilePosition(2, col, 0));
+    }
+    // Row 4: 5 tiles — bottom taper
+    for (final col in const [14, 16, 18, 20, 22]) {
+      builder.add(TilePosition(4, col, 0));
+    }
+
+    // Layer 1 — half-tile bridging (6 tiles)
+    // Odd rows sit between layer-0 rows. Odd cols sit between layer-0 cols.
+    // Spaced step=4 to prevent same-layer side-blocking.
+    for (final col in const [15, 19, 23]) {
+      builder.add(TilePosition(1, col, 1));
+    }
+    for (final col in const [15, 19, 23]) {
+      builder.add(TilePosition(3, col, 1));
+    }
+
+    // Layer 2 — top cap (5 tiles)
+    // Forms a smaller centred row atop the whole structure.
+    for (final col in const [16, 18, 20, 22, 24]) {
+      builder.add(TilePosition(2, col, 2));
+    }
+
+    return builder.build();
+  }(),
+);
+
+/// Beginner pilot: an open, tapered diamond with six exposed bridge tiles.
+/// Kept out of [kLevels] until its rendered previews are approved.
+final pilotOpenDiamondLayout = namedLayout(
+  'pilotOpenDiamond',
+  'Pilot Open Diamond',
+  () {
+    final builder = TileLayoutBuilder()
+      // Open base: the narrow middle row deliberately leaves a central void.
+      ..addRow(row: 0, startCol: 14, count: 5)
+      ..addAll(const [
+        TilePosition(2, 12, 0),
+        TilePosition(2, 14, 0),
+        TilePosition(2, 18, 0),
+        TilePosition(2, 22, 0),
+        TilePosition(2, 24, 0),
+      ])
+      ..addRow(row: 4, startCol: 12, count: 7)
+      ..addRow(row: 6, startCol: 14, count: 5)
+      // Half-grid bridges. Step four keeps same-layer edges readable.
+      ..addRow(row: 3, startCol: 15, count: 3, layer: 1, step: 4)
+      ..addRow(row: 5, startCol: 14, count: 3, layer: 1, step: 4)
+      // A small supported crown.
+      ..addRow(row: 4, startCol: 18, count: 2, layer: 2);
+    return builder.build();
+  }(),
+);
+
+/// Later beginner pilot: a denser stepped diamond with a four-tile crown.
+/// Kept out of [kLevels] until its rendered previews are approved.
+final pilotLayeredDiamondLayout = namedLayout(
+  'pilotLayeredDiamond',
+  'Pilot Layered Diamond',
+  () {
+    final builder = TileLayoutBuilder()
+      ..addRow(row: 0, startCol: 16, count: 4)
+      ..addRow(row: 2, startCol: 14, count: 6)
+      ..addRow(row: 4, startCol: 14, count: 6)
+      ..addRow(row: 6, startCol: 16, count: 4)
+      ..addRow(row: 1, startCol: 15, count: 3, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 16, count: 3, layer: 1, step: 4)
+      ..addRow(row: 5, startCol: 17, count: 2, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 17, count: 4, layer: 2, step: 2);
+    return builder.build();
+  }(),
+);
+
+final earlyOpenDiamond01Layout = namedLayout(
+  'earlyOpenDiamond01',
+  'Early Open Diamond 01',
+  () {
+    final builder = TileLayoutBuilder()
+      ..addRow(row: 0, startCol: 17, count: 4)
+      ..addAll(const [
+        TilePosition(2, 15, 0),
+        TilePosition(2, 17, 0),
+        TilePosition(2, 23, 0),
+        TilePosition(2, 25, 0),
+        TilePosition(4, 15, 0),
+        TilePosition(4, 17, 0),
+        TilePosition(4, 23, 0),
+        TilePosition(4, 25, 0),
+      ])
+      ..addRow(row: 6, startCol: 17, count: 4)
+      ..addRow(row: 8, startCol: 19, count: 2)
+      ..addRow(row: 1, startCol: 18, count: 2, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 17, count: 2, layer: 1, step: 6)
+      ..addRow(row: 5, startCol: 18, count: 2, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 18, count: 2, layer: 2, step: 4);
+    return builder.build();
+  }(),
+);
+
+final earlyOpenDiamond02Layout = namedLayout(
+  'earlyOpenDiamond02',
+  'Early Open Diamond 02',
+  () {
+    final builder = TileLayoutBuilder()
+      ..addRow(row: 0, startCol: 17, count: 4)
+      ..addAll(const [
+        TilePosition(2, 15, 0),
+        TilePosition(2, 17, 0),
+        TilePosition(2, 20, 0),
+        TilePosition(2, 23, 0),
+        TilePosition(2, 25, 0),
+        TilePosition(4, 15, 0),
+        TilePosition(4, 17, 0),
+        TilePosition(4, 20, 0),
+        TilePosition(4, 23, 0),
+        TilePosition(4, 25, 0),
+      ])
+      ..addRow(row: 6, startCol: 17, count: 4)
+      ..addRow(row: 8, startCol: 19, count: 2)
+      ..addRow(row: 1, startCol: 16, count: 3, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 18, count: 2, layer: 1, step: 4)
+      ..addRow(row: 5, startCol: 16, count: 3, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 19, count: 2, layer: 2, step: 4);
+    return builder.build();
+  }(),
+);
+
+final earlyShrine01Layout = namedLayout(
+  'earlyShrine01',
+  'Early Shrine 01',
+  () {
+    final builder = TileLayoutBuilder()
+      ..addRow(row: 0, startCol: 17, count: 4)
+      ..addRow(row: 2, startCol: 15, count: 6)
+      ..addRow(row: 4, startCol: 15, count: 6)
+      ..addRow(row: 6, startCol: 17, count: 4)
+      ..addRow(row: 1, startCol: 16, count: 3, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 19, count: 2, layer: 1, step: 4)
+      ..addRow(row: 5, startCol: 16, count: 3, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 18, count: 4, layer: 2);
+    return builder.build();
+  }(),
+);
+
+final earlyBridge01Layout = namedLayout(
+  'earlyBridge01',
+  'Early Bridge 01',
+  () {
+    final builder = TileLayoutBuilder()
+      ..addAll(const [
+        TilePosition(0, 15, 0),
+        TilePosition(0, 17, 0),
+        TilePosition(0, 25, 0),
+        TilePosition(0, 27, 0),
+      ])
+      ..addRow(row: 2, startCol: 15, count: 7)
+      ..addRow(row: 4, startCol: 15, count: 7)
+      ..addRow(row: 6, startCol: 20, count: 2)
+      ..addRow(row: 1, startCol: 16, count: 4, layer: 1, step: 4)
+      ..addRow(row: 3, startCol: 16, count: 4, layer: 1, step: 4)
+      ..addAll(const [
+        TilePosition(5, 16, 1),
+        TilePosition(5, 20, 1),
+        TilePosition(5, 24, 1),
+        TilePosition(5, 26, 1),
+      ])
+      ..addRow(row: 2, startCol: 19, count: 4, layer: 2);
+    return builder.build();
+  }(),
+);
+
+final earlyLayeredDiamond01Layout = namedLayout(
+  'earlyLayeredDiamond01',
+  'Early Layered Diamond 01',
+  () {
+    final builder = TileLayoutBuilder()
+      ..addRow(row: 0, startCol: 16, count: 5)
+      ..addRow(row: 2, startCol: 14, count: 7)
+      ..addRow(row: 4, startCol: 14, count: 7)
+      ..addRow(row: 6, startCol: 16, count: 5)
+      ..addRow(row: 1, startCol: 17, count: 4, layer: 1)
+      ..addRow(row: 3, startCol: 18, count: 4, layer: 1)
+      ..addRow(row: 5, startCol: 17, count: 4, layer: 1)
+      ..addRow(row: 3, startCol: 18, count: 4, layer: 2);
+    return builder.build();
+  }(),
+);
+
 final List<NamedLayout> kLayoutLibrary = [
+  earlyOpenDiamond01Layout,
+  earlyOpenDiamond02Layout,
+  earlyShrine01Layout,
+  earlyBridge01Layout,
+  earlyLayeredDiamond01Layout,
+  pilotOpenDiamondLayout,
+  pilotLayeredDiamondLayout,
+  pilotSmallDiamondLayout,
   compactDiamondLayout,
   beginnerBridgeLayout,
   smallTurtleLayout,

@@ -31,6 +31,7 @@ class TileWidget extends ConsumerStatefulWidget {
   final bool forceHideName;
   final bool isAvailable;
   final bool isCoordinatedMatch;
+  final bool isHinted;
   final ValueChanged<bool>? onPressChanged;
 
   const TileWidget({
@@ -42,6 +43,7 @@ class TileWidget extends ConsumerStatefulWidget {
     this.forceHideName = false,
     this.isAvailable = false,
     this.isCoordinatedMatch = false,
+    this.isHinted = false,
     this.onPressChanged,
   });
 
@@ -52,7 +54,7 @@ class TileWidget extends ConsumerStatefulWidget {
 class _TileWidgetState extends ConsumerState<TileWidget>
     with TickerProviderStateMixin {
   late AnimationController _hintController;
-  late Animation<double> _glowOpacity;
+  late Animation<double> _hintPulse;
 
   late AnimationController _shakeController;
   late Animation<double> _shakeX;
@@ -73,11 +75,11 @@ class _TileWidgetState extends ConsumerState<TileWidget>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    if (widget.tile.isHinted && !kRunningTests) {
+    if (widget.isHinted && !kRunningTests) {
       _hintController.repeat(reverse: true);
     }
-    _glowOpacity = Tween<double>(begin: 0.0, end: 0.55).animate(
-      CurvedAnimation(parent: _hintController, curve: Curves.easeInOut),
+    _hintPulse = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _hintController, curve: Curves.easeInOutCubic),
     );
 
     _shakeController = AnimationController(
@@ -108,12 +110,13 @@ class _TileWidgetState extends ConsumerState<TileWidget>
     if (widget.tile.isSelected && !oldWidget.tile.isSelected) {
       HapticService.selectionClick(ref.read(settingsProvider).hapticIntensity);
     }
-    if (widget.tile.isHinted && !oldWidget.tile.isHinted) {
+    if (widget.isHinted && !oldWidget.isHinted) {
       if (!kRunningTests) {
         _hintController.repeat(reverse: true);
       }
-    } else if (!widget.tile.isHinted && oldWidget.tile.isHinted) {
+    } else if (!widget.isHinted && oldWidget.isHinted) {
       _hintController.stop();
+      _hintController.reset();
     }
   }
 
@@ -229,31 +232,9 @@ class _TileWidgetState extends ConsumerState<TileWidget>
       );
     }
 
-    // Hinted: stronger antique-gold pulse without dimming the tile artwork.
-    else if (tile.isHinted) {
-      body = AnimatedBuilder(
-        animation: _glowOpacity,
-        builder: (_, __) => _buildPhysicalTile(
-          tile: tile,
-          assetPath: assetPath,
-          assetScale: assetScale,
-          showNames: showNames,
-          tileW: tileW,
-          tileH: tileH,
-          showSuitCode: widget.showSuitCode,
-          forceHideName: widget.forceHideName,
-          borderColor: SankofaGameTheme.antiqueGold.withValues(
-            alpha: 0.72 + (_glowOpacity.value * 0.28),
-          ),
-          borderWidth: 2.8,
-          glowStrength: 0.34 + (_glowOpacity.value * 0.36),
-        ),
-      );
-    }
-
     // Normal / selected (including mismatched — shake applied via outer AnimatedBuilder)
     else {
-      Widget physicalTile = _buildPhysicalTile(
+      final physicalTile = _buildPhysicalTile(
         tile: tile,
         assetPath: assetPath,
         assetScale: assetScale,
@@ -334,24 +315,46 @@ class _TileWidgetState extends ConsumerState<TileWidget>
         curve: _isPressed ? Curves.easeOutCubic : Curves.easeOutBack,
         offset: Offset(
           0,
-          _isPressed
-              ? -min(10.0, tileH * 0.12) / tileH
-              : tile.isSelected
-                  ? -min(5.0, tileH * 0.06) / tileH
-                  : 0,
+          _interactiveLiftOffset(tileH, tile),
         ),
         child: AnimatedScale(
           duration: _kTouchLiftDuration,
           curve: Curves.easeOutCubic,
-          scale: _isPressed
-              ? 1.24
-              : tile.isSelected
-                  ? 1.20
-                  : 1.0,
-          child: child,
+          scale: _interactiveScale(tile),
+          child: widget.isHinted
+              ? AnimatedBuilder(
+                  animation: _hintPulse,
+                  builder: (_, hintedChild) {
+                    final pulse = kRunningTests ? 0.5 : _hintPulse.value;
+                    final bounce = sin(pulse * pi);
+                    return Transform.translate(
+                      offset: Offset(0, -2.5 * bounce),
+                      child: Transform.scale(
+                        scale: 1 + (0.035 * bounce),
+                        child: hintedChild,
+                      ),
+                    );
+                  },
+                  child: child,
+                )
+              : child,
         ),
       ),
     );
+  }
+
+  double _interactiveLiftOffset(double tileH, TileModel tile) {
+    if (_isPressed) return -min(10.0, tileH * 0.12) / tileH;
+    if (widget.isHinted) return -min(8.0, tileH * 0.095) / tileH;
+    if (tile.isSelected) return -min(5.0, tileH * 0.06) / tileH;
+    return 0;
+  }
+
+  double _interactiveScale(TileModel tile) {
+    if (_isPressed) return 1.24;
+    if (widget.isHinted) return 1.23;
+    if (tile.isSelected) return 1.20;
+    return 1.0;
   }
 
   Widget _buildPhysicalTile({

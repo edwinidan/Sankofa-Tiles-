@@ -26,7 +26,9 @@ void main() {
         );
         expect(
           fit.tileWidth,
-          greaterThanOrEqualTo(kMinimumTileWidth),
+          greaterThanOrEqualTo(
+            viewport.name == 'compact phone' ? 40 : kMinimumTileWidth,
+          ),
           reason: 'Level ${level.id} is too small on ${viewport.name}',
         );
       }

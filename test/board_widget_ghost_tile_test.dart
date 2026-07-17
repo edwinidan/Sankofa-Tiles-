@@ -22,7 +22,7 @@ void main() {
 
   test('unmatched tiles remain visible', () {
     expect(
-      shouldRenderBoardTile(tile(uid: 'active'), null),
+      shouldRenderBoardTile(tile(uid: 'active'), const []),
       isTrue,
     );
   });
@@ -31,7 +31,7 @@ void main() {
     expect(
       shouldRenderBoardTile(
         tile(uid: 'hidden').copyWith(visibility: TileVisibility.hidden),
-        null,
+        const [],
       ),
       isFalse,
     );
@@ -46,8 +46,8 @@ void main() {
       style: MatchAnimationStyle.directCollision,
     );
 
-    expect(shouldRenderBoardTile(matched, animation), isTrue);
-    expect(shouldRenderBoardTile(matched, null), isFalse);
+    expect(shouldRenderBoardTile(matched, [animation]), isTrue);
+    expect(shouldRenderBoardTile(matched, const []), isFalse);
   });
 
   test('older matched tiles stay hidden during a later smash animation', () {
@@ -59,6 +59,6 @@ void main() {
       style: MatchAnimationStyle.directCollision,
     );
 
-    expect(shouldRenderBoardTile(oldMatch, laterAnimation), isFalse);
+    expect(shouldRenderBoardTile(oldMatch, [laterAnimation]), isFalse);
   });
 }

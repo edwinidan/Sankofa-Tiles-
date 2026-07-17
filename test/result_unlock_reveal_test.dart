@@ -21,9 +21,10 @@ Future<StorageService> _storage(Map<String, Object> values) async {
 Map<String, Object> _starterCollectionUnlocked() => {
       for (final tileId in kTileIds.take(10))
         'collection_unlocked_$tileId': true,
+      'collection_unlocked_nea_onnim': true,
     };
 
-const _wonLevelOne = GameState(
+const _wonUnlockLevel = GameState(
   tiles: [],
   status: GameStatus.won,
   difficulty: DifficultyMode.normal,
@@ -31,7 +32,7 @@ const _wonLevelOne = GameState(
   moves: 12,
   hintsUsed: 0,
   secondsElapsed: 30,
-  levelId: 1,
+  levelId: 4,
   bestStreak: 5,
   shufflesUsed: 0,
 );
@@ -46,9 +47,9 @@ Widget _resultHarness(StorageService storage) {
     ],
     child: const MaterialApp(
       home: ResultScreen(
-        gameState: _wonLevelOne,
+        gameState: _wonUnlockLevel,
         launchConfig: GameLaunchConfig(
-          levelId: 1,
+          levelId: 4,
           launchMode: GameLaunchMode.normalProgression,
         ),
       ),
@@ -76,22 +77,22 @@ void main() {
     await tester.pumpWidget(_resultHarness(storage));
     await tester.pumpAndSettle();
 
-    expect(find.text('New Symbol Unlocked 1 of 10'), findsOneWidget);
-    expect(find.text('Aban'), findsOneWidget);
-    expect(find.text('The castle - authority'), findsOneWidget);
+    expect(find.text('New Symbol Unlocked'), findsOneWidget);
+    expect(find.text('Nea Onnim'), findsOneWidget);
+    expect(find.text('He who does not know'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
             widget.properties.label ==
-                'New Adinkra symbol unlocked: Aban. The castle - authority',
+                'New Adinkra symbol unlocked: Nea Onnim. He who does not know',
       ),
       findsOneWidget,
     );
     await _dismissUnlockReveals(tester);
 
     expect(
-      find.textContaining('10 new symbols added to Collection'),
+      find.textContaining('New symbol added to Collection'),
       findsOneWidget,
     );
     expect(find.textContaining('New symbol:'), findsNothing);

@@ -5,7 +5,7 @@
 **Sankofa Tiles** is a Flutter mobile puzzle game — a Mahjong solitaire tile-matching game themed around Ghanaian Adinkra symbols. Players match pairs of identical tiles on a 3D-layered board following classic Mahjong "free tile" rules. The game targets Android and iOS (portrait only), with a chapter-based campaign, in-game economy (cowries currency + boosters), tile collection unlocks, AdMob ads, and IAP monetization.
 
 - **Package:** `com.sankofatiles.sankofa_tiles`
-- **Version:** 1.0.4+7
+- **Version:** 1.0.4+8
 - **Dart SDK:** >=3.0.0 <4.0.0
 
 ---
@@ -40,8 +40,8 @@ lib/
 
 ├── core/
 │   ├── ads/
-│   │   ├── ad_ids.dart               # Ad unit IDs, platform detection, test/production switching
-│   │   ├── admob_service.dart        # Singleton — Mobile Ads SDK init, interstitial preload/cache/show, rewarded ad lifecycle
+│   │   ├── ad_ids.dart               # Cross-platform (Android/iOS) ad unit IDs, test/production switching
+│   │   ├── admob_service.dart        # Singleton — Mobile Ads SDK init, interstitial & rewarded lifecycles, adaptive banner loader
 │   │   └── consent_service.dart      # Singleton — GDPR consent gathering, privacy options form
 │   ├── config/
 │   │   └── developer_tools_config.dart  # Gates developer features (debug-only or env flag)
@@ -80,7 +80,7 @@ lib/
 ├── models/
 │   ├── tile_model.dart               # TileModel — uid, def, position(row,col,layer), TileVisibility, isPeeked (immutable+copyWith)
 │   ├── board_model.dart              # BoardModel — rows, cols, tiles list, tileAt(row,col)
-│   ├── game_state.dart               # GameState — tiles, status, score, streaks, shufflesUsed, match animation, peek/stuck states
+│   ├── game_state.dart               # GameState — tiles, status, score, streaks, shufflesUsed, concurrent match animations, peek/stuck states
 │   ├── game_launch_config.dart       # GameLaunchConfig, GameLaunchMode, GameResultConfig
 │   └── level_model.dart              # LevelResult — levelId, bestScore, stars
 
@@ -113,7 +113,10 @@ lib/
 │   │       ├── tile_widget.dart           # Single tile: 3D slab, visibility states (hidden/covered/revealed), PNG-backed
 │   │       └── hint_overlay.dart          # "Hint Active" instructional modal
 │   ├── result/result_screen.dart           # Win (stars + economy rewards + collection unlocks + interstitial) / Lose (proverb + retry)
-│   ├── settings/settings_screen.dart       # Audio, haptic, gameplay toggles, privacy policy, developer tools
+│   ├── settings/
+│   │   ├── settings_screen.dart            # Audio, haptic, gameplay toggles, privacy policy, developer tools
+│   │   └── widgets/
+│   │       └── settings_banner_ad.dart     # Settings screen adaptive banner ad widget
 │   └── preview/tile_preview_screen.dart    # Adinkra symbol reference with collection unlock tracking
 
 └── widgets/
@@ -320,7 +323,10 @@ Shown only after completed levels (`InterstitialPlacement.afterCompletedLevels`)
 6. Frequency: every `completedLevelFrequency` wins (3)
 7. Cooldown: 8 minutes between interstitials, 2 minutes after rewarded ads
 
-Ad preloading with 55-minute cache age. Ads-only platform (Android, not Web).
+Ad preloading with 55-minute cache age. Ads-only platforms (Android and iOS, not Web).
+
+### Banner Ads (1 Placement)
+`settingsBottom`. Displays an anchored adaptive banner ad at the bottom of the Settings screen. Automatically hidden/destroyed if the user purchases the `remove_ads` entitlement or if the layout width becomes invalid.
 
 ### Consent
 GDPR consent gathered at startup via `ConsentService`. Debug EEA geography in debug mode. Privacy options form available if required.
@@ -464,7 +470,7 @@ assets/
 | Timer / timed mode | Not implemented |
 | Play Store IAP integration (real billing) | Not started |
 | Play Store prep (icon, signing, splash) | Not started |
-| iOS AdMob ad units | Not configured |
+| iOS AdMob ad units (consent, rewarded, interstitials, settings banner) | Complete |
 
 ---
 
@@ -476,5 +482,4 @@ assets/
 4. In-game settings sheet uses `AppColors` archive palette while game uses `SankofaGameTheme` dark greens
 5. Some PNG filenames have `-removebg-preview` suffixes (unprocessed tool output)
 6. IAP integration uses sandbox store IDs only; real Google Play billing not yet integrated
-7. Ad units only configured for Android; iOS ad units not set up
-8. Extended campaign levels (51-200) are procedurally generated with recycled layout patterns
+7. Extended campaign levels (51-200) are procedurally generated with recycled layout patterns

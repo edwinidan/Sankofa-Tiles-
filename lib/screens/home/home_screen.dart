@@ -139,11 +139,11 @@ class _ProgressSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final nextLevelId = progress.nextUnfinishedLevelId;
-    final chapter = chapterForLevel(nextLevelId ?? kFinalCampaignLevelId);
+    final chapter = chapterForLevel(nextLevelId ?? kImplementedFinalLevelId);
     final completed = progress.highestCompletedLevel;
-    final progressValue = kCampaignLevelCount == 0
+    final progressValue = kImplementedCampaignLevelCount == 0
         ? 0.0
-        : (completed / kCampaignLevelCount).clamp(0.0, 1.0);
+        : (completed / kImplementedCampaignLevelCount).clamp(0.0, 1.0);
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 380),
@@ -171,8 +171,8 @@ class _ProgressSummary extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Levels $completed/$kCampaignLevelCount · Stars '
-              '${progress.totalStars}/$kMaximumCampaignStars',
+              'Levels $completed/$kImplementedCampaignLevelCount · Stars '
+              '${progress.totalStars}/$kImplementedMaximumCampaignStars',
               style: AppTextStyles.bodySmall.copyWith(
                 color: SankofaGameTheme.mutedLightText,
               ),

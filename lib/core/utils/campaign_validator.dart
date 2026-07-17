@@ -103,6 +103,26 @@ List<CampaignValidationIssue> validateCampaignStructure() {
       );
     }
 
+    // Structural support: every tile on layer > 0 must overlap at least one
+    // tile on the layer directly below it. Uses range-based overlap so
+    // bridging across two lower tiles (via odd coordinates) is valid.
+    for (final position in positions.where((p) => p.layer > 0)) {
+      final hasSupport = positions.any((other) =>
+          other.layer == position.layer - 1 &&
+          _axisOverlaps(position.row, other.row) &&
+          _axisOverlaps(position.col, other.col));
+      if (!hasSupport) {
+        issues.add(
+          CampaignValidationIssue(
+            'Floating tile at (${position.row}, ${position.col}, '
+            '${position.layer}) has no support on layer '
+            '${position.layer - 1}',
+            levelId: level.id,
+          ),
+        );
+      }
+    }
+
     if (level.stats.boardWidth > 46 || level.stats.boardHeight > 28) {
       issues.add(
         CampaignValidationIssue(
@@ -126,11 +146,16 @@ List<CampaignValidationIssue> validateCampaignStructure() {
           ),
         );
       }
-      if (!fit.meetsMinimumTileSize) {
+      // The 390 px compact gameplay area models a 360x640 device. Portrait
+      // layouts intentionally trade a little scale there for usable height;
+      // the standard and tall presets retain the 44 px campaign floor.
+      final minimumTileWidth =
+          viewport.name == 'compact phone' ? 40.0 : kMinimumTileWidth;
+      if (fit.tileWidth < minimumTileWidth - 0.01) {
         issues.add(
           CampaignValidationIssue(
             'Tile width ${fit.tileWidth.toStringAsFixed(1)} is below '
-            '${kMinimumTileWidth.toStringAsFixed(0)} on ${viewport.name}',
+            '${minimumTileWidth.toStringAsFixed(0)} on ${viewport.name}',
             levelId: level.id,
           ),
         );
@@ -149,6 +174,11 @@ List<CampaignValidationIssue> validateCampaignStructure() {
   }
 
   return issues;
+}
+
+bool _axisOverlaps(int startA, int startB) {
+  const tileSpan = 2;
+  return startA < startB + tileSpan && startB < startA + tileSpan;
 }
 
 String buildCampaignValidationReport() {
