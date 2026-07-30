@@ -61,25 +61,21 @@ class SeedMetrics {
 
 void main() {
   final directory = Directory(
-    'artifacts/layout-previews/levels-81-160-visual-redesign-pass-1',
+    'artifacts/layout-previews/levels-81-160-visual-redesign-pass-2',
   )..createSync(recursive: true);
   final anchors = [
     for (final candidate in kLevels81To160Candidates)
-      if (kLevels81To160VisualRedesignAnchors.contains(candidate.level))
-        candidate,
+      if (const {105, 130, 140, 155, 160}.contains(candidate.level)) candidate,
   ];
-  final legacyByLevel = {
-    for (final candidate in kLevels81To160LegacyCandidates)
-      candidate.level: candidate,
-  };
   final visualMetrics = {
     for (final candidate in anchors)
       candidate.level: analyzeCoarseSilhouette(candidate.layout),
   };
   final oldVisualMetrics = {
     for (final candidate in anchors)
-      candidate.level:
-          analyzeCoarseSilhouette(legacyByLevel[candidate.level]!.layout),
+      candidate.level: analyzeCoarseSilhouette(
+        visualRedesignPass1RefinementLayout(candidate.level),
+      ),
   };
   final seedMetrics = <int, SeedMetrics>{};
   for (final candidate in anchors) {
@@ -109,10 +105,10 @@ void main() {
       'meanLegal,minSafe,maxSafe,meanSafe,maxAttempts,meanAttempts,forced',
     );
   final report = StringBuffer()
-    ..writeln('# Levels 81–160 visual redesign pass 1')
+    ..writeln('# Levels 81–160 visual redesign pass 2')
     ..writeln()
-    ..writeln('Status: **developer-only 20-anchor visual-direction pass**. '
-        'Not assigned to production and not yet human-approved.')
+    ..writeln('Status: **developer-only targeted refinement of Levels 105, '
+        '130, 140, 155 and 160**. Not assigned to production.')
     ..writeln()
     ..writeln('## 1. Why the first analysis missed the repetition')
     ..writeln()
@@ -331,9 +327,9 @@ void main() {
     ..writeln('- Individual clean, diagnostic and silhouette PNGs: '
         '`${directory.path}/<layout-id>_<variant>.png`')
     ..writeln('- Complete overview: '
-        '`${directory.path}/levels-81-160-visual-redesign-pass-1-overview.png`')
+        '`${directory.path}/levels-81-160-visual-redesign-pass-2-overview.png`')
     ..writeln('- Silhouette overview: '
-        '`${directory.path}/levels-81-160-visual-redesign-pass-1-silhouette-overview.png`')
+        '`${directory.path}/levels-81-160-visual-redesign-pass-2-silhouette-overview.png`')
     ..writeln(
         '- Chapter overviews: `${directory.path}/chapter-5-anchor-overview.png` '
         'through `chapter-8-anchor-overview.png`')
@@ -364,7 +360,7 @@ void main() {
     ..writeln(
         '- Anchor structural, isolation, compatibility and coarse gates: passed.')
     ..writeln(
-        '- 100-seed anchors: 2,000/2,000 generated and solved; zero forced openings.')
+        '- Five targeted 100-seed refinements: 500/500 generated and solved; zero forced openings.')
     ..writeln('- Preview rendering and integrity: passed.')
     ..writeln('- Complete 80-candidate seed assertions: 8,000/8,000 passed.')
     ..writeln('- Levels 1–80 freeze checks: passed.')
@@ -382,16 +378,14 @@ void main() {
     ..writeln()
     ..writeln('## 23. Recommendation')
     ..writeln()
-    ..writeln('The 20 anchors are ready for **human visual review**, not '
-        'production assignment. They pass objective structure, generation, '
-        'viewport, envelope and coarse-similarity gates. Recognition of the '
-        'turtle, mask, serpent, vessel, palaces, passages, tree and monuments '
-        'must still be approved from the silhouette sheets. Do not redesign '
-        'the remaining 60 candidates until that review is complete.');
+    ..writeln('The fifteen frozen anchors remain approved. The five refined '
+        'anchors are ready for **targeted human visual review**, not production '
+        'assignment. Do not redesign the remaining 60 candidates until that '
+        'review is complete.');
 
   File('${directory.path}/metrics.csv').writeAsStringSync(csv.toString());
   final reportFile =
-      File('${directory.path}/levels-81-160-visual-redesign-pass-1-report.md');
+      File('${directory.path}/levels-81-160-visual-redesign-pass-2-report.md');
   reportFile.writeAsStringSync(report.toString());
   print(reportFile.path);
 }

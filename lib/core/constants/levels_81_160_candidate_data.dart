@@ -243,12 +243,12 @@ const Map<int, List<String>> _anchorMasks = {
     '.XXXX',
   ],
   105: [
-    'XX.X',
+    'XXXX',
     'X..X',
     'X..X',
     'X..X',
     'X..X',
-    'X..X',
+    'X.XX',
     'XX.X',
   ],
   110: [
@@ -299,13 +299,12 @@ const Map<int, List<String>> _anchorMasks = {
     'X...',
   ],
   130: [
-    'XXXX',
-    'X..X',
-    'XX.X',
-    'X..X',
-    'X.XX',
-    'X..X',
-    'XXXX',
+    '.XXX.',
+    'XXXXX',
+    '.X.X.',
+    '.X.X.',
+    '.X.X.',
+    '.X.X.',
   ],
   135: [
     'XX...',
@@ -317,11 +316,10 @@ const Map<int, List<String>> _anchorMasks = {
   ],
   140: [
     'X...X',
+    'XX.XX',
     'XXXXX',
     'X...X',
     'X...X',
-    'X...X',
-    'XXXXX',
     'XX.XX',
   ],
   141: [
@@ -355,29 +353,56 @@ const Map<int, List<String>> _anchorMasks = {
     'XXXX',
   ],
   155: [
-    'X.X',
-    '.X.',
-    'X.X',
-    'X.X',
-    'X.X',
-    'X.X',
-    'X.X',
-    'XXX',
+    '.XX.',
+    'XXXX',
+    'X..X',
+    'X..X',
+    'X..X',
+    'XX.X',
+    'X..X',
   ],
   160: [
-    '..X..',
+    'X...X',
+    'XX.XX',
     '.XXX.',
-    'X.X.X',
-    '.X.X.',
+    'XX.XX',
     'X...X',
     'X.X.X',
-    '.XXX.',
+    'XX.XX',
     'XXXXX',
   ],
 };
 
+/// Frozen pass-1 definitions for the five deliberately refined anchors.
+/// Kept developer-only so pass-2 reports can compare the actual prior
+/// geometry without exposing either revision to production.
+const Map<int, List<String>> kLevels81To160Pass1RefinementMasks = {
+  105: ['XX.X', 'X..X', 'X..X', 'X..X', 'X..X', 'X..X', 'XX.X'],
+  130: ['XXXX', 'X..X', 'XX.X', 'X..X', 'X.XX', 'X..X', 'XXXX'],
+  140: ['X...X', 'XXXXX', 'X...X', 'X...X', 'X...X', 'XXXXX', 'XX.XX'],
+  155: ['X.X', '.X.', 'X.X', 'X.X', 'X.X', 'X.X', 'X.X', 'XXX'],
+  160: ['..X..', '.XXX.', 'X.X.X', '.X.X.', 'X...X', 'X.X.X', '.XXX.', 'XXXXX'],
+};
+
 NamedLayout _visualAnchorLayout(int level, String family) {
-  final mask = _anchorMasks[level]!;
+  return _visualAnchorLayoutFromMask(level, family, _anchorMasks[level]!);
+}
+
+/// Returns the exact pass-1 geometry for a refinement comparison only.
+NamedLayout visualRedesignPass1RefinementLayout(int level) {
+  final family = _chapterFamilies[level - 81];
+  return _visualAnchorLayoutFromMask(
+    level,
+    family,
+    kLevels81To160Pass1RefinementMasks[level]!,
+  );
+}
+
+NamedLayout _visualAnchorLayoutFromMask(
+  int level,
+  String family,
+  List<String> mask,
+) {
   final base = <TilePosition>[];
   for (var row = 0; row < mask.length; row++) {
     for (var col = 0; col < mask[row].length; col++) {
@@ -518,7 +543,7 @@ FutureCampaignLayoutCandidate _candidateAt(
     family: family,
     variant:
         useVisualAnchors && kLevels81To160VisualRedesignAnchors.contains(level)
-            ? 'visual redesign pass 1'
+            ? 'visual redesign pass 2'
             : index.isEven
                 ? 'anchor profile'
                 : 'complement profile',

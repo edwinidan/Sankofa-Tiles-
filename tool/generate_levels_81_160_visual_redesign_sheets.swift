@@ -18,16 +18,17 @@ struct Item {
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let directory = root.appendingPathComponent(
+  "artifacts/layout-previews/levels-81-160-visual-redesign-pass-2"
+)
+let pass1Directory = root.appendingPathComponent(
   "artifacts/layout-previews/levels-81-160-visual-redesign-pass-1"
 )
-let legacyDirectory = root.appendingPathComponent(
-  "artifacts/layout-previews/levels-81-160-candidates"
-)
-let lines = try String(
-  contentsOf: directory.appendingPathComponent("metrics.csv"),
-  encoding: .utf8
-).split(separator: "\n").dropFirst()
-let items: [Item] = lines.map {
+func readItems(_ source: URL) throws -> [Item] {
+  let lines = try String(
+    contentsOf: source.appendingPathComponent("metrics.csv"),
+    encoding: .utf8
+  ).split(separator: "\n").dropFirst()
+  return lines.map {
   let fields = $0.split(separator: ",", omittingEmptySubsequences: false)
   return Item(
     level: Int(fields[0])!,
@@ -43,6 +44,16 @@ let items: [Item] = lines.map {
     empty: String(fields[12]),
     holes: String(fields[13])
   )
+  }
+}
+let items = try readItems(directory)
+let pass1Items = try readItems(pass1Directory)
+let allItems = pass1Items.map { old in
+  items.first(where: { $0.level == old.level }) ?? old
+}
+func previewURL(_ item: Item, _ suffix: String) -> URL {
+  let source = items.contains(where: { $0.level == item.level }) ? directory : pass1Directory
+  return source.appendingPathComponent("\(item.id)_\(suffix).png")
 }
 
 let background = NSColor(deviceRed: 0.025, green: 0.055, blue: 0.045, alpha: 1)
@@ -100,7 +111,7 @@ func writeSheet(
     let x = gap + CGFloat(column) * (previewWidth + gap)
     let y = size.height - gap
       - CGFloat(row + 1) * (previewHeight + labelHeight + gap) + labelHeight
-    let url = directory.appendingPathComponent("\(item.id)_\(suffix).png")
+    let url = previewURL(item, suffix)
     guard let preview = NSImage(contentsOf: url) else {
       throw NSError(
         domain: "MissingPreview",
@@ -124,22 +135,22 @@ func writeSheet(
 }
 
 try writeSheet(
-  items,
-  name: "levels-81-160-visual-redesign-pass-1-overview.png"
+  allItems,
+  name: "levels-81-160-visual-redesign-pass-2-overview.png"
 )
 try writeSheet(
-  items,
-  name: "levels-81-160-visual-redesign-pass-1-silhouette-overview.png",
+  allItems,
+  name: "levels-81-160-visual-redesign-pass-2-silhouette-overview.png",
   suffix: "silhouette"
 )
 for chapter in 0..<4 {
   try writeSheet(
-    Array(items[chapter * 5..<chapter * 5 + 5]),
+    Array(allItems[chapter * 5..<chapter * 5 + 5]),
     name: "chapter-\(chapter + 5)-anchor-overview.png"
   )
 }
 try writeSheet(
-  items,
+  allItems,
   name: "coarse-silhouette-classification.png",
   suffix: "silhouette",
   classLabels: true
@@ -168,7 +179,7 @@ func writeOldVersusNew() throws {
       let x = gap + CGFloat(column) * (previewWidth + gap)
       let y = size.height - gap
         - CGFloat(row + 1) * (previewHeight + labelHeight + gap) + labelHeight
-      let source = variant == 0 ? legacyDirectory : directory
+      let source = variant == 0 ? pass1Directory : directory
       let url = source.appendingPathComponent("\(item.id)_silhouette.png")
       guard let preview = NSImage(contentsOf: url) else {
         throw NSError(domain: "MissingComparison", code: item.level)
@@ -213,8 +224,8 @@ func writeFinales() throws {
       )
       label = "L\(level) · frozen production finale"
     } else {
-      let item = items.first { $0.level == level }!
-      url = directory.appendingPathComponent("\(item.id)_silhouette.png")
+      let item = allItems.first { $0.level == level }!
+      url = previewURL(item, "silhouette")
       label = "L\(level) · \(item.family)\n\(item.tiles) tiles · "
         + "\(String(format: "%.1f", item.width))%W × "
         + "\(String(format: "%.1f", item.height))%H"
@@ -233,6 +244,38 @@ func writeFinales() throws {
   }
   canvas.unlockFocus()
   try save(canvas, name: "finale-comparison-levels-20-160.png")
+}
+
+func writeComparison(_ levels: [Int], name: String) throws {
+  let previewWidth: CGFloat = 260
+  let previewHeight: CGFloat = 562
+  let labelHeight: CGFloat = 62
+  let gap: CGFloat = 12
+  let size = NSSize(
+    width: gap + CGFloat(levels.count) * (previewWidth + gap),
+    height: gap + previewHeight + labelHeight + gap
+  )
+  let canvas = NSImage(size: size)
+  canvas.lockFocus()
+  background.setFill()
+  NSRect(origin: .zero, size: size).fill()
+  for (index, level) in levels.enumerated() {
+    let item = allItems.first { $0.level == level }!
+    let x = gap + CGFloat(index) * (previewWidth + gap)
+    guard let preview = NSImage(contentsOf: previewURL(item, "silhouette")) else {
+      throw NSError(domain: "MissingComparison", code: level)
+    }
+    preview.draw(in: NSRect(x: x, y: labelHeight, width: previewWidth, height: previewHeight))
+    drawLabel(
+      "L\(level) · \(item.family)\n\(item.tiles) tiles · \(String(format: "%.1f", item.width))%W × \(String(format: "%.1f", item.height))%H",
+      rect: NSRect(x: x, y: 8, width: previewWidth, height: labelHeight - 8),
+      size: 10,
+      color: gold,
+      bold: true
+    )
+  }
+  canvas.unlockFocus()
+  try save(canvas, name: name)
 }
 
 func writeEnvelopeDistribution() throws {
@@ -259,7 +302,7 @@ func writeEnvelopeDistribution() throws {
   grid.lineWidth = 1
   grid.stroke()
   var occurrence: [String: Int] = [:]
-  for item in items {
+  for item in allItems {
     let key = "\(item.width)-\(item.height)"
     let offsetIndex = occurrence[key, default: 0]
     occurrence[key] = offsetIndex + 1
@@ -293,4 +336,7 @@ func writeEnvelopeDistribution() throws {
 
 try writeOldVersusNew()
 try writeFinales()
+try writeComparison([110, 155], name: "level-110-vs-level-155.png")
+try writeComparison([120, 140], name: "level-120-vs-level-140.png")
+try writeComparison([100, 120, 140, 160], name: "finale-progression-100-160.png")
 try writeEnvelopeDistribution()

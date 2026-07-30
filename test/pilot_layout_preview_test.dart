@@ -258,26 +258,13 @@ void main() {
     }
   }
 
-  const additionalVisualAnchorSizes = {
-    81,
-    100,
-    110,
-    120,
-    121,
-    135,
-    140,
-    141,
-    145,
-    155,
-    160,
-  };
+  const refinedVisualAnchors = {105, 130, 140, 155, 160};
   for (final candidate in kLevels81To160Candidates.where(
-    (candidate) =>
-        kLevels81To160VisualRedesignAnchors.contains(candidate.level),
+    (candidate) => refinedVisualAnchors.contains(candidate.level),
   )) {
     final layout = candidate.layout;
     final state = _futureCandidateState(candidate);
-    const directory = 'levels-81-160-visual-redesign-pass-1';
+    const directory = 'levels-81-160-visual-redesign-pass-2';
     testWidgets('render visual anchor ${layout.id} 390x844', (tester) async {
       await _render(
         tester,
@@ -308,23 +295,21 @@ void main() {
         outputStem: '$directory/${layout.id}',
       );
     });
-    if (additionalVisualAnchorSizes.contains(candidate.level)) {
-      for (final size in const [Size(360, 640), Size(430, 932)]) {
-        testWidgets(
-          'render visual anchor ${layout.id} '
-          '${size.width.toInt()}x${size.height.toInt()}',
-          (tester) async {
-            await _render(
-              tester,
-              layout: layout,
-              size: size,
-              diagnostic: false,
-              suppliedState: state,
-              outputStem: '$directory/${layout.id}',
-            );
-          },
-        );
-      }
+    for (final size in const [Size(360, 640), Size(430, 932)]) {
+      testWidgets(
+        'render visual anchor ${layout.id} '
+        '${size.width.toInt()}x${size.height.toInt()}',
+        (tester) async {
+          await _render(
+            tester,
+            layout: layout,
+            size: size,
+            diagnostic: false,
+            suppliedState: state,
+            outputStem: '$directory/${layout.id}',
+          );
+        },
+      );
     }
   }
 
