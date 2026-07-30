@@ -103,6 +103,310 @@ const _chapterFamilies = <String>[
   'Grand remembrance',
 ];
 
+const Set<int> kLevels81To160VisualRedesignAnchors = {
+  81,
+  85,
+  90,
+  95,
+  100,
+  101,
+  105,
+  110,
+  115,
+  120,
+  121,
+  125,
+  130,
+  135,
+  140,
+  141,
+  145,
+  150,
+  155,
+  160,
+};
+
+const Set<int> kLevels81To160WideVisualAnchors = {
+  81,
+  100,
+  120,
+  121,
+  135,
+  140,
+  145,
+  160,
+};
+
+const Set<int> kLevels81To160AsymmetricVisualAnchors = {
+  90,
+  101,
+  125,
+  135,
+  145,
+};
+
+const Set<int> kLevels81To160OpenVisualAnchors = {
+  85,
+  95,
+  105,
+  110,
+  115,
+  120,
+  130,
+  140,
+  150,
+  155,
+  160,
+};
+
+const Map<int, String> kLevels81To160AnchorClasses = {
+  81: 'Animal or emblem',
+  85: 'Monument',
+  90: 'Curved or winding',
+  95: 'Hollow rectangle',
+  100: 'Cross',
+  101: 'Asymmetric formation',
+  105: 'Ring',
+  110: 'Arch',
+  115: 'U-frame',
+  120: 'Monument',
+  121: 'Bridge',
+  125: 'Staircase',
+  130: 'H-frame',
+  135: 'Split masses',
+  140: 'Bridge',
+  141: 'Pillar',
+  145: 'Tree',
+  150: 'Split masses',
+  155: 'Arch',
+  160: 'Monument',
+};
+
+/// Silhouette-first base masks for visual-redesign pass 1.
+///
+/// Each character is one full half-grid tile position. Upper layers are
+/// derived only from occupied cells, so openings remain open through the
+/// complete stack instead of becoming shallow grooves in a dense slab.
+const Map<int, List<String>> _anchorMasks = {
+  81: [
+    '.XXX.',
+    'XXXXX',
+    'XXXXX',
+    'X.X.X',
+    '.XXX.',
+    'X...X',
+  ],
+  85: [
+    'XXXXX',
+    'X.X.X',
+    'X.X.X',
+    'XXXXX',
+    '.XXX.',
+    '.XXX.',
+    '..X..',
+  ],
+  90: [
+    'XXX.',
+    '..X.',
+    '..XX',
+    '...X',
+    '.XXX',
+    '.X..',
+    'XX..',
+  ],
+  95: [
+    '.XXX.',
+    'XXXXX',
+    '..X..',
+    '.X.X.',
+    'X...X',
+    'X...X',
+    '.XXX.',
+  ],
+  100: [
+    '..X..',
+    '.XXX.',
+    'X.X.X',
+    'XXXXX',
+    '.X.X.',
+    'XX.XX',
+    '.XXX.',
+    'XXXXX',
+  ],
+  101: [
+    'X.X.X',
+    'XXXXX',
+    'X...X',
+    'X.X.X',
+    'XXXXX',
+    '..X.X',
+    '.XXXX',
+  ],
+  105: [
+    'XX.X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'XX.X',
+  ],
+  110: [
+    '.X.',
+    'XXX',
+    'X.X',
+    'X.X',
+    'X.X',
+    'X.X',
+    'X.X',
+  ],
+  115: [
+    'X.XX',
+    'XXXX',
+    'X..X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'XX.X',
+  ],
+  120: [
+    'X.X.X',
+    'XXXXX',
+    '.XXX.',
+    'X.X.X',
+    'X...X',
+    'XX.XX',
+    'X...X',
+    'XXXXX',
+  ],
+  121: [
+    'X...X',
+    'XXXXX',
+    'X.X.X',
+    'X.X.X',
+    'XXXXX',
+    'X.X.X',
+  ],
+  125: [
+    '...X',
+    '..XX',
+    '.XXX',
+    '.XXX',
+    'XXX.',
+    'XXX.',
+    'XX..',
+    'X...',
+  ],
+  130: [
+    'XXXX',
+    'X..X',
+    'XX.X',
+    'X..X',
+    'X.XX',
+    'X..X',
+    'XXXX',
+  ],
+  135: [
+    'XX...',
+    'XX...',
+    '.XXX.',
+    '...XX',
+    '...XX',
+    '...XX',
+  ],
+  140: [
+    'X...X',
+    'XXXXX',
+    'X...X',
+    'X...X',
+    'X...X',
+    'XXXXX',
+    'XX.XX',
+  ],
+  141: [
+    '.X.',
+    'XXX',
+    '.X.',
+    '.X.',
+    '.X.',
+    '.X.',
+    'XXX',
+    'XXX',
+  ],
+  145: [
+    '..X..',
+    '.XXX.',
+    'XXXXX',
+    'X.X.X',
+    '.XXX.',
+    '..X..',
+    '.X.X.',
+    'XX.XX',
+  ],
+  150: [
+    'X..X',
+    'XX.X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'X..X',
+    'X.XX',
+    'XXXX',
+  ],
+  155: [
+    'X.X',
+    '.X.',
+    'X.X',
+    'X.X',
+    'X.X',
+    'X.X',
+    'X.X',
+    'XXX',
+  ],
+  160: [
+    '..X..',
+    '.XXX.',
+    'X.X.X',
+    '.X.X.',
+    'X...X',
+    'X.X.X',
+    '.XXX.',
+    'XXXXX',
+  ],
+};
+
+NamedLayout _visualAnchorLayout(int level, String family) {
+  final mask = _anchorMasks[level]!;
+  final base = <TilePosition>[];
+  for (var row = 0; row < mask.length; row++) {
+    for (var col = 0; col < mask[row].length; col++) {
+      if (mask[row][col] == 'X') {
+        base.add(TilePosition(row * 2, 16 + col * 2, 0));
+      }
+    }
+  }
+
+  final positions = <TilePosition>[...base];
+  for (final tile in base) {
+    positions.add(TilePosition(tile.row + 1, tile.col, 1));
+  }
+
+  final top = <TilePosition>[
+    for (final tile in base)
+      if (level == 160 || ((tile.row ~/ 2) + ((tile.col - 16) ~/ 2)).isEven)
+        TilePosition(tile.row, tile.col, 2),
+  ];
+  if (top.length.isOdd) top.removeLast();
+  positions.addAll(top);
+
+  return namedLayout(
+    'future${family.replaceAll(RegExp(r'[^A-Za-z0-9]'), '')}$level',
+    '$family — visual redesign anchor',
+    positions,
+  );
+}
+
 NamedLayout _futureLayout(int level, String family) {
   final positions = <TilePosition>[];
   final isFinale = const {100, 120, 140, 160}.contains(level);
@@ -203,30 +507,43 @@ int _bitCount(int value) {
   return count;
 }
 
+FutureCampaignLayoutCandidate _candidateAt(
+  int index, {
+  required bool useVisualAnchors,
+}) {
+  final level = index + 81;
+  final family = _chapterFamilies[index];
+  return FutureCampaignLayoutCandidate(
+    level: level,
+    family: family,
+    variant:
+        useVisualAnchors && kLevels81To160VisualRedesignAnchors.contains(level)
+            ? 'visual redesign pass 1'
+            : index.isEven
+                ? 'anchor profile'
+                : 'complement profile',
+    layout:
+        useVisualAnchors && kLevels81To160VisualRedesignAnchors.contains(level)
+            ? _visualAnchorLayout(level, family)
+            : _futureLayout(level, family),
+    proposedName: index == 79
+        ? 'Grand Remembrance Monument'
+        : '$family ${index < 20 ? 'Formation' : index < 40 ? 'Ceremony' : index < 60 ? 'Passage' : 'Memorial'}',
+    isBreather: const {84, 90, 96, 103, 109, 115, 123, 129, 135, 143, 149, 155}
+        .contains(level),
+  );
+}
+
+/// Frozen reference catalogue from the technically valid but visually
+/// repetitive first pass. It is retained only for development comparisons.
+final List<FutureCampaignLayoutCandidate> kLevels81To160LegacyCandidates =
+    List.unmodifiable([
+  for (var index = 0; index < 80; index++)
+    _candidateAt(index, useVisualAnchors: false),
+]);
+
 final List<FutureCampaignLayoutCandidate> kLevels81To160Candidates =
     List.unmodifiable([
   for (var index = 0; index < 80; index++)
-    FutureCampaignLayoutCandidate(
-      level: index + 81,
-      family: _chapterFamilies[index],
-      variant: index.isEven ? 'anchor profile' : 'complement profile',
-      layout: _futureLayout(index + 81, _chapterFamilies[index]),
-      proposedName: index == 79
-          ? 'Grand Remembrance Monument'
-          : '${_chapterFamilies[index]} ${index < 20 ? 'Formation' : index < 40 ? 'Ceremony' : index < 60 ? 'Passage' : 'Memorial'}',
-      isBreather: const {
-        84,
-        90,
-        96,
-        103,
-        109,
-        115,
-        123,
-        129,
-        135,
-        143,
-        149,
-        155
-      }.contains(index + 81),
-    ),
+    _candidateAt(index, useVisualAnchors: true),
 ]);
