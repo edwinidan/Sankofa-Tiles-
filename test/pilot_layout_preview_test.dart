@@ -13,6 +13,7 @@ import 'package:sankofa_tiles/core/constants/batch_b_layout_data.dart';
 import 'package:sankofa_tiles/core/constants/chapter2_layout_data.dart';
 import 'package:sankofa_tiles/core/constants/level_data.dart';
 import 'package:sankofa_tiles/core/constants/levels_41_80_candidate_data.dart';
+import 'package:sankofa_tiles/core/constants/levels_81_160_candidate_data.dart';
 import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/theme/sankofa_game_theme.dart';
 import 'package:sankofa_tiles/core/utils/board_layout_geometry.dart';
@@ -206,6 +207,57 @@ void main() {
     });
   }
 
+  for (final candidate in kLevels81To160Candidates) {
+    final layout = candidate.layout;
+    final state = _futureCandidateState(candidate);
+    testWidgets('render Levels 81-160 ${layout.id} 390x844', (tester) async {
+      await _render(
+        tester,
+        layout: layout,
+        size: const Size(390, 844),
+        diagnostic: false,
+        suppliedState: state,
+        outputStem: 'levels-81-160-candidates/${layout.id}',
+      );
+    });
+    testWidgets('render Levels 81-160 ${layout.id} diagnostic', (tester) async {
+      await _render(
+        tester,
+        layout: layout,
+        size: const Size(390, 844),
+        diagnostic: true,
+        suppliedState: state,
+        outputStem: 'levels-81-160-candidates/${layout.id}',
+      );
+    });
+    testWidgets('render Levels 81-160 ${layout.id} silhouette', (tester) async {
+      await _render(
+        tester,
+        layout: layout,
+        size: const Size(390, 844),
+        diagnostic: false,
+        silhouette: true,
+        outputStem: 'levels-81-160-candidates/${layout.id}',
+      );
+    });
+    if (const {100, 120, 140, 160}.contains(candidate.level)) {
+      for (final size in const [Size(360, 640), Size(430, 932)]) {
+        testWidgets(
+            'render finale ${layout.id} '
+            '${size.width.toInt()}x${size.height.toInt()}', (tester) async {
+          await _render(
+            tester,
+            layout: layout,
+            size: size,
+            diagnostic: false,
+            suppliedState: state,
+            outputStem: 'levels-81-160-candidates/${layout.id}',
+          );
+        });
+      }
+    }
+  }
+
   const portraitPass2Levels = {7, 9, 10, 11, 12, 15, 17, 19, 20};
   for (final candidate in kBatchBLayoutCandidates.where(
     (candidate) => portraitPass2Levels.contains(candidate.intendedLevel),
@@ -270,6 +322,41 @@ void main() {
         diagnostic: false,
         suppliedState: state,
         outputStem: 'chapter-2-production/level_$levelId',
+      );
+    });
+  }
+
+  for (var levelId = 41; levelId <= 80; levelId++) {
+    testWidgets(
+        'render Chapters 3–4 production level $levelId through startLevel',
+        (tester) async {
+      final level = getLevelById(levelId)!;
+      final state = _startCampaignLevel(levelId);
+      expect(state.status, GameStatus.playing);
+      expect(state.tiles, hasLength(level.tileCount));
+      expect(BoardSolver.isSolvable(state.tiles), isTrue);
+      await _render(
+        tester,
+        layout: level.namedLayout,
+        size: const Size(390, 844),
+        diagnostic: false,
+        suppliedState: state,
+        outputStem: 'levels-41-80-production/level_$levelId',
+      );
+    });
+  }
+
+  for (var levelId = 1; levelId <= 80; levelId++) {
+    testWidgets('render frozen production silhouette level $levelId',
+        (tester) async {
+      final level = getLevelById(levelId)!;
+      await _render(
+        tester,
+        layout: level.namedLayout,
+        size: const Size(390, 844),
+        diagnostic: false,
+        silhouette: true,
+        outputStem: 'levels-1-80-silhouettes/level_$levelId',
       );
     });
   }
@@ -657,6 +744,37 @@ GameState _startCampaignLevel(int levelId) {
   final state = container.read(gameProvider);
   container.dispose();
   return state;
+}
+
+GameState _futureCandidateState(FutureCampaignLayoutCandidate candidate) {
+  final level = getLevelById(candidate.level)!;
+  final definitions = <TileDefinition>[];
+  final counts = level.symbolPlan
+      .copyCountsForTileCount(candidate.layout.positions.length);
+  for (var index = 0; index < counts.length; index++) {
+    definitions.addAll(
+      List.filled(counts[index], kAllTiles[index % kAllTiles.length]),
+    );
+  }
+  return GameState(
+    tiles: [
+      for (var index = 0; index < candidate.layout.positions.length; index++)
+        TileModel(
+          uid: 'future_${candidate.level}_$index',
+          def: definitions[index],
+          row: candidate.layout.positions[index].row,
+          col: candidate.layout.positions[index].col,
+          layer: candidate.layout.positions[index].layer,
+        ),
+    ],
+    status: GameStatus.playing,
+    difficulty: DifficultyMode.relaxed,
+    score: 0,
+    moves: 0,
+    hintsUsed: 0,
+    secondsElapsed: 0,
+    levelId: candidate.level,
+  );
 }
 
 class _SilentAudioPlayer extends AudioPlayer {

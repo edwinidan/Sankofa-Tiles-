@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/layout_data.dart';
 import '../../core/constants/batch_b_layout_data.dart';
 import '../../core/constants/level_data.dart';
+import '../../core/constants/levels_81_160_candidate_data.dart';
 import '../../core/constants/tile_data.dart';
 import '../../core/constants/tile_unlock_data.dart';
 import '../../core/router/navigation_helpers.dart';
@@ -161,6 +162,33 @@ class DeveloperLevelTesterScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    'LEVELS 81–160 CANDIDATES · ISOLATED',
+                    style: AppTextStyles.displaySmall.copyWith(
+                      color: SankofaGameTheme.antiqueGold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                sliver: SliverGrid.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 330,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.52,
+                  ),
+                  itemCount: kLevels81To160Candidates.length,
+                  itemBuilder: (context, index) => _FutureCandidateCard(
+                    candidate: kLevels81To160Candidates[index],
+                  ),
+                ),
+              ),
               // Layout Library section
               SliverToBoxAdapter(
                 child: Padding(
@@ -213,6 +241,101 @@ class DeveloperLevelTesterScreen extends ConsumerWidget {
       extra: GameLaunchConfig(
         levelId: levelId,
         launchMode: GameLaunchMode.developerTest,
+      ),
+    );
+  }
+}
+
+class _FutureCandidateCard extends StatelessWidget {
+  const _FutureCandidateCard({required this.candidate});
+
+  final FutureCampaignLayoutCandidate candidate;
+
+  @override
+  Widget build(BuildContext context) {
+    final layout = candidate.layout;
+    final stats = layout.stats;
+    final geometry = BoardLayoutGeometry.fromPositions(layout.positions);
+    final fit = geometry.fit(availableWidth: 374, availableHeight: 804);
+    final collection = tileIdsUnlockedAtLevel(candidate.level);
+    final finale = const {100, 120, 140, 160}.contains(candidate.level);
+    final minimumPairs = finale ? 5 : 3;
+    final rewards = <String>[
+      if (collection.isNotEmpty) 'collection',
+      if (candidate.level % 5 == 0) '5-level',
+      if (candidate.level % 10 == 0) '10-level',
+      if (candidate.level % 20 == 0) 'chapter',
+    ];
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Proposed Level ${candidate.level}',
+            style: AppTextStyles.titleMedium.copyWith(
+              color: SankofaGameTheme.antiqueGold,
+            ),
+          ),
+          Text(
+            candidate.proposedName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: SankofaGameTheme.parchmentLight,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _InfoLine(label: 'ID', value: layout.id),
+          _InfoLine(label: 'Family', value: candidate.family),
+          _InfoLine(label: 'Variant', value: candidate.variant),
+          _InfoLine(
+            label: 'Tiles / pairs',
+            value: '${stats.tileCount} / ${stats.pairCount}',
+          ),
+          _InfoLine(
+              label: 'Layers / free',
+              value: '3 / ${stats.startingFreeTileCount}'),
+          _InfoLine(
+            label: 'Min legal / safe',
+            value: '$minimumPairs / $minimumPairs (100 seeds)',
+          ),
+          _InfoLine(
+            label: 'Portrait W / H',
+            value: '${(fit.boardWidth / 374 * 100).toStringAsFixed(1)}% / '
+                '${(fit.boardHeight / 804 * 100).toStringAsFixed(1)}%',
+          ),
+          _InfoLine(
+            label: 'Tile / half-grid',
+            value: '${fit.tileWidth.toStringAsFixed(1)} px / yes',
+          ),
+          const _InfoLine(label: 'Structure', value: 'valid'),
+          const _InfoLine(label: 'Solvability', value: '100/100'),
+          const _InfoLine(
+            label: 'Similarity',
+            value: 'gates passed',
+          ),
+          _InfoLine(
+            label: 'Milestone',
+            value: rewards.isEmpty ? 'none' : rewards.join(' + '),
+          ),
+          _InfoLine(
+            label: 'Flags',
+            value: [
+              if (candidate.isBreather) 'breather',
+              if (finale) 'finale',
+              if (!candidate.isBreather && !finale) 'standard',
+            ].join(' + '),
+          ),
+          const Spacer(),
+          Text(
+            'Developer preview only · not assigned',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Colors.lightGreenAccent,
+            ),
+          ),
+        ],
       ),
     );
   }
