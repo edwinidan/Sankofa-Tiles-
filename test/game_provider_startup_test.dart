@@ -30,9 +30,9 @@ void main() {
       isEmpty,
       reason: issues.map((issue) => issue.toString()).join('\n'),
     );
-    expect(kLevels, hasLength(200));
+    expect(kLevels, hasLength(240));
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(200, (i) => i + 1)));
+        orderedEquals(List.generate(240, (i) => i + 1)));
     expect(kLevels.where((level) => level.layerCount <= 1),
         hasLength(lessThanOrEqualTo(2)));
   });
@@ -64,6 +64,10 @@ void main() {
       150,
       175,
       200,
+      201,
+      220,
+      221,
+      240,
     ]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);

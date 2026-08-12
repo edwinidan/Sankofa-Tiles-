@@ -70,6 +70,7 @@ class _ChapterCard extends ConsumerWidget {
         .length;
     final chapterStars = chapter.levels
         .fold(0, (sum, level) => sum + progress.getStars(level.id));
+    final levelCount = chapter.levels.length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -86,9 +87,17 @@ class _ChapterCard extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             'Levels ${chapter.levelStart}-${chapter.levelEnd} · '
-            '$completed/10 complete · $chapterStars stars',
+            '$completed/$levelCount complete · $chapterStars stars',
             style: AppTextStyles.bodySmall.copyWith(
               color: SankofaGameTheme.mutedLightText,
+            ),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: levelCount == 0 ? 0 : completed / levelCount,
+            backgroundColor: SankofaGameTheme.boardEdge,
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              SankofaGameTheme.antiqueGold,
             ),
           ),
           const SizedBox(height: 6),
@@ -96,6 +105,17 @@ class _ChapterCard extends ConsumerWidget {
             chapter.meaning,
             style: AppTextStyles.bodySmall.copyWith(
               color: SankofaGameTheme.parchmentLight,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            completed == levelCount
+                ? 'Chapter complete · ${chapter.featuredSymbol} mastered'
+                : 'Featured symbol: ${chapter.featuredSymbol} · '
+                    '${levelCount - completed} levels to chapter completion',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: SankofaGameTheme.antiqueGold,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 12),
@@ -152,14 +172,12 @@ class _LevelChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      button: unlocked && completed,
+      button: unlocked,
       label: unlocked
           ? 'Level $levelId, ${completed ? '$stars stars' : 'current'}'
           : 'Level $levelId locked',
       child: InkWell(
-        onTap: unlocked && completed
-            ? () => context.push('/level/$levelId')
-            : null,
+        onTap: unlocked ? () => context.push('/level/$levelId') : null,
         borderRadius: BorderRadius.circular(10),
         child: DecoratedBox(
           decoration: BoxDecoration(

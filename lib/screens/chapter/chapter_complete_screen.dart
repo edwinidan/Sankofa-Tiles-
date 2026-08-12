@@ -24,6 +24,7 @@ class ChapterCompleteScreen extends ConsumerWidget {
       0,
       (sum, level) => sum + progress.getStars(level.id),
     );
+    final maximumStars = chapter.levels.length * 3;
     final campaignComplete = completedLevelId >= kImplementedFinalLevelId;
     final nextLevelId = campaignComplete ? null : completedLevelId + 1;
 
@@ -50,7 +51,7 @@ class ChapterCompleteScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Text(
                       campaignComplete
-                          ? 'Campaign Complete'
+                          ? 'Current Journey Complete'
                           : 'Chapter Complete',
                       style: AppTextStyles.archiveDisplayLarge.copyWith(
                         color: SankofaGameTheme.darkText,
@@ -83,7 +84,7 @@ class ChapterCompleteScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Chapter stars: $stars / 30',
+                      'Chapter stars: $stars / $maximumStars',
                       style: AppTextStyles.archiveBodyMedium.copyWith(
                         color: SankofaGameTheme.darkText,
                         fontWeight: FontWeight.w700,

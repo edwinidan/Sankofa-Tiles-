@@ -402,6 +402,8 @@ class _WinContent extends StatelessWidget {
               cowries: rewardSummary!.cowries,
             ),
           ],
+          const SizedBox(height: 12),
+          _ChapterProgressCard(levelId: gameState.levelId),
           const SizedBox(height: 14),
           if (launchConfig.isDeveloperTest)
             _DeveloperResultActions(
@@ -425,13 +427,19 @@ class _WinContent extends StatelessWidget {
               onPrimary: () => onBeforePrimaryNavigation(() {
                 final nextLevelId = gameState.levelId + 1;
                 AnalyticsService.logNextGamePressed(nextLevelId);
-                context.go('/level/$nextLevelId');
+                context.go(
+                  '/game/$nextLevelId',
+                  extra: GameLaunchConfig(
+                    levelId: nextLevelId,
+                    launchMode: GameLaunchMode.normalProgression,
+                  ),
+                );
               }),
               levelId: gameState.levelId,
             )
           else ...[
             Text(
-              'All Levels Completed',
+              'All Current Levels Completed',
               style: AppTextStyles.archiveTitleLarge.copyWith(
                 color: SankofaGameTheme.mutedGold,
               ),
@@ -445,6 +453,73 @@ class _WinContent extends StatelessWidget {
               onTap: () => onBeforePrimaryNavigation(() => context.go('/')),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ChapterProgressCard extends ConsumerWidget {
+  const _ChapterProgressCard({required this.levelId});
+
+  final int levelId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chapter = chapterForLevel(levelId);
+    final progress = ref.read(progressProvider);
+    final completed = chapter.levels
+        .where((level) => progress.isLevelCompleted(level.id))
+        .length;
+    final stars = chapter.levels
+        .fold<int>(0, (sum, level) => sum + progress.getStars(level.id));
+    final levelCount = chapter.levels.length;
+    final maximumStars = levelCount * 3;
+    final remainingLevels = (levelCount - completed).clamp(0, levelCount);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${chapter.title} progress',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: SankofaGameTheme.parchmentLight,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '$completed/$levelCount',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: SankofaGameTheme.antiqueGold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: levelCount == 0 ? 0 : completed / levelCount,
+            backgroundColor: SankofaGameTheme.boardEdge,
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              SankofaGameTheme.antiqueGold,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            remainingLevels > 0
+                ? '$stars/$maximumStars stars · $remainingLevels levels to the chapter reward'
+                : '$stars/$maximumStars stars · Chapter reward earned',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: SankofaGameTheme.mutedLightText,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

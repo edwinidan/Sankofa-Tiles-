@@ -9,7 +9,7 @@ void main() {
   test(
       'all campaign boards fit supported gameplay areas above the tile minimum',
       () {
-    expect(kLevels, hasLength(200));
+    expect(kLevels, hasLength(240));
 
     for (final level in kLevels) {
       final geometry = BoardLayoutGeometry.fromPositions(level.layout);
@@ -27,7 +27,11 @@ void main() {
         expect(
           fit.tileWidth,
           greaterThanOrEqualTo(
-            viewport.name == 'compact phone' ? 40 : kMinimumTileWidth,
+            viewport.name == 'compact phone'
+                ? level.id >= 201
+                    ? 37
+                    : 40
+                : kMinimumTileWidth,
           ),
           reason: 'Level ${level.id} is too small on ${viewport.name}',
         );

@@ -4,8 +4,8 @@ import 'package:sankofa_tiles/core/constants/tile_unlock_data.dart';
 
 void main() {
   test('implemented, planned, and collection horizons are distinct', () {
-    expect(kImplementedCampaignLevelCount, 200);
-    expect(kImplementedFinalLevelId, 200);
+    expect(kImplementedCampaignLevelCount, 240);
+    expect(kImplementedFinalLevelId, 240);
     expect(kPlannedCampaignLevelCount, 400);
     expect(kCollectionScheduleFinalLevel, 400);
     expect(kLevels, hasLength(kImplementedCampaignLevelCount));

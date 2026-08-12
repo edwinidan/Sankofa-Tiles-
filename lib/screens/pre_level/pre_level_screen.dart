@@ -116,12 +116,25 @@ class PreLevelScreen extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: SankofaGameTheme.darkPanelDecoration(),
-                      child: Text(
-                        'Boosters unlock in a later phase.',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: SankofaGameTheme.mutedLightText,
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Column(
+                        children: [
+                          Text(
+                            _journeyPace(levelId),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: SankofaGameTheme.antiqueGold,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Featured symbol: ${chapter.featuredSymbol}',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: SankofaGameTheme.mutedLightText,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -150,6 +163,20 @@ class PreLevelScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _journeyPace(int levelId) {
+  final chapter = chapterForLevel(levelId);
+  final position = levelId - chapter.levelStart + 1;
+  final finalPosition = chapter.levelEnd - chapter.levelStart + 1;
+  return switch (position) {
+    1 => 'Gentle chapter opening',
+    4 || 8 => 'Quick rhythm board',
+    5 || 10 || 15 => 'New strategic turn',
+    _ when position == finalPosition - 1 => 'Advanced chapter challenge',
+    _ when position == finalPosition => 'Grand chapter finale',
+    _ => 'Steady strategic journey',
+  };
 }
 
 class _LevelInfoGrid extends StatelessWidget {

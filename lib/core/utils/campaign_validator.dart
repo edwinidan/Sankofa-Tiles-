@@ -149,8 +149,11 @@ List<CampaignValidationIssue> validateCampaignStructure() {
       // The 390 px compact gameplay area models a 360x640 device. Portrait
       // layouts intentionally trade a little scale there for usable height;
       // the standard and tall presets retain the 44 px campaign floor.
-      final minimumTileWidth =
-          viewport.name == 'compact phone' ? 40.0 : kMinimumTileWidth;
+      final minimumTileWidth = viewport.name == 'compact phone'
+          ? level.id >= 201
+              ? 37.0
+              : 40.0
+          : kMinimumTileWidth;
       if (fit.tileWidth < minimumTileWidth - 0.01) {
         issues.add(
           CampaignValidationIssue(

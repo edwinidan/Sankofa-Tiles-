@@ -120,15 +120,15 @@ void main() {
       _scopedApp(storage: storage, child: const PreLevelScreen(levelId: 1)),
     );
 
-    expect(find.text('Accra'), findsWidgets);
+    expect(find.text('Kokrobite to Ada Foah'), findsWidgets);
     expect(find.text('PLAY'), findsOneWidget);
   });
 
   testWidgets('chapter-complete result routes to milestone screen',
       (tester) async {
     final storage = await _storage({
-      'completed_9': true,
-      for (final tileId in tileIdsUnlockedThroughLevel(10))
+      'completed_19': true,
+      for (final tileId in tileIdsUnlockedThroughLevel(20))
         'collection_unlocked_$tileId': true,
     });
     final router = GoRouter(
@@ -145,10 +145,10 @@ void main() {
               moves: 12,
               hintsUsed: 0,
               secondsElapsed: 30,
-              levelId: 10,
+              levelId: 20,
             ),
             launchConfig: GameLaunchConfig(
-              levelId: 10,
+              levelId: 20,
               launchMode: GameLaunchMode.normalProgression,
             ),
           ),
@@ -157,7 +157,7 @@ void main() {
           path: '/chapter-complete/:levelId',
           builder: (_, state) => ChapterCompleteScreen(
             completedLevelId:
-                int.parse(state.pathParameters['levelId'] ?? '10'),
+                int.parse(state.pathParameters['levelId'] ?? '20'),
           ),
         ),
       ],
@@ -170,6 +170,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Chapter Complete'), findsOneWidget);
-    expect(find.text('Accra'), findsOneWidget);
+    expect(find.text('Kokrobite to Ada Foah'), findsOneWidget);
   });
 }

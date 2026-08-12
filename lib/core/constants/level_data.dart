@@ -2,6 +2,8 @@ import 'layout_data.dart';
 import 'batch_b_layout_data.dart';
 import 'chapter2_layout_data.dart';
 import 'tile_data.dart';
+import 'levels_41_80_candidate_data.dart';
+import 'levels_201_240_candidate_data.dart';
 
 class SymbolCopyPlan {
   final int symbolPoolSize;
@@ -128,7 +130,7 @@ List<String> _progressiveTileIds(
 LevelDefinition _level(
   int id,
   String name,
-  String chapter,
+  String _,
   NamedLayout layout,
   int symbols,
   String difficulty, {
@@ -138,7 +140,7 @@ LevelDefinition _level(
   return LevelDefinition(
     id: id,
     name: name,
-    chapter: chapter,
+    chapter: kJourneyCityNames[(id - 1) ~/ 10],
     namedLayout: layout,
     unlockRequirement: id - 1,
     symbolPlan: SymbolCopyPlan(
@@ -149,6 +151,31 @@ LevelDefinition _level(
     symbolStartIndex: symbolStart,
   );
 }
+
+/// Ghana Journey destinations ordered to grow from smaller communities into
+/// the country's largest urban centres as the campaign progresses.
+const kJourneyCityNames = [
+  'Kokrobite',
+  'Ada Foah',
+  'Aburi',
+  'Axim',
+  'Akosombo',
+  'Elmina',
+  'Winneba',
+  'Ho',
+  'Wa',
+  'Bolgatanga',
+  'Cape Coast',
+  'Koforidua',
+  'Techiman',
+  'Sunyani',
+  'Obuasi',
+  'Amanfrom',
+  'Sekondi-Takoradi',
+  'Tamale',
+  'Kumasi',
+  'Accra',
+];
 
 List<LevelDefinition> _extendedCampaignLevels() {
   final chapters = <({String chapter, String difficulty})>[
@@ -210,11 +237,19 @@ List<LevelDefinition> _extendedCampaignLevels() {
       for (var slot = 0; slot < motifs.length; slot++)
         _level(
           51 + chapterIndex * motifs.length + slot,
-          '${chapters[chapterIndex].chapter} ${motifs[slot]}',
+          chapterIndex < 3
+              ? kLevels41To80Candidates[
+                      10 + chapterIndex * motifs.length + slot]
+                  .proposedName
+              : '${chapters[chapterIndex].chapter} ${motifs[slot]}',
           chapters[chapterIndex].chapter,
-          chapterIndex == chapters.length - 1 && slot == motifs.length - 1
-              ? finalArchiveLayout
-              : layouts[(chapterIndex * 3 + slot) % layouts.length],
+          chapterIndex < 3
+              ? kLevels41To80Candidates[
+                      10 + chapterIndex * motifs.length + slot]
+                  .layout
+              : chapterIndex == chapters.length - 1 && slot == motifs.length - 1
+                  ? finalArchiveLayout
+                  : layouts[(chapterIndex * 3 + slot) % layouts.length],
           34 + chapterIndex * 3 + slot,
           chapters[chapterIndex].difficulty,
           symbolStart:
@@ -224,6 +259,21 @@ List<LevelDefinition> _extendedCampaignLevels() {
         ),
   ]);
 }
+
+List<LevelDefinition> _approvedLevels201To240() => List.unmodifiable([
+      for (var index = 0; index < kLevels201To240Candidates.length; index++)
+        LevelDefinition(
+          id: kLevels201To240Candidates[index].level,
+          name: kLevels201To240Candidates[index].proposedName,
+          chapter: index < 20 ? 'The Journey Reopens' : 'Living Memory',
+          namedLayout: kLevels201To240Candidates[index].layout,
+          unlockRequirement: kLevels201To240Candidates[index].level - 1,
+          symbolPlan: kLevels201To240Candidates[index].symbolPlan,
+          difficultyCategory:
+              kLevels201To240Candidates[index].difficultyCategory,
+          symbolStartIndex: 88 + index * 3,
+        ),
+    ]);
 
 final List<LevelDefinition> kLevels = [
   _level(1, 'First Symbols', 'Accra', earlyOpenDiamond01Layout, 7, 'Novice'),
@@ -319,27 +369,38 @@ final List<LevelDefinition> kLevels = [
   _level(40, 'Ancestral Trial', 'Obuasi', kChapter2LayoutCandidates[19].layout,
       40, 'Advanced',
       symbolStart: 66),
-  _level(41, 'Grand Treasury', 'Ho', grandTreasuryLayout, 42, 'Master',
+  _level(41, 'Grand turtle Path', 'Ho', kLevels41To80Candidates[0].layout, 42,
+      'Master',
       symbolStart: 68),
-  _level(42, 'Royal Courtyard', 'Ho', templeComplexLayout, 43, 'Master',
+  _level(42, 'Twin sanctuary Path', 'Ho', kLevels41To80Candidates[1].layout, 43,
+      'Master',
       symbolStart: 70),
-  _level(43, 'Golden Archive', 'Ho', finalArchiveLayout, 44, 'Master',
+  _level(43, 'Tall butterfly Path', 'Ho', kLevels41To80Candidates[2].layout, 44,
+      'Master',
       symbolStart: 72),
-  _level(44, 'Ancestral Map', 'Ho', complexFortressLayout, 42, 'Master',
+  _level(44, 'Royal mask Path', 'Ho', kLevels41To80Candidates[3].layout, 42,
+      'Master',
       symbolStart: 74),
-  _level(45, 'Complete Heritage', 'Ho', grandTurtleLayout, 40, 'Master',
+  _level(45, 'Spiral courtyard Path', 'Ho', kLevels41To80Candidates[4].layout,
+      40, 'Master',
       symbolStart: 76),
-  _level(46, 'Sacred Crown', 'Ho', ancestralCrownLayout, 42, 'Master',
+  _level(46, 'Layered bridges Path', 'Ho', kLevels41To80Candidates[5].layout,
+      42, 'Master',
       symbolStart: 78),
-  _level(47, 'Temple of Memory', 'Ho', templeComplexLayout, 44, 'Master',
+  _level(47, 'Hollow fortress Path', 'Ho', kLevels41To80Candidates[6].layout,
+      44, 'Master',
       symbolStart: 80),
-  _level(48, 'Treasury Wings', 'Ho', multiPeakLayout, 40, 'Master',
+  _level(48, 'Vertical fort Path', 'Ho', kLevels41To80Candidates[7].layout, 40,
+      'Master',
       symbolStart: 82),
-  _level(49, 'Grand Archive', 'Ho', grandTreasuryLayout, 44, 'Master',
+  _level(49, 'Ceremonial crown Path', 'Ho', kLevels41To80Candidates[8].layout,
+      44, 'Master',
       symbolStart: 84),
-  _level(50, 'Ancestral Treasury', 'Ho', finalArchiveLayout, 46, 'Master',
+  _level(50, 'Multi-arch gate Path', 'Ho', kLevels41To80Candidates[9].layout,
+      46, 'Master',
       symbolStart: 86),
   ..._extendedCampaignLevels(),
+  ..._approvedLevels201To240(),
 ];
 
 /// Long-term target. Never use this to index [kLevels] or render level cards.

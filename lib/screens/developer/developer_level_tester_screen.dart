@@ -5,6 +5,8 @@ import '../../core/constants/layout_data.dart';
 import '../../core/constants/batch_b_layout_data.dart';
 import '../../core/constants/level_data.dart';
 import '../../core/constants/levels_81_160_candidate_data.dart';
+import '../../core/constants/levels_201_240_candidate_data.dart';
+import '../../core/constants/levels_241_280_candidate_data.dart';
 import '../../core/constants/tile_data.dart';
 import '../../core/constants/tile_unlock_data.dart';
 import '../../core/router/navigation_helpers.dart';
@@ -189,6 +191,60 @@ class DeveloperLevelTesterScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    'LEVELS 201–240 · APPROVED PRODUCTION SOURCE',
+                    style: AppTextStyles.displaySmall.copyWith(
+                      color: SankofaGameTheme.antiqueGold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                sliver: SliverGrid.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 330,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.54,
+                  ),
+                  itemCount: kLevels201To240Candidates.length,
+                  itemBuilder: (context, index) => _ExpansionCandidateCard(
+                    candidate: kLevels201To240Candidates[index],
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    'LEVELS 241–280 · HUMAN-REVIEW CANDIDATES · ISOLATED',
+                    style: AppTextStyles.displaySmall.copyWith(
+                      color: SankofaGameTheme.antiqueGold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                sliver: SliverGrid.builder(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 330,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.50,
+                  ),
+                  itemCount: kLevels241To280Candidates.length,
+                  itemBuilder: (context, index) => _RoadmapCandidateCard(
+                    candidate: kLevels241To280Candidates[index],
+                  ),
+                ),
+              ),
               // Layout Library section
               SliverToBoxAdapter(
                 child: Padding(
@@ -273,7 +329,7 @@ class _FutureCandidateCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Proposed Level ${candidate.level}',
+            'Production Level ${candidate.level}',
             style: AppTextStyles.titleMedium.copyWith(
               color: SankofaGameTheme.antiqueGold,
             ),
@@ -330,7 +386,146 @@ class _FutureCandidateCard extends StatelessWidget {
           ),
           const Spacer(),
           Text(
+            'Human approved · production assigned · frozen',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Colors.lightGreenAccent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpansionCandidateCard extends StatelessWidget {
+  const _ExpansionCandidateCard({required this.candidate});
+
+  final ExpansionLayoutCandidate candidate;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = candidate.layout.stats;
+    final finale = kLevels201To240Finales.contains(candidate.level);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Proposed Level ${candidate.level}',
+            style: AppTextStyles.titleMedium.copyWith(
+              color: SankofaGameTheme.antiqueGold,
+            ),
+          ),
+          Text(
+            candidate.proposedName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: SankofaGameTheme.parchmentLight,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _InfoLine(label: 'ID', value: candidate.layout.id),
+          _InfoLine(label: 'Family', value: candidate.family),
+          _InfoLine(label: 'Class', value: candidate.silhouetteClass),
+          _InfoLine(
+            label: 'Tiles / pairs',
+            value: '${stats.tileCount} / ${stats.pairCount}',
+          ),
+          _InfoLine(
+            label: 'Symbols',
+            value: '${candidate.symbolPlan.symbolPoolSize}',
+          ),
+          _InfoLine(
+            label: 'Opening gate',
+            value: finale ? '5 legal / 5 safe' : '3 legal / 3 safe',
+          ),
+          _InfoLine(
+            label: 'Role',
+            value: finale
+                ? 'chapter finale'
+                : candidate.isBreather
+                    ? 'breather'
+                    : 'frontier',
+          ),
+          const Spacer(),
+          Text(
             'Developer preview only · not assigned',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Colors.lightGreenAccent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoadmapCandidateCard extends StatelessWidget {
+  const _RoadmapCandidateCard({required this.candidate});
+
+  final RoadmapLayoutCandidate candidate;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = candidate.layout.stats;
+    final finale = kLevels241To280Finales.contains(candidate.level);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Candidate Level ${candidate.level}',
+            style: AppTextStyles.titleMedium.copyWith(
+              color: SankofaGameTheme.antiqueGold,
+            ),
+          ),
+          Text(
+            candidate.proposedName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: SankofaGameTheme.parchmentLight,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _InfoLine(label: 'ID', value: candidate.layout.id),
+          _InfoLine(label: 'Chapter', value: '${candidate.chapter}'),
+          _InfoLine(label: 'Family', value: candidate.family),
+          _InfoLine(label: 'Class', value: candidate.silhouetteClass),
+          _InfoLine(label: 'Fullness', value: candidate.fullnessClass),
+          _InfoLine(
+            label: 'Tiles / pairs',
+            value: '${stats.tileCount} / ${stats.pairCount}',
+          ),
+          _InfoLine(
+            label: 'Symbols',
+            value: '${candidate.symbolPlan.symbolPoolSize}',
+          ),
+          _InfoLine(
+            label: 'Opening gate',
+            value: finale
+                ? '5 legal / 5 safe'
+                : candidate.level == 241
+                    ? '4 legal / 4 safe'
+                    : '3 legal / 3 safe',
+          ),
+          _InfoLine(
+            label: 'Role',
+            value: [
+              if (candidate.isAnchor) 'anchor',
+              if (candidate.isBreather) 'breather',
+              if (candidate.isShowcase) 'showcase',
+              if (finale) 'finale',
+            ].join(' · '),
+          ),
+          const Spacer(),
+          Text(
+            'Developer-only · no production route',
             style: AppTextStyles.bodySmall.copyWith(
               color: Colors.lightGreenAccent,
             ),

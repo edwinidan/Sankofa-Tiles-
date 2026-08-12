@@ -36,8 +36,8 @@ void main() {
       expect(summary.unlockedSymbols, hasLength(level == 4 ? 1 : 0));
     }
     expect(storage.getUnlockedCollectionIds(), hasLength(11));
-    expect(storage.isCollectionUnlocked(tileIdsUnlockedAtLevel(4).single),
-        isTrue);
+    expect(
+        storage.isCollectionUnlocked(tileIdsUnlockedAtLevel(4).single), isTrue);
 
     final restarted = EconomyService(storage);
     expect(restarted.loadState().unlockedCollectionIds, hasLength(11));
@@ -94,6 +94,31 @@ void main() {
       second.getUnlockedCollectionIds(),
       containsAll(legacyV1TileIdsUnlockedThroughLevel(80)),
     );
+  });
+
+  test('post-200 milestone is additive for a schema-v4 veteran', () async {
+    final milestoneId = tileIdsUnlockedAtLevel(202).single;
+    SharedPreferences.setMockInitialValues({
+      'campaign_progress_schema_version': 4,
+      'highest_completed_level': 200,
+      'completed_200': true,
+      'collection_unlocked_$milestoneId': true,
+      'economy_cowries': 321,
+      'monetization_entitlement_remove_ads': true,
+    });
+    final storage = StorageService();
+    await storage.init();
+    final before = storage.getUnlockedCollectionIds();
+    final summary = await EconomyService(storage).grantLevelRewards(
+      gameState: _wonLevel(202),
+      previousStars: 0,
+      wasCompleted: false,
+    );
+
+    expect(summary.unlockedSymbols, isEmpty);
+    expect(storage.getUnlockedCollectionIds(), before);
+    expect(storage.isCollectionUnlocked(milestoneId), isTrue);
+    expect(storage.hasMonetizationEntitlement('remove_ads'), isTrue);
   });
 }
 

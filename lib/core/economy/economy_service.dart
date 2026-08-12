@@ -272,8 +272,8 @@ class EconomyService {
       'chapter_complete' => isChapterFinalLevel(state.levelId),
       'discover_20_symbols' => _storage.getUnlockedCollectionIds().length >= 20,
       'earn_50_stars' => totalStars >= 50,
-      'complete_campaign' => completed >= kImplementedFinalLevelId ||
-          state.levelId >= kImplementedFinalLevelId,
+      'complete_campaign' => completed >= kPlannedCampaignLevelCount ||
+          state.levelId >= kPlannedCampaignLevelCount,
       _ => false,
     };
   }
