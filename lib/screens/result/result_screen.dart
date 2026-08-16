@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../core/utils/audio_service.dart';
+import '../../core/utils/haptic_service.dart';
 import '../../models/game_state.dart';
 import '../../models/game_launch_config.dart';
 import '../../providers/game_provider.dart';
@@ -36,6 +38,27 @@ class ResultScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<ResultScreen> createState() => _ResultScreenState();
+}
+
+/// Opens the production symbol-unlock ceremony without changing progression.
+/// Intended only for the developer-tools test button.
+Future<void> showDebugUnlockRevealPreview(
+  BuildContext context, {
+  String tileId = 'nea_onnim',
+}) async {
+  final tile = _tileById(tileId);
+  if (tile == null) return;
+
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: SankofaGameTheme.backgroundTop.withValues(alpha: 0.88),
+    builder: (_) => _UnlockRevealDialog(
+      tile: tile,
+      currentIndex: 1,
+      totalCount: 1,
+    ),
+  );
 }
 
 class _ResultScreenState extends ConsumerState<ResultScreen>
@@ -177,6 +200,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         await showDialog<void>(
           context: context,
           barrierDismissible: false,
+          barrierColor: SankofaGameTheme.backgroundTop.withValues(alpha: 0.88),
           builder: (dialogContext) {
             return _UnlockRevealDialog(
               tile: tile,
@@ -683,7 +707,7 @@ class _RewardReveal extends StatelessWidget {
   }
 }
 
-class _UnlockRevealDialog extends StatelessWidget {
+class _UnlockRevealDialog extends ConsumerStatefulWidget {
   const _UnlockRevealDialog({
     required this.tile,
     required this.currentIndex,
@@ -695,61 +719,417 @@ class _UnlockRevealDialog extends StatelessWidget {
   final int totalCount;
 
   @override
+  ConsumerState<_UnlockRevealDialog> createState() =>
+      _UnlockRevealDialogState();
+}
+
+class _UnlockRevealDialogState extends ConsumerState<_UnlockRevealDialog>
+    with SingleTickerProviderStateMixin {
+  static const _revealDuration = Duration(milliseconds: 1800);
+
+  late final AnimationController _revealController;
+  late final Animation<double> _cardOpacity;
+  late final Animation<Offset> _cardOffset;
+  late final Animation<double> _headingOpacity;
+  late final Animation<double> _tileTurn;
+  late final Animation<double> _tileScale;
+  late final Animation<double> _nameOpacity;
+  late final Animation<Offset> _nameOffset;
+  late final Animation<double> _meaningOpacity;
+  late final Animation<double> _buttonOpacity;
+  Timer? _accentTimer;
+  bool _started = false;
+  bool _accentPlayed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _revealController = AnimationController(
+      vsync: this,
+      duration: _revealDuration,
+    );
+    _cardOpacity = CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0, 0.22, curve: Curves.easeOut),
+    );
+    _cardOffset = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0, 0.28, curve: Curves.easeOutCubic),
+    ));
+    _headingOpacity = CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0.08, 0.3, curve: Curves.easeOut),
+    );
+    _tileTurn = Tween<double>(begin: math.pi / 2, end: 0).animate(
+      CurvedAnimation(
+        parent: _revealController,
+        curve: const Interval(0.2, 0.58, curve: Curves.easeOutBack),
+      ),
+    );
+    _tileScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.72, end: 1.08), weight: 72),
+      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1), weight: 28),
+    ]).animate(CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0.2, 0.68, curve: Curves.easeOut),
+    ));
+    _nameOpacity = CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0.52, 0.74, curve: Curves.easeOut),
+    );
+    _nameOffset = Tween<Offset>(
+      begin: const Offset(0, 0.25),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0.52, 0.78, curve: Curves.easeOutCubic),
+    ));
+    _meaningOpacity = CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0.66, 0.86, curve: Curves.easeOut),
+    );
+    _buttonOpacity = CurvedAnimation(
+      parent: _revealController,
+      curve: const Interval(0.82, 1, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _revealController.value = 1;
+      _playRevealAccent(useSequence: false);
+      return;
+    }
+
+    _revealController.forward();
+    _accentTimer = Timer(
+      const Duration(milliseconds: 720),
+      _playRevealAccent,
+    );
+  }
+
+  void _playRevealAccent({bool useSequence = true}) {
+    if (!mounted || _accentPlayed) return;
+    _accentPlayed = true;
+    unawaited(ref.read(audioServiceProvider).playMatch());
+    final intensity = ref.read(settingsProvider).hapticIntensity;
+    if (useSequence) {
+      HapticService.sequence(intensity, const [0, 110]);
+    } else {
+      HapticService.heavyImpact(intensity);
+    }
+  }
+
+  Future<void> _finishReveal() async {
+    if (_revealController.value >= 1) return;
+    _accentTimer?.cancel();
+    await _revealController.animateTo(
+      1,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+    _playRevealAccent();
+  }
+
+  void _continue() {
+    if (_revealController.value < 1) {
+      unawaited(_finishReveal());
+      return;
+    }
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  void dispose() {
+    _accentTimer?.cancel();
+    _revealController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final countLabel = totalCount > 1 ? ' $currentIndex of $totalCount' : '';
+    final tile = widget.tile;
 
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Semantics(
-        label: 'New Adinkra symbol unlocked: ${tile.name}. ${tile.meaning}',
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 420),
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-          decoration: SankofaGameTheme.appParchmentPanelDecoration,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'New Symbol Unlocked$countLabel',
-                style: AppTextStyles.archiveTitleLarge.copyWith(
-                  color: SankofaGameTheme.mutedGold,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _finishReveal,
+        child: FadeTransition(
+          opacity: _cardOpacity,
+          child: SlideTransition(
+            position: _cardOffset,
+            child: Semantics(
+              liveRegion: true,
+              label:
+                  'New Adinkra symbol unlocked: ${tile.name}. ${tile.meaning}',
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+                decoration: SankofaGameTheme.appParchmentPanelDecoration,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FadeTransition(
+                      opacity: _headingOpacity,
+                      child: Column(
+                        children: [
+                          Text(
+                            'New Symbol Unlocked',
+                            style: AppTextStyles.archiveTitleLarge.copyWith(
+                              color: SankofaGameTheme.mutedGold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (widget.totalCount > 1) ...[
+                            const SizedBox(height: 7),
+                            _UnlockProgressPill(
+                              currentIndex: widget.currentIndex,
+                              totalCount: widget.totalCount,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _ArtifactTileReveal(
+                      tile: tile,
+                      controller: _revealController,
+                      turn: _tileTurn,
+                      scale: _tileScale,
+                    ),
+                    const SizedBox(height: 8),
+                    FadeTransition(
+                      opacity: _nameOpacity,
+                      child: SlideTransition(
+                        position: _nameOffset,
+                        child: Text(
+                          tile.name,
+                          key: const ValueKey('unlock-symbol-name'),
+                          style: AppTextStyles.archiveDisplayMedium.copyWith(
+                            color: SankofaGameTheme.darkText,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FadeTransition(
+                      opacity: _meaningOpacity,
+                      child: Text(
+                        tile.meaning,
+                        key: const ValueKey('unlock-symbol-meaning'),
+                        style: AppTextStyles.archiveBodyMedium.copyWith(
+                          color: SankofaGameTheme.mutedGold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FadeTransition(
+                      opacity: _buttonOpacity,
+                      child: AnimatedBuilder(
+                        animation: _revealController,
+                        builder: (context, child) => IgnorePointer(
+                          key: const ValueKey('unlock-reveal-action-gate'),
+                          ignoring: _revealController.value < 0.88,
+                          child: child,
+                        ),
+                        child: KenteButton(
+                          label: widget.currentIndex == widget.totalCount
+                              ? 'CONTINUE'
+                              : 'NEXT SYMBOL',
+                          icon: widget.currentIndex == widget.totalCount
+                              ? Icons.check
+                              : Icons.arrow_forward,
+                          width: double.infinity,
+                          onTap: _continue,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              _UnlockRevealImage(tile: tile),
-              const SizedBox(height: 16),
-              Text(
-                tile.name,
-                style: AppTextStyles.archiveDisplayMedium.copyWith(
-                  color: SankofaGameTheme.darkText,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                tile.meaning,
-                style: AppTextStyles.archiveBodyMedium.copyWith(
-                  color: SankofaGameTheme.mutedGold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              KenteButton(
-                label: currentIndex == totalCount ? 'CONTINUE' : 'NEXT SYMBOL',
-                icon: currentIndex == totalCount
-                    ? Icons.check
-                    : Icons.arrow_forward,
-                width: double.infinity,
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _UnlockProgressPill extends StatelessWidget {
+  const _UnlockProgressPill({
+    required this.currentIndex,
+    required this.totalCount,
+  });
+
+  final int currentIndex;
+  final int totalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.34),
+        ),
+      ),
+      child: Text(
+        'Discovery $currentIndex of $totalCount',
+        style: AppTextStyles.labelSmall.copyWith(
+          color: SankofaGameTheme.mutedGold,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _ArtifactTileReveal extends StatelessWidget {
+  const _ArtifactTileReveal({
+    required this.tile,
+    required this.controller,
+    required this.turn,
+    required this.scale,
+  });
+
+  final TileDefinition tile;
+  final AnimationController controller;
+  final Animation<double> turn;
+  final Animation<double> scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: const ValueKey('artifact-tile-reveal'),
+      width: 200,
+      height: 180,
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) {
+          final revealProgress = Curves.easeOut.transform(
+            ((controller.value - 0.18) / 0.5).clamp(0.0, 1.0),
+          );
+          final glowPulse = math.sin(revealProgress * math.pi);
+
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              CustomPaint(
+                size: const Size(200, 180),
+                painter: _ArtifactParticlePainter(progress: revealProgress),
+              ),
+              Container(
+                width: 154 + (glowPulse * 18),
+                height: 154 + (glowPulse * 18),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      SankofaGameTheme.antiqueGold
+                          .withValues(alpha: 0.34 * revealProgress),
+                      SankofaGameTheme.antiqueGold.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+              Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.0012)
+                  ..rotateY(turn.value),
+                child: Transform.scale(
+                  scale: scale.value,
+                  child: _UnlockRevealImage(tile: tile),
+                ),
+              ),
+              if (controller.value > 0.46 && controller.value < 0.82)
+                IgnorePointer(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: SizedBox(
+                      width: 144,
+                      height: 144,
+                      child: Opacity(
+                        opacity: math.sin(
+                          ((controller.value - 0.46) / 0.36) * math.pi,
+                        ),
+                        child: Transform.translate(
+                          offset: Offset(
+                            -70 + (((controller.value - 0.46) / 0.36) * 140),
+                            0,
+                          ),
+                          child: Container(
+                            width: 18,
+                            height: 136,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withValues(alpha: 0),
+                                  Colors.white.withValues(alpha: 0.58),
+                                  SankofaGameTheme.antiqueGold
+                                      .withValues(alpha: 0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ArtifactParticlePainter extends CustomPainter {
+  const _ArtifactParticlePainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+    final center = size.center(Offset.zero);
+    final paint = Paint()..color = SankofaGameTheme.antiqueGold;
+
+    for (var index = 0; index < 14; index++) {
+      final angle = ((math.pi * 2) / 14) * index - (math.pi / 2);
+      final stagger = (index % 4) * 0.035;
+      final local = ((progress - stagger) / (1 - stagger)).clamp(0.0, 1.0);
+      final radius = 34 + (local * (42 + ((index % 3) * 7)));
+      final opacity = math.sin(local * math.pi).clamp(0.0, 1.0) * 0.72;
+      paint.color = SankofaGameTheme.antiqueGold.withValues(alpha: opacity);
+      final position = Offset(
+        center.dx + (math.cos(angle) * radius),
+        center.dy + (math.sin(angle) * radius * 0.82),
+      );
+      canvas.drawCircle(position, 1.5 + ((index % 3) * 0.7), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArtifactParticlePainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _UnlockRevealImage extends StatelessWidget {

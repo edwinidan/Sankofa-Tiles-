@@ -37,7 +37,10 @@ const _wonUnlockLevel = GameState(
   shufflesUsed: 0,
 );
 
-Widget _resultHarness(StorageService storage) {
+Widget _resultHarness(
+  StorageService storage, {
+  bool disableAnimations = false,
+}) {
   return ProviderScope(
     overrides: [
       audioServiceProvider.overrideWithValue(
@@ -45,8 +48,14 @@ Widget _resultHarness(StorageService storage) {
       ),
       storageServiceProvider.overrideWithValue(storage),
     ],
-    child: const MaterialApp(
-      home: ResultScreen(
+    child: MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          disableAnimations: disableAnimations,
+        ),
+        child: child!,
+      ),
+      home: const ResultScreen(
         gameState: _wonUnlockLevel,
         launchConfig: GameLaunchConfig(
           levelId: 4,
@@ -55,6 +64,19 @@ Widget _resultHarness(StorageService storage) {
       ),
     ),
   );
+}
+
+Future<void> _pumpUntilRevealAppears(WidgetTester tester) async {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    if (find
+        .byKey(const ValueKey('artifact-tile-reveal'))
+        .evaluate()
+        .isNotEmpty) {
+      return;
+    }
+    await tester.pump(const Duration(milliseconds: 25));
+  }
+  fail('Unlock reveal did not appear');
 }
 
 Future<void> _dismissUnlockReveals(WidgetTester tester) async {
@@ -118,5 +140,43 @@ void main() {
       tester.getBottomRight(find.text('NEXT LEVEL')).dy,
       lessThanOrEqualTo(logicalScreenHeight),
     );
+  });
+
+  testWidgets('tapping an active reveal completes it before continuing',
+      (tester) async {
+    final storage = await _storage({});
+
+    await tester.pumpWidget(_resultHarness(storage));
+    await _pumpUntilRevealAppears(tester);
+
+    var actionGate = tester.widget<IgnorePointer>(
+      find.byKey(const ValueKey('unlock-reveal-action-gate')),
+    );
+    expect(actionGate.ignoring, isTrue);
+
+    await tester.tap(find.byKey(const ValueKey('artifact-tile-reveal')));
+    await tester.pumpAndSettle();
+
+    actionGate = tester.widget<IgnorePointer>(
+      find.byKey(const ValueKey('unlock-reveal-action-gate')),
+    );
+    expect(actionGate.ignoring, isFalse);
+    expect(find.text('CONTINUE'), findsOneWidget);
+  });
+
+  testWidgets('reduced motion shows the completed reveal immediately',
+      (tester) async {
+    final storage = await _storage({});
+
+    await tester.pumpWidget(
+      _resultHarness(storage, disableAnimations: true),
+    );
+    await _pumpUntilRevealAppears(tester);
+
+    final actionGate = tester.widget<IgnorePointer>(
+      find.byKey(const ValueKey('unlock-reveal-action-gate')),
+    );
+    expect(actionGate.ignoring, isFalse);
+    expect(find.text('CONTINUE'), findsOneWidget);
   });
 }

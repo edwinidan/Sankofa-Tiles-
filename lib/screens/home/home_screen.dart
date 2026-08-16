@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/chapter_data.dart';
 import '../../core/constants/level_data.dart';
+import '../../core/config/developer_tools_config.dart';
 import '../../core/economy/economy_models.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
@@ -11,6 +12,7 @@ import '../../models/game_launch_config.dart';
 import '../../providers/economy_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../result/result_screen.dart';
 import '../../widgets/cowrie_icon.dart';
 import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
@@ -142,6 +144,16 @@ class HomeScreen extends ConsumerWidget {
                                   context.push('/settings');
                                 },
                               ),
+                              if (developerToolsEnabled) ...[
+                                const SizedBox(height: 12),
+                                KenteButton(
+                                  label: 'TEST SYMBOL REVEAL',
+                                  icon: Icons.auto_awesome_outlined,
+                                  width: double.infinity,
+                                  onTap: () =>
+                                      showDebugUnlockRevealPreview(context),
+                                ),
+                              ],
                               const SizedBox(height: 14),
                               const _RewardEntryRow(),
                             ],
