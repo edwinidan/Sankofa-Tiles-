@@ -84,8 +84,8 @@ void main() {
       kLevels201To240Candidates.map((candidate) => candidate.family).toSet(),
       hasLength(40),
     );
-    expect(kImplementedFinalLevelId, 240);
-    expect(kLevels, hasLength(240));
+    expect(kImplementedFinalLevelId, 280);
+    expect(kLevels, hasLength(280));
     for (final candidate in kLevels201To240Candidates) {
       final production = getLevelById(candidate.level)!;
       expect(production.name, candidate.proposedName);
@@ -102,7 +102,7 @@ void main() {
       );
       expect(candidate.features, hasLength(greaterThanOrEqualTo(2)));
     }
-    expect(getLevelById(241), isNull);
+    expect(getLevelById(241), isNotNull);
   });
 
   test('bulky redesign preserves identity while replacing every footprint', () {

@@ -29,23 +29,20 @@ The app currently implements two categories of ads: **Rewarded Ads** (where user
 
 ## 2. Key Technical & Configuration Findings
 
-### ⚠️ Missing Production Unit IDs (Critical Production Risk)
-In [lib/core/ads/ad_ids.dart](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/lib/core/ads/ad_ids.dart), the production unit mapping is configured as follows:
-* **Production IDs configured:** `freeHint`, `retryAssistance` (Continue), and `afterCompletedLevels`.
-* **No Production IDs configured (returns `null` in release builds):**
-  * `doubleCompletionCowries`
-  * `freeRescueShuffle`
-  * `bonusDailyChest`
-  * `smallShopReward`
-  * `returningHome` (interstitial)
-  * `beforeNewChapter` (interstitial)
+### ✅ Production Unit IDs Configured For Enabled Placements
+In `lib/core/ads/ad_ids.dart`, every enabled rewarded placement plus the
+level-transition interstitial and settings banner has a distinct Android and
+iOS production ad-unit ID. The unused `returningHome` and `beforeNewChapter`
+interstitial placements intentionally return `null`.
 
-> [!WARNING]
-> **Impact:** In release mode with production ads enabled (`USE_PRODUCTION_ADS=true`), any request for the missing placements will immediately fail. The user will see an **"Ad unavailable"** message in a SnackBar, and the buttons will effectively act as dead-ends, preventing players from obtaining these rewards.
+Release builds automatically select production IDs through
+`kReleaseMode || useProductionAds`. Debug builds use Google's platform-specific
+test IDs by default.
 
-### 🚫 iOS Ads Completely Disabled
-Currently, [lib/core/ads/ad_ids.dart](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/lib/core/ads/ad_ids.dart) checks `defaultTargetPlatform == TargetPlatform.android` and returns `null` for iOS. 
-* **Impact:** No ads of any kind (rewarded or interstitial) will load or show on iOS devices in both testing and production modes.
+### ✅ iOS Ads Configured
+The iOS AdMob App ID is configured in `ios/Runner/Info.plist`, and the resolver
+returns iOS-specific test or production ad-unit IDs for supported placements.
+It does not return Android IDs on iOS.
 
 ### 🔄 Session Cap Resets on Boot
 The `sessionInterstitialCap` (set to `2` per session) is stored in `SharedPreferences` but is explicitly reset to `0` in `StorageService.init()` every time the app boots.
@@ -74,17 +71,12 @@ The `sessionInterstitialCap` (set to `2` per session) is stored in `SharedPrefer
   > **[ WATCH ]**  **[ CANCEL ]**
 * **Rationale:** This preserves active gameplay flow, prevents accidental ad triggers, and aligns with Google Mobile Ads policies regarding user consent and expectations.
 
-### 💡 Recommendation 2: Address the Missing Production Ad IDs
-* **Action:** Either:
-  1. **Generate AdMob Unit IDs** in the Google AdMob console for `doubleCompletionCowries`, `freeRescueShuffle`, `bonusDailyChest`, and `smallShopReward`, and add them to [lib/core/ads/ad_ids.dart](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/lib/core/ads/ad_ids.dart).
-  2. **Or Remove the Placements / Hide the UI elements** in production if you do not want to set up individual ad units for them. For example, hide the "Free Shop Gift" or disable the "DOUBLE COWRIES" button if their ad units are not created, avoiding dead/error buttons.
-
-### 💡 Recommendation 3: Add iOS Configuration (If iOS is a Target Release)
-* **Action:** 
-  1. Update `lib/core/ads/ad_ids.dart` to support `TargetPlatform.iOS`.
-  2. Add iOS AdMob App ID and corresponding iOS Ad Unit IDs (test and production).
-  3. Ensure UMP Consent settings are initialized for iOS.
-* **Rationale:** The project targets both Android and iOS, but the current configuration ignores iOS completely.
+### 💡 Recommendation 2: Enforce Release-Test Safety
+* **Action:** Test TestFlight and other release builds only on devices registered
+  as AdMob test devices. Confirm the **Test Ad** or **Test mode** indicator is
+  visible before interacting. Publishers must never click their own live ads.
+* **Rationale:** Release builds automatically use the configured production IDs,
+  including the iOS IDs used by App Store builds.
 
 ### 💡 Recommendation 4: Remove Unused Interstitial Placements
 * **Action:** Remove `returningHome` and `beforeNewChapter` from the `InterstitialPlacement` enum in [lib/core/monetization/monetization_models.dart](file:///Users/edwinrichardidan/projects/GitHub/Sankofa-Tiles-/lib/core/monetization/monetization_models.dart) and their corresponding lines in `ad_ids.dart`.

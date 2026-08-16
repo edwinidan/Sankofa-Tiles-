@@ -1,7 +1,8 @@
 # Levels 201–240 production assignment
 
-Status: assigned, verified, and frozen at the current implemented-content
-boundary. The planned campaign and collection horizons remain Level 400.
+Status: assigned, verified, and frozen. This historical checkpoint predates
+the approved Levels 241–280 production assignment; the planned campaign and
+collection horizons remain Level 400.
 
 ## Final Level 240 refinement
 
@@ -31,11 +32,12 @@ Final Level 240 coordinates:
 
 ## Production assignment and boundaries
 
-- `kLevels` contains the contiguous IDs 1–240.
+- At this checkpoint, `kLevels` contained the contiguous IDs 1–240.
 - `kImplementedCampaignLevelCount` and `kImplementedFinalLevelId` resolve to
   240 from the production registry.
 - `kPlannedCampaignLevelCount` and `kCollectionScheduleFinalLevel` remain 400.
-- `getLevelById(241)` returns `null`; Levels 241–400 have no production route.
+- This checkpoint ended at Level 240. The later Levels 241–280 assignment is
+  documented separately; Levels 281–400 remain unavailable.
 - Production definitions 201–240 exactly match the frozen candidate IDs,
   names, coordinates, tile totals, symbol-plan totals, and chapter membership.
 - Chapter 11, **The Journey Reopens**, contains Levels 201–220.
@@ -75,9 +77,9 @@ not create repeated unlocks. The release continues to use the existing 97 tile
 faces; no new face was added.
 
 Verified transitions are 199→200, 200→201, 219→220, 220→221, and 239→240.
-After Level 240 the UI shows **Current Journey Complete** and offers no Level
-241 navigation. The permanent 400-level campaign achievement remains tied to
-the planned horizon.
+At this checkpoint Level 240 was the current boundary. It now continues to
+Level 241; the permanent 400-level campaign achievement remains tied to the
+planned horizon.
 
 ## Production visual evidence
 
@@ -100,5 +102,4 @@ shadows, background, and production scaling/centering.
 - `level-220-vs-240-finale-comparison.png`
 - `production-finale-comparison-levels-200-220-240.png`
 
-No Level 241–280 design work was performed, no tile faces were added, and no
-commit or push was made.
+No Level 241–280 design work was part of this earlier checkpoint.

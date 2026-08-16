@@ -7,8 +7,10 @@ import '../../core/economy/economy_models.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
+import '../../models/game_launch_config.dart';
 import '../../providers/economy_provider.dart';
 import '../../providers/progress_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/cowrie_icon.dart';
 import '../../widgets/sankofa_background.dart';
 import '../../widgets/kente_button.dart';
@@ -21,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final showHowToPlay = progress.shouldShowHowToPlayPrompt;
+    final savedGame = ref.read(storageServiceProvider).getActiveGameSummary();
 
     return Scaffold(
       backgroundColor: SankofaGameTheme.backgroundTop,
@@ -58,10 +61,24 @@ class HomeScreen extends ConsumerWidget {
                           child: Column(
                             children: [
                               KenteButton(
-                                label: 'CONTINUE',
+                                label: savedGame == null
+                                    ? 'CONTINUE'
+                                    : 'CONTINUE LEVEL ${savedGame.levelId}',
                                 icon: Icons.play_arrow_rounded,
                                 width: double.infinity,
                                 onTap: () {
+                                  if (savedGame != null) {
+                                    context.push(
+                                      '/game/${savedGame.levelId}',
+                                      extra: GameLaunchConfig(
+                                        levelId: savedGame.levelId,
+                                        launchMode:
+                                            GameLaunchMode.normalProgression,
+                                        resumeSavedGame: true,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   final levelId = ref
                                       .read(progressProvider)
                                       .nextUnfinishedLevelId;
@@ -69,7 +86,8 @@ class HomeScreen extends ConsumerWidget {
                                   if (levelId == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('All Levels Completed'),
+                                        content: Text(
+                                            'All Current Levels Completed'),
                                       ),
                                     );
                                     return;
@@ -77,6 +95,26 @@ class HomeScreen extends ConsumerWidget {
                                   context.push('/level/$levelId');
                                 },
                               ),
+                              if (savedGame != null) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${savedGame.remainingTiles} tiles remaining',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: SankofaGameTheme.mutedGold,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    final levelId = ref
+                                        .read(progressProvider)
+                                        .nextUnfinishedLevelId;
+                                    if (levelId != null) {
+                                      context.push('/level/$levelId');
+                                    }
+                                  },
+                                  child: const Text('Start another level'),
+                                ),
+                              ],
                               const SizedBox(height: 12),
                               KenteButton(
                                 label: 'JOURNEY',
@@ -154,7 +192,7 @@ class _ProgressSummary extends ConsumerWidget {
           children: [
             Text(
               progress.hasCompletedAllLevels
-                  ? 'Campaign Complete'
+                  ? 'Current Journey Complete'
                   : 'Current Chapter: ${chapter.title}',
               style: AppTextStyles.titleMedium.copyWith(
                 color: SankofaGameTheme.antiqueGold,

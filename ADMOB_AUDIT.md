@@ -71,11 +71,10 @@ The notifier now attempts to show a rewarded AdMob ad first. The Hint booster is
 granted only if the rewarded callback is earned.
 
 Debug and profile builds resolve this placement to Google's official rewarded
-test ad unit. A production ad unit is selected only in a release build with:
-
-```sh
-flutter build appbundle --release --dart-define=USE_PRODUCTION_ADS=true
-```
+test ad unit by default. Release builds automatically select the correct
+platform-specific production ad unit. `USE_PRODUCTION_ADS=true` remains an
+optional override for intentional non-release verification; it is not required
+for store release builds.
 
 ## Continue After Loss
 
@@ -118,12 +117,25 @@ pass explicit context when they invoke interstitial eligibility.
 All IDs live in `lib/core/ads/ad_ids.dart`.
 
 - Android app ID is inserted once in `AndroidManifest.xml`.
+- iOS app ID is inserted once in `ios/Runner/Info.plist`.
 - Debug/profile builds use Google's official sample test ad-unit IDs.
-- Release builds still use test IDs unless `USE_PRODUCTION_ADS=true`.
-- Production IDs are selected only when `kReleaseMode && useProductionAds`.
+- Release builds automatically use production IDs.
+- Production IDs are selected when `kReleaseMode || useProductionAds`.
 - Android app ID is validated for `~`.
 - Ad-unit IDs are validated for `/`.
-- iOS returns `null` for ad IDs and remains unsupported for this phase.
+- Android and iOS production IDs exist for every enabled placement, and the
+  platform-specific resolver prevents one platform's ID from being returned
+  for the other.
+
+## Release And TestFlight Ad Safety
+
+- TestFlight and release-build testing must occur only on a device registered
+  as an AdMob test device.
+- Confirm that every ad displays the **Test Ad** or **Test mode** indicator
+  before anyone interacts with it.
+- Publishers must never click their own live production ads.
+- App Store production builds automatically use the configured iOS production
+  ad-unit IDs; no `USE_PRODUCTION_ADS` flag is required.
 
 ## Missing Information Requiring Edwin's Action
 

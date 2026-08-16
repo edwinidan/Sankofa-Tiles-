@@ -218,6 +218,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       },
       child: Scaffold(
         backgroundColor: SankofaGameTheme.backgroundTop,
+        bottomNavigationBar: isWin ? _buildPersistentWinActions(context) : null,
         body: SankofaBackground(
           child: SafeArea(
             child: FadeTransition(
@@ -225,10 +226,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 48,
+                        minHeight: constraints.maxHeight > 40
+                            ? constraints.maxHeight - 40
+                            : 0,
                       ),
                       child: Center(
                         child: ConstrainedBox(
@@ -240,9 +243,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                                   bestScore: bestScore,
                                   rewardSummary: _rewardSummary,
                                   scaleAnim: _scaleAnim,
-                                  launchConfig: widget.launchConfig,
-                                  onBeforePrimaryNavigation:
-                                      _continueAfterInterstitial,
                                 )
                               : _LoseContent(
                                   gameState: widget.gameState,
@@ -259,6 +259,67 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildPersistentWinActions(BuildContext context) {
+    final gameState = widget.gameState;
+    late final Widget actions;
+
+    if (widget.launchConfig.isDeveloperTest) {
+      actions = _DeveloperResultActions(
+        levelId: gameState.levelId,
+        includeNext: gameState.levelId < kLevels.last.id,
+      );
+    } else if (isChapterFinalLevel(gameState.levelId)) {
+      actions = _ResultActions(
+        primaryLabel:
+            gameState.levelId == kLevels.last.id ? 'FINISH' : 'CONTINUE',
+        primaryIcon: Icons.auto_awesome,
+        onPrimary: () => _continueAfterInterstitial(
+          () => context.go('/chapter-complete/${gameState.levelId}'),
+        ),
+        levelId: gameState.levelId,
+      );
+    } else if (gameState.levelId < kLevels.last.id) {
+      actions = _ResultActions(
+        primaryLabel: 'NEXT LEVEL',
+        primaryIcon: Icons.arrow_forward,
+        onPrimary: () => _continueAfterInterstitial(() {
+          final nextLevelId = gameState.levelId + 1;
+          AnalyticsService.logNextGamePressed(nextLevelId);
+          context.go(
+            '/game/$nextLevelId',
+            extra: GameLaunchConfig(
+              levelId: nextLevelId,
+              launchMode: GameLaunchMode.normalProgression,
+            ),
+          );
+        }),
+        levelId: gameState.levelId,
+      );
+    } else {
+      actions = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'All Current Levels Completed',
+            style: AppTextStyles.archiveTitleLarge.copyWith(
+              color: SankofaGameTheme.parchmentLight,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          KenteButton(
+            label: 'RETURN HOME',
+            icon: Icons.home_outlined,
+            width: double.infinity,
+            onTap: () => _continueAfterInterstitial(() => context.go('/')),
+          ),
+        ],
+      );
+    }
+
+    return _PersistentActionBar(child: actions);
   }
 }
 
@@ -285,9 +346,6 @@ class _WinContent extends StatelessWidget {
   final int bestScore;
   final RewardGrantSummary? rewardSummary;
   final Animation<double> scaleAnim;
-  final GameLaunchConfig launchConfig;
-  final Future<void> Function(FutureOr<void> Function() navigate)
-      onBeforePrimaryNavigation;
 
   const _WinContent({
     required this.gameState,
@@ -295,8 +353,6 @@ class _WinContent extends StatelessWidget {
     required this.bestScore,
     required this.rewardSummary,
     required this.scaleAnim,
-    required this.launchConfig,
-    required this.onBeforePrimaryNavigation,
   });
 
   @override
@@ -306,7 +362,7 @@ class _WinContent extends StatelessWidget {
         gameState.tiles.where((tile) => tile.isMatched).length ~/ 2;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: SankofaGameTheme.appParchmentPanelDecoration,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -316,15 +372,15 @@ class _WinContent extends StatelessWidget {
             child: const Text(
               '✦',
               style: TextStyle(
-                fontSize: 58,
+                fontSize: 38,
                 color: SankofaGameTheme.antiqueGold,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           Text(
             'Level Complete!',
-            style: AppTextStyles.archiveDisplayLarge.copyWith(
+            style: AppTextStyles.archiveDisplayMedium.copyWith(
               color: SankofaGameTheme.darkText,
             ),
             textAlign: TextAlign.center,
@@ -336,9 +392,7 @@ class _WinContent extends StatelessWidget {
               color: SankofaGameTheme.mutedGold,
             ),
           ),
-          const SizedBox(height: 20),
-          const AdinkraDivider(),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(3, (i) {
@@ -351,48 +405,25 @@ class _WinContent extends StatelessWidget {
                     color: i < stars
                         ? SankofaGameTheme.antiqueGold
                         : SankofaGameTheme.mutedText.withValues(alpha: 0.55),
-                    size: 42,
+                    size: 34,
                   ),
                 ),
               );
             }),
           ),
-          const SizedBox(height: 20),
-          _ScoreRow(
-            label: 'Pairs cleared',
-            value: '',
-            score: pairsCleared,
-          ),
-          _ScoreRow(
-            label: 'Moves used',
-            value: '',
-            score: gameState.moves,
-          ),
-          _ScoreRow(
-            label: 'Best streak',
-            value: '',
-            score: gameState.bestStreak,
-          ),
-          _ScoreRow(
-            label: 'Shuffles used',
-            value: '',
-            score: gameState.shufflesUsed,
-          ),
-          _ScoreRow(
-            label: 'Best score',
-            value: '',
-            score: bestScore,
-          ),
-          Divider(
-            color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.42),
-          ),
-          _ScoreRow(
-            label: 'TOTAL',
-            value: '',
+          const SizedBox(height: 14),
+          _CompactResultStats(
             score: gameState.score,
-            bold: true,
+            moves: gameState.moves,
+            streak: gameState.bestStreak,
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 10),
+          _ResultDetails(
+            pairsCleared: pairsCleared,
+            shufflesUsed: gameState.shufflesUsed,
+            bestScore: bestScore,
+          ),
+          const SizedBox(height: 12),
           _RewardReveal(summary: rewardSummary),
           if (rewardSummary != null && rewardSummary!.cowries > 0) ...[
             const SizedBox(height: 10),
@@ -404,55 +435,100 @@ class _WinContent extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           _ChapterProgressCard(levelId: gameState.levelId),
-          const SizedBox(height: 14),
-          if (launchConfig.isDeveloperTest)
-            _DeveloperResultActions(
-              levelId: gameState.levelId,
-              includeNext: gameState.levelId < kLevels.last.id,
-            )
-          else if (isChapterFinalLevel(gameState.levelId))
-            _ResultActions(
-              primaryLabel:
-                  gameState.levelId == kLevels.last.id ? 'FINISH' : 'CONTINUE',
-              primaryIcon: Icons.auto_awesome,
-              onPrimary: () => onBeforePrimaryNavigation(
-                () => context.go('/chapter-complete/${gameState.levelId}'),
-              ),
-              levelId: gameState.levelId,
-            )
-          else if (gameState.levelId < kLevels.last.id)
-            _ResultActions(
-              primaryLabel: 'NEXT LEVEL',
-              primaryIcon: Icons.arrow_forward,
-              onPrimary: () => onBeforePrimaryNavigation(() {
-                final nextLevelId = gameState.levelId + 1;
-                AnalyticsService.logNextGamePressed(nextLevelId);
-                context.go(
-                  '/game/$nextLevelId',
-                  extra: GameLaunchConfig(
-                    levelId: nextLevelId,
-                    launchMode: GameLaunchMode.normalProgression,
-                  ),
-                );
-              }),
-              levelId: gameState.levelId,
-            )
-          else ...[
-            Text(
-              'All Current Levels Completed',
-              style: AppTextStyles.archiveTitleLarge.copyWith(
-                color: SankofaGameTheme.mutedGold,
-              ),
-              textAlign: TextAlign.center,
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactResultStats extends StatelessWidget {
+  const _CompactResultStats({
+    required this.score,
+    required this.moves,
+    required this.streak,
+  });
+
+  final int score;
+  final int moves;
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _ResultStat(label: 'SCORE', value: score),
+        _ResultStat(label: 'MOVES', value: moves),
+        _ResultStat(label: 'STREAK', value: streak),
+      ],
+    );
+  }
+}
+
+class _ResultStat extends StatelessWidget {
+  const _ResultStat({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: SankofaGameTheme.mutedGold,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 12),
-            KenteButton(
-              label: 'RETURN HOME',
-              icon: Icons.home_outlined,
-              width: double.infinity,
-              onTap: () => onBeforePrimaryNavigation(() => context.go('/')),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '$value',
+            style: AppTextStyles.archiveTitleLarge.copyWith(
+              color: SankofaGameTheme.darkText,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultDetails extends StatelessWidget {
+  const _ResultDetails({
+    required this.pairsCleared,
+    required this.shufflesUsed,
+    required this.bestScore,
+  });
+
+  final int pairsCleared;
+  final int shufflesUsed;
+  final int bestScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 6),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        iconColor: SankofaGameTheme.mutedGold,
+        collapsedIconColor: SankofaGameTheme.mutedGold,
+        title: Text(
+          'View details',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: SankofaGameTheme.mutedGold,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        children: [
+          _ScoreRow(label: 'Pairs cleared', value: '', score: pairsCleared),
+          _ScoreRow(label: 'Shuffles used', value: '', score: shufflesUsed),
+          _ScoreRow(label: 'Best score', value: '', score: bestScore),
         ],
       ),
     );
@@ -566,47 +642,41 @@ class _RewardReveal extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (summary!.cowries > 0)
-            CowrieAmount(
-              amount: summary!.cowries,
-              prefix: '+',
-              iconSize: 22,
-              mainAxisAlignment: MainAxisAlignment.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: SankofaGameTheme.parchmentLight,
-              ),
-            ),
-          if (summary!.cowries > 0 && lines.isNotEmpty)
-            const SizedBox(height: 6),
-          if (lines.isNotEmpty)
-            Text(
-              lines.join('\n'),
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: SankofaGameTheme.parchmentLight,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          if (lines.isNotEmpty) const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Balance: ',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: SankofaGameTheme.parchmentLight,
+              if (summary!.cowries > 0)
+                Expanded(
+                  child: CowrieAmount(
+                    amount: summary!.cowries,
+                    prefix: '+',
+                    iconSize: 20,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: SankofaGameTheme.parchmentLight,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-              ),
-              CowrieAmount(
-                amount: summary!.updatedBalance,
-                iconSize: 22,
-                style: AppTextStyles.bodyMedium.copyWith(
+              Text(
+                'Balance: ${summary!.updatedBalance}',
+                style: AppTextStyles.bodySmall.copyWith(
                   color: SankofaGameTheme.parchmentLight,
                 ),
               ),
             ],
           ),
+          if (lines.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                lines.join(' · '),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: SankofaGameTheme.mutedLightText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
         ],
       ),
     );
@@ -1016,6 +1086,7 @@ class _ResultActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         KenteButton(
           label: primaryLabel,
@@ -1030,6 +1101,7 @@ class _ResultActions extends StatelessWidget {
               child: KenteButton(
                 label: 'REPLAY',
                 icon: Icons.refresh,
+                small: true,
                 onTap: () => context.go('/level/$levelId'),
               ),
             ),
@@ -1038,12 +1110,51 @@ class _ResultActions extends StatelessWidget {
               child: KenteButton(
                 label: 'HOME',
                 icon: Icons.home_outlined,
+                small: true,
                 onTap: () => context.go('/'),
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _PersistentActionBar extends StatelessWidget {
+  const _PersistentActionBar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: SankofaGameTheme.backgroundTop,
+        border: Border(
+          top: BorderSide(
+            color: SankofaGameTheme.antiqueGold.withValues(alpha: 0.28),
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.24),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1060,6 +1171,7 @@ class _DeveloperResultActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (includeNext) ...[
           KenteButton(
@@ -1102,24 +1214,18 @@ class _ScoreRow extends StatelessWidget {
   final String label;
   final String value;
   final int score;
-  final bool bold;
 
   const _ScoreRow({
     required this.label,
     required this.value,
     required this.score,
-    this.bold = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final style = bold
-        ? AppTextStyles.archiveTitleLarge.copyWith(
-            color: SankofaGameTheme.mutedGold,
-          )
-        : AppTextStyles.archiveBodyMedium.copyWith(
-            color: SankofaGameTheme.darkText,
-          );
+    final style = AppTextStyles.archiveBodyMedium.copyWith(
+      color: SankofaGameTheme.darkText,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

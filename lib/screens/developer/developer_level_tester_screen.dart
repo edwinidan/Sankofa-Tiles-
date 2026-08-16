@@ -222,7 +222,7 @@ class DeveloperLevelTesterScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: Text(
-                    'LEVELS 241–280 · HUMAN-REVIEW CANDIDATES · ISOLATED',
+                    'LEVELS 241–280 · APPROVED PRODUCTION · FROZEN',
                     style: AppTextStyles.displaySmall.copyWith(
                       color: SankofaGameTheme.antiqueGold,
                       fontSize: 16,
@@ -479,7 +479,7 @@ class _RoadmapCandidateCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Candidate Level ${candidate.level}',
+            'Production Level ${candidate.level}',
             style: AppTextStyles.titleMedium.copyWith(
               color: SankofaGameTheme.antiqueGold,
             ),

@@ -12,13 +12,28 @@ import 'package:sankofa_tiles/core/utils/layout_validator.dart';
 import 'package:sankofa_tiles/models/tile_model.dart';
 
 void main() {
-  test('Levels 41-80 candidates remain isolated and structurally valid', () {
+  test('Levels 1-80 stay contiguous and every production assignment generates',
+      () {
+    expect(kLevels.take(80).map((level) => level.id),
+        orderedEquals(List.generate(80, (index) => index + 1)));
+    for (final level in kLevels.take(80)) {
+      expect(validateLayout(level.namedLayout, minimumOpeningTiles: 4).issues,
+          isEmpty,
+          reason: 'Level ${level.id}');
+      expect(level.symbolCopyCounts.reduce((a, b) => a + b), level.tileCount);
+      expect(level.symbolCopyCounts.every((count) => count.isEven), isTrue);
+    }
+  });
+
+  test(
+      'Levels 41-80 production assignments remain exact and structurally valid',
+      () {
     expect(kLevels41To80Candidates, hasLength(40));
     expect(kLevels41To80Candidates.map((c) => c.family).toSet().length,
         greaterThanOrEqualTo(24));
     for (final candidate in kLevels41To80Candidates) {
-      expect(getLevelById(candidate.level)!.layoutName,
-          isNot(candidate.layout.id));
+      expect(getLevelById(candidate.level)!.layoutName, candidate.layout.id);
+      expect(getLevelById(candidate.level)!.name, candidate.proposedName);
       final validation =
           validateLayout(candidate.layout, minimumOpeningTiles: 4);
       expect(validation.issues, isEmpty,

@@ -12,13 +12,14 @@ void main() {
       Directory('artifacts/layout-previews/levels-41-80-candidates')
         ..createSync(recursive: true);
   final report = StringBuffer()
-    ..writeln('# Isolated Levels 41–80 candidate report')
+    ..writeln('# Levels 41–80 production assignment report')
     ..writeln()
-    ..writeln('Production Levels 41–80 remain unchanged. These forty layouts '
-        'are developer-only candidates for Chapters 3 and 4.')
+    ..writeln('The approved handcrafted layouts are assigned to production '
+        'Levels 41–80. Numeric IDs, unlock requirements, symbol-plan '
+        'configuration, and progress keys remain unchanged.')
     ..writeln()
     ..writeln(
-        '|Level|Production name / layout|Candidate|Family / variant|Proposed name|Breather|Tiles / pairs|Width|Height|Tile px|')
+        '|Level|Production name / layout|Family / variant|Breather|Tiles / pairs|Width|Height|Tile px|')
     ..writeln('|---:|---|---|---|---|---|---:|---:|---:|---:|');
   final csv = StringBuffer()
     ..writeln('level,id,name,family,variant,tiles,pairs,width,height,tile');
@@ -30,8 +31,7 @@ void main() {
     final width = fit.boardWidth / 374 * 100;
     final height = fit.boardHeight / 804 * 100;
     report.writeln('|${candidate.level}|${production.name} / '
-        '`${production.layoutName}`|`${candidate.layout.id}`|'
-        '${candidate.family} / ${candidate.variant}|${candidate.proposedName}|'
+        '`${production.layoutName}`|${candidate.family} / ${candidate.variant}|'
         '${candidate.isBreather ? 'yes' : 'no'}|'
         '${candidate.layout.stats.tileCount} / ${candidate.layout.stats.pairCount}|'
         '${width.toStringAsFixed(1)}%|${height.toStringAsFixed(1)}%|'
@@ -95,7 +95,7 @@ void main() {
     ..writeln('- Minimum three legal and safe opening pairs on every seed.')
     ..writeln('- Zero forced-opening seeds.')
     ..writeln('- Breathers: 44, 49, 55, 62, 68, 74, 78.')
-    ..writeln('- Production references for Levels 41–80 remain unchanged.');
+    ..writeln('- Production references for Levels 41–80 match the approved assignments.');
   File('${directory.path}/levels-41-80-candidate-report.md')
       .writeAsStringSync(report.toString());
   File('${directory.path}/metrics.csv').writeAsStringSync(csv.toString());

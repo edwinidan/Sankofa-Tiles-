@@ -30,9 +30,9 @@ void main() {
       isEmpty,
       reason: issues.map((issue) => issue.toString()).join('\n'),
     );
-    expect(kLevels, hasLength(240));
+    expect(kLevels, hasLength(280));
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(240, (i) => i + 1)));
+        orderedEquals(List.generate(280, (i) => i + 1)));
     expect(kLevels.where((level) => level.layerCount <= 1),
         hasLength(lessThanOrEqualTo(2)));
   });

@@ -6,11 +6,26 @@ import 'package:sankofa_tiles/core/ads/ad_ids.dart';
 import 'package:sankofa_tiles/core/monetization/monetization_models.dart';
 
 void main() {
-  test('production ads are disabled in test builds', () {
-    // In test/debug builds, productionAdsEnabled must be false unless the
-    // explicit USE_PRODUCTION_ADS override is supplied.
+  test('debug builds use test IDs by default', () {
     expect(AdIds.productionAdsEnabled, isFalse);
     expect(AdIds.useProductionAds, isFalse);
+  });
+
+  test('release-mode production selection remains automatic', () {
+    final source = File('lib/core/ads/ad_ids.dart').readAsStringSync();
+
+    expect(
+      RegExp(
+        r'static\s+bool\s+get\s+productionAdsEnabled\s*=>\s*'
+        r'kReleaseMode\s*\|\|\s*useProductionAds\s*;',
+      ).hasMatch(source),
+      isTrue,
+      reason: 'Release mode must select production IDs without a dart-define.',
+    );
+    expect(
+      source,
+      isNot(contains('kReleaseMode && useProductionAds')),
+    );
   });
 
   test('Android App ID contains tilde separator', () {
@@ -38,6 +53,27 @@ void main() {
         reason: 'Should find ad-unit IDs (not app IDs)');
     for (final id in adUnitIds) {
       expect(id, contains('/'), reason: 'Ad-unit ID "$id" must contain /');
+    }
+  });
+
+  test('Google sample test IDs are not production constants', () {
+    final source = File('lib/core/ads/ad_ids.dart').readAsStringSync();
+    final productionConstantPattern = RegExp(
+      r"static const String _(?:android|ios)[A-Za-z]+\s*=\s*"
+      r"'([^']+)'",
+    );
+    final productionIds = productionConstantPattern
+        .allMatches(source)
+        .map((match) => match.group(1)!)
+        .toList();
+
+    expect(productionIds, isNotEmpty);
+    for (final id in productionIds) {
+      expect(
+        id,
+        isNot(startsWith('ca-app-pub-3940256099942544/')),
+        reason: 'Production constant must not contain a Google sample test ID.',
+      );
     }
   });
 
@@ -176,6 +212,71 @@ void main() {
       ),
       'ca-app-pub-5484820744037011/5646819163',
     );
+  });
+
+  test('platform resolvers never cross-return Android and iOS IDs', () {
+    const androidProductionIds = {
+      'ca-app-pub-5484820744037011/7155770551',
+      'ca-app-pub-5484820744037011/4741360208',
+      'ca-app-pub-5484820744037011/2775600473',
+      'ca-app-pub-5484820744037011/1462518800',
+      'ca-app-pub-5484820744037011/4557666995',
+      'ca-app-pub-5484820744037011/4777158847',
+      'ca-app-pub-5484820744037011/8600714161',
+      'ca-app-pub-5484820744037011/4876698366',
+    };
+    const iosProductionIds = {
+      'ca-app-pub-5484820744037011/9228795350',
+      'ca-app-pub-5484820744037011/4164170939',
+      'ca-app-pub-5484820744037011/8151517400',
+      'ca-app-pub-5484820744037011/9356787868',
+      'ca-app-pub-5484820744037011/8137251130',
+      'ca-app-pub-5484820744037011/8081410819',
+      'ca-app-pub-5484820744037011/5477252602',
+      'ca-app-pub-5484820744037011/5646819163',
+    };
+
+    final androidResolvedIds = <String>{
+      for (final placement in RewardedPlacement.values)
+        AdIds.rewardedAdUnitIdForPlatform(
+          placement,
+          TargetPlatform.android,
+          useProductionIds: true,
+        )!,
+      AdIds.interstitialAdUnitIdForPlatform(
+        InterstitialPlacement.afterCompletedLevels,
+        TargetPlatform.android,
+        useProductionIds: true,
+      )!,
+      AdIds.bannerAdUnitIdForPlatform(
+        BannerPlacement.settingsBottom,
+        TargetPlatform.android,
+        useProductionIds: true,
+      )!,
+    };
+    final iosResolvedIds = <String>{
+      for (final placement in RewardedPlacement.values)
+        AdIds.rewardedAdUnitIdForPlatform(
+          placement,
+          TargetPlatform.iOS,
+          useProductionIds: true,
+        )!,
+      AdIds.interstitialAdUnitIdForPlatform(
+        InterstitialPlacement.afterCompletedLevels,
+        TargetPlatform.iOS,
+        useProductionIds: true,
+      )!,
+      AdIds.bannerAdUnitIdForPlatform(
+        BannerPlacement.settingsBottom,
+        TargetPlatform.iOS,
+        useProductionIds: true,
+      )!,
+    };
+
+    expect(androidResolvedIds, androidProductionIds);
+    expect(iosResolvedIds, iosProductionIds);
+    expect(androidResolvedIds.intersection(iosProductionIds), isEmpty);
+    expect(iosResolvedIds.intersection(androidProductionIds), isEmpty);
   });
 
   test('unsupported interstitial placements return null in production', () {

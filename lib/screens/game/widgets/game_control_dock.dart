@@ -29,11 +29,31 @@ class GameControlDock extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final buttonDiameter =
-                (constraints.maxWidth * 0.18).clamp(56.0, 72.0);
+                (constraints.maxWidth * 0.18).clamp(52.0, 68.0);
 
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
+                _ControlButton(
+                  diameter: buttonDiameter,
+                  icon: Icons.undo_rounded,
+                  label: gameState.freeUndosRemaining > 0
+                      ? 'Undo (free)'
+                      : 'Undo used',
+                  onTap: isPlaying && gameState.canUndo
+                      ? () {
+                          final used = notifier.undoLastMatch();
+                          if (used) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Last match restored'),
+                                duration: Duration(milliseconds: 1100),
+                              ),
+                            );
+                          }
+                        }
+                      : null,
+                ),
                 _ControlButton(
                   diameter: buttonDiameter,
                   icon: Icons.lightbulb_outline,
@@ -114,28 +134,6 @@ class GameControlDock extends ConsumerWidget {
                                 BoosterType.shuffle,
                                 1,
                                 reason: 'shuffle_refund',
-                              );
-                            }
-                          }
-                        }
-                      : null,
-                ),
-                _ControlButton(
-                  diameter: buttonDiameter,
-                  icon: Icons.auto_fix_high_outlined,
-                  label:
-                      'Open Path ${economy.boosterCount(BoosterType.openPath)}',
-                  onTap: isPlaying &&
-                          economy.boosterCount(BoosterType.openPath) > 0
-                      ? () async {
-                          if (await economyNotifier
-                              .spendBooster(BoosterType.openPath)) {
-                            final used = notifier.useOpenPath();
-                            if (!used) {
-                              await economyNotifier.addBooster(
-                                BoosterType.openPath,
-                                1,
-                                reason: 'open_path_refund',
                               );
                             }
                           }

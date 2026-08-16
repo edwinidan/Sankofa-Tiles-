@@ -66,20 +66,31 @@ void main() {
     }
   });
 
-  test('production remains frozen at 240 and roadmap candidates are isolated',
-      () {
-    expect(kLevels, hasLength(240));
-    expect(kImplementedCampaignLevelCount, 240);
-    expect(kImplementedFinalLevelId, 240);
+  test('approved catalogue is exactly assigned to production through 280', () {
+    expect(kLevels, hasLength(280));
+    expect(kImplementedCampaignLevelCount, 280);
+    expect(kImplementedFinalLevelId, 280);
     expect(kPlannedCampaignLevelCount, 400);
-    expect(getLevelById(241), isNull);
+    expect(getLevelById(281), isNull);
     expect(kLevels241To280Candidates, hasLength(40));
     expect(
       kLevels241To280Candidates.map((candidate) => candidate.level),
       orderedEquals(List.generate(40, (index) => 241 + index)),
     );
     for (final candidate in kLevels241To280Candidates) {
-      expect(getLevelById(candidate.level), isNull);
+      final production = getLevelById(candidate.level)!;
+      expect(production.id, candidate.level);
+      expect(production.name, candidate.proposedName);
+      expect(production.layoutName, candidate.layout.id);
+      expect(production.layout, orderedEquals(candidate.layout.positions));
+      expect(production.tileCount, candidate.layout.stats.tileCount);
+      expect(production.symbolPlan, same(candidate.symbolPlan));
+      expect(
+          production.chapter,
+          candidate.chapter == 13
+              ? 'Rivers of Counsel'
+              : 'Forest of Ancestors');
+      expect(production.unlockRequirement, candidate.level - 1);
     }
   });
 
@@ -255,7 +266,7 @@ void main() {
         expect(score, lessThanOrEqualTo(.75),
             reason: '${candidate.level}/${offset.level}: $score');
       }
-      for (final production in kLevels) {
+      for (final production in kLevels.where((level) => level.id <= 240)) {
         expect(
           compareLayoutSilhouettes(candidate.layout, production.namedLayout)
               .score,

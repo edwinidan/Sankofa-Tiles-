@@ -5,10 +5,10 @@ import 'package:image/image.dart' as image;
 import 'package:sankofa_tiles/core/constants/levels_241_280_candidate_data.dart';
 
 const _artifactDirectory =
-    'artifacts/layout-previews/levels-241-280-candidates';
+    'artifacts/layout-previews/levels-241-280-production';
 
 void main() {
-  test('candidate previews and visual-review sheets are complete and visible',
+  test('production previews and visual-review sheets are complete and visible',
       () {
     for (final candidate in kLevels241To280Candidates) {
       _expectPng(
@@ -54,6 +54,8 @@ void main() {
       'levels-221-280-comparison.png',
       'levels-201-280-silhouette-comparison.png',
       'level-240-to-241-comparison.png',
+      'level-260-to-261-comparison.png',
+      'level-280-current-boundary.png',
       'finale-comparison-levels-200-220-240-260-280.png',
     ]) {
       _expectPng(File('$_artifactDirectory/$name'));
@@ -61,9 +63,13 @@ void main() {
     expect(File('$_artifactDirectory/metrics.csv').lengthSync(),
         greaterThan(5000));
     expect(
-      File('$_artifactDirectory/levels-241-280-candidate-report.md')
+      File('$_artifactDirectory/levels-241-280-production-assignment.md')
           .lengthSync(),
       greaterThan(15000),
+    );
+    expect(
+      File('$_artifactDirectory/production-assignment-matrix.csv').lengthSync(),
+      greaterThan(5000),
     );
   }, skip: !Directory(_artifactDirectory).existsSync());
 }

@@ -23,7 +23,7 @@ struct Item {
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let directory = root.appendingPathComponent(
-  "artifacts/layout-previews/levels-241-280-candidates"
+  "artifacts/layout-previews/levels-241-280-production"
 )
 let productionDirectory = root.appendingPathComponent(
   "artifacts/layout-previews/levels-201-240-production"
@@ -148,7 +148,7 @@ for start in stride(from: 0, to: 40, by: 10) {
   try sheet(
     Array(items[start..<start + 10]),
     name: "levels-\(241 + start)-\(250 + start)-contact-sheet.png",
-    title: "Developer candidates · Levels \(241 + start)–\(250 + start)"
+    title: "Production · Levels \(241 + start)–\(250 + start)"
   )
 }
 try sheet(
@@ -164,7 +164,7 @@ try sheet(
 try sheet(
   items,
   name: "levels-241-280-visual-overview.png",
-  title: "Levels 241–280 · complete candidate overview"
+  title: "Levels 241–280 · production overview"
 )
 try sheet(
   items,
@@ -303,17 +303,48 @@ func boundaryComparison() throws {
   canvas.lockFocus()
   background.setFill()
   NSRect(origin: .zero, size: canvas.size).fill()
-  label("Current boundary → next re-entry", rect: NSRect(x: 10, y: 460, width: 390, height: 30), size: 18, bold: true, color: gold)
+  label("Production transition · Level 240 → 241", rect: NSRect(x: 10, y: 460, width: 390, height: 30), size: 18, bold: true, color: gold)
   let images = [
     productionDirectory.appendingPathComponent("level-240_390x844.png"),
     directory.appendingPathComponent("\(items[0].id)_390x844.png"),
   ]
   for index in 0..<2 {
     NSImage(contentsOf: images[index])!.draw(in: NSRect(x: 10 + index * 200, y: 58, width: 190, height: 390))
-    label(index == 0 ? "L240 · current boundary" : "L241 · welcoming breather", rect: NSRect(x: 10 + index * 200, y: 15, width: 190, height: 35), size: 11, bold: true)
+    label(index == 0 ? "L240 · Living Memory finale" : "L241 · Rivers opens", rect: NSRect(x: 10 + index * 200, y: 15, width: 190, height: 35), size: 11, bold: true)
   }
   canvas.unlockFocus()
   try save(canvas, "level-240-to-241-comparison.png")
+}
+
+func chapterTransition() throws {
+  let canvas = NSImage(size: NSSize(width: 410, height: 500))
+  canvas.lockFocus()
+  background.setFill()
+  NSRect(origin: .zero, size: canvas.size).fill()
+  label("Production transition · Level 260 → 261", rect: NSRect(x: 10, y: 460, width: 390, height: 30), size: 18, bold: true, color: gold)
+  for (index, level) in [260, 261].enumerated() {
+    let item = items[level - 241]
+    let url = directory.appendingPathComponent("\(item.id)_390x844.png")
+    NSImage(contentsOf: url)!.draw(in: NSRect(x: 10 + index * 200, y: 58, width: 190, height: 390))
+    label(index == 0 ? "L260 · Rivers finale" : "L261 · Forest threshold", rect: NSRect(x: 10 + index * 200, y: 15, width: 190, height: 35), size: 11, bold: true)
+  }
+  canvas.unlockFocus()
+  try save(canvas, "level-260-to-261-comparison.png")
+}
+
+func currentBoundary() throws {
+  let canvas = NSImage(size: NSSize(width: 620, height: 500))
+  canvas.lockFocus()
+  background.setFill()
+  NSRect(origin: .zero, size: canvas.size).fill()
+  label("Current production boundary · Level 280", rect: NSRect(x: 10, y: 460, width: 600, height: 30), size: 18, bold: true, color: gold)
+  let item = items[39]
+  let url = directory.appendingPathComponent("\(item.id)_390x844.png")
+  NSImage(contentsOf: url)!.draw(in: NSRect(x: 20, y: 58, width: 190, height: 390))
+  label("L280 · Great Ancestral Tree", rect: NSRect(x: 20, y: 15, width: 190, height: 35), size: 11, bold: true)
+  label("CURRENT JOURNEY COMPLETE\n\nRETURN HOME\n\nLevel 281 unavailable\ngetLevelById(281) = null\n\n400 levels remain planned", rect: NSRect(x: 240, y: 110, width: 350, height: 250), size: 17, bold: true, color: gold)
+  canvas.unlockFocus()
+  try save(canvas, "level-280-current-boundary.png")
 }
 
 func finaleComparison() throws {
@@ -343,7 +374,7 @@ try envelopeChart()
 try comparison(
   levels: Array(221...280),
   name: "levels-221-280-comparison.png",
-  title: "Production 221–240 beside developer candidates 241–280",
+  title: "Production continuity · Levels 221–280",
   silhouette: false
 )
 try comparison(
@@ -353,4 +384,6 @@ try comparison(
   silhouette: true
 )
 try boundaryComparison()
+try chapterTransition()
+try currentBoundary()
 try finaleComparison()

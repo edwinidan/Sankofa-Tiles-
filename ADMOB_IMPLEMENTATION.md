@@ -166,21 +166,24 @@ Interstitials are shown only after completed levels, subject to ALL of these:
         ┌───────┴───────┐
         │ No            │ Yes
         ▼               ▼
-   Test IDs      ┌──────────────────┐
-                 │ USE_PRODUCTION_ADS│
-                 │ == true?          │
-                 └──────┬───────────┘
-                        │
-                ┌───────┴───────┐
-                │ No            │ Yes
-                ▼               ▼
-           Test IDs      Production IDs
+┌──────────────────┐ Production IDs
+│ USE_PRODUCTION_ADS│
+│ == true?          │
+└──────┬───────────┘
+       │
+┌──────┴──────┐
+│ No          │ Yes
+▼             ▼
+Test IDs  Production IDs
 ```
 
-- `productionAdsEnabled = kReleaseMode && useProductionAds`
+- `productionAdsEnabled = kReleaseMode || useProductionAds`
 - Test IDs: `ca-app-pub-3940256099942544/*` (Google's official test units)
 - Production IDs: `ca-app-pub-5484820744037011/*`
-- iOS returns `null` for all ad IDs (unsupported this release).
+- Debug builds use Google test ad-unit IDs by default. `USE_PRODUCTION_ADS=true`
+  remains available for intentional non-release verification.
+- Release builds automatically use the real platform-specific production IDs;
+  no dart-define is required for App Store or Play Store builds.
 
 ---
 
@@ -202,13 +205,24 @@ Uses test ad IDs.
 ```bash
 flutter build appbundle --release
 ```
-Uses **test ad IDs** (no `USE_PRODUCTION_ADS`). Safe for internal testing and Google Play internal track.
+Uses **production ad IDs** automatically. Test only on a device registered as
+an AdMob test device.
 
 ### Final Production AAB
 ```bash
-flutter build appbundle --release --dart-define=USE_PRODUCTION_ADS=true
+flutter build appbundle --release
 ```
-Uses **production ad IDs**. Only use for the production release track.
+Uses **production ad IDs** automatically.
+
+### Ad interaction safety
+
+- TestFlight and all release-build testing must occur only on an
+  AdMob-registered test device.
+- Before anyone interacts with an ad, verify that it displays the **Test Ad** or
+  **Test mode** indicator.
+- Publishers must never click their own live production ads.
+- App Store production builds automatically use the configured iOS production
+  ad-unit IDs.
 
 ---
 
@@ -238,7 +252,9 @@ ConsentDebugSettings(
 )
 ```
 
-This causes the consent form to appear on every fresh install in debug mode, regardless of actual location. To test non-EEA behavior, build in release mode without production ads.
+This causes the consent form to appear on every fresh install in debug mode,
+regardless of actual location. Release builds always use production ad-unit
+IDs, so release-mode consent testing must use an AdMob-registered test device.
 
 To add a test device ID for UMP (if needed):
 ```dart
@@ -253,9 +269,12 @@ ConsentDebugSettings(
 ## Known Limitations
 
 1. **No board restoration**: The "Continue after loss" rewarded ad unit is mapped to retry assistance (grants 1 Shuffle for a level restart). True board restoration requires game-state architecture changes.
-2. **iOS not supported**: Ad IDs return `null` on iOS. AdMob setup is Android-only for this release.
+2. **Platform-specific IDs**: Android and iOS each have their own configured
+   production ad-unit IDs. Release builds select the correct platform's IDs.
 3. **No pre-caching**: Ads are loaded on-demand when requested, not pre-cached. This means a brief loading delay when the player triggers a rewarded ad.
-4. **Placements without production IDs**: `doubleCompletionCowries`, `freeRescueShuffle`, `bonusDailyChest`, `smallShopReward` use test IDs in all builds until AdMob units are created.
+4. **Unsupported interstitial placements**: `returningHome` and
+   `beforeNewChapter` return `null`; the enabled rewarded, level-transition
+   interstitial, and settings-banner placements have platform-specific IDs.
 5. **Advertising ID removed**: AD_ID permissions are explicitly removed in the manifest. This may affect ad personalization and reporting.
 6. **Session cap resets on app restart**: The interstitial session cap is reset in `StorageService.init()` on each app launch.
 

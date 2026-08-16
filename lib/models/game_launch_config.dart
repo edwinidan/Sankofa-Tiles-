@@ -9,10 +9,12 @@ class GameLaunchConfig {
   const GameLaunchConfig({
     required this.levelId,
     required this.launchMode,
+    this.resumeSavedGame = false,
   });
 
   final int levelId;
   final GameLaunchMode launchMode;
+  final bool resumeSavedGame;
 
   bool get isDeveloperTest => launchMode == GameLaunchMode.developerTest;
 }

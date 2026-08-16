@@ -49,6 +49,7 @@ class GameNotifier extends StateNotifier<GameState> {
   final int _reverseSolvedAttempts;
   bool _isDeveloperTest = false;
   int _matchAnimationSequence = 0;
+  _UndoSnapshot? _undoSnapshot;
 
   GameNotifier(
     this._audio,
@@ -60,6 +61,24 @@ class GameNotifier extends StateNotifier<GameState> {
   @visibleForTesting
   void replaceStateForTesting(GameState testState) {
     state = testState;
+    _undoSnapshot = null;
+  }
+
+  bool restoreSavedGame(GameState savedState) {
+    if (savedState.tiles.isEmpty || savedState.hasWon) return false;
+    _isDeveloperTest = false;
+    _undoSnapshot = null;
+    state = savedState.copyWith(
+      status: GameStatus.playing,
+      canUndo: false,
+      recoveryNeeded: savedState.isStuck,
+      clearSelectedTile: true,
+      clearBlockedTile: true,
+      pendingScorePops: const [],
+      pendingMatchAnimations: const [],
+    );
+    _audio.startBackgroundMusic();
+    return true;
   }
 
   HapticIntensity get _hapticIntensity =>
@@ -78,6 +97,7 @@ class GameNotifier extends StateNotifier<GameState> {
     bool isDeveloperTest = false,
   }) {
     _isDeveloperTest = isDeveloperTest;
+    _undoSnapshot = null;
     final totalStopwatch = Stopwatch()..start();
     debugPrint('[LEVEL_LOAD] level=$levelId start');
 
@@ -422,6 +442,15 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.status != GameStatus.playing) return;
     if (state.animatingMatchedTileIds.contains(uid)) return;
 
+    if (state.tiles.any((tile) => tile.isHinted)) {
+      state = state.copyWith(
+        tiles: state.tiles
+            .map(
+                (tile) => tile.isHinted ? tile.copyWith(isHinted: false) : tile)
+            .toList(),
+      );
+    }
+
     final tile = state.tiles.firstWhere(
       (t) => t.uid == uid,
       orElse: () => throw StateError('Tile not found'),
@@ -429,7 +458,34 @@ class GameNotifier extends StateNotifier<GameState> {
     if (tile.isMatched) return;
 
     // Mahjong rule: tile must be free (not covered, one side open)
-    if (!state.freeTileUids.contains(uid)) return;
+    if (!state.freeTileUids.contains(uid)) {
+      final blockingUids = BoardSolver.blockingTileUids(tile, state.tiles);
+      HapticService.heavyImpact(_hapticIntensity);
+      _audio.playNoMatch();
+      state = state.copyWith(
+        tiles: state.tiles.map((candidate) {
+          if (candidate.uid == uid || blockingUids.contains(candidate.uid)) {
+            return candidate.copyWith(isMismatched: true);
+          }
+          return candidate;
+        }).toList(),
+        blockedTileUid: uid,
+        blockingTileUids: blockingUids,
+      );
+      Future.delayed(const Duration(milliseconds: 1100), () {
+        if (!mounted || state.blockedTileUid != uid) return;
+        state = state.copyWith(
+          tiles: state.tiles.map((candidate) {
+            if (candidate.uid == uid || blockingUids.contains(candidate.uid)) {
+              return candidate.copyWith(isMismatched: false);
+            }
+            return candidate;
+          }).toList(),
+          clearBlockedTile: true,
+        );
+      });
+      return;
+    }
 
     _audio.playTileTap();
 
@@ -482,58 +538,9 @@ class GameNotifier extends StateNotifier<GameState> {
     );
 
     if (firstTile.def.id == secondTile.def.id) {
-      final isSafeMove = BoardSolver.isSafeMove(
-        state.tiles,
-        firstTile,
-        secondTile,
-        maxSearchNodes: _moveSearchNodes,
-      );
-      if (!isSafeMove) {
-        debugPrint(
-          'Blocked unsafe move: ${firstTile.def.id} at '
-          '(${firstTile.row}, ${firstTile.col}, ${firstTile.layer}) and '
-          '(${secondTile.row}, ${secondTile.col}, ${secondTile.layer})',
-        );
-
-        if (_hasSafeMatchingMove(state.tiles)) {
-          HapticService.heavyImpact(_hapticIntensity);
-          _audio.playNoMatch();
-
-          final deniedTiles = updatedTiles.map((t) {
-            if (t.uid == firstUid || t.uid == uid) {
-              return t.copyWith(
-                isSelected: false,
-                isMismatched: true,
-              );
-            }
-            return t;
-          }).toList();
-
-          state = state.copyWith(
-            tiles: deniedTiles,
-            clearSelectedTile: true,
-            currentStreak: 0,
-          );
-
-          Future.delayed(const Duration(milliseconds: 600), () {
-            if (!mounted) return;
-            final cleared = state.tiles.map((t) {
-              if (t.uid == firstUid || t.uid == uid) {
-                return t.copyWith(isMismatched: false);
-              }
-              return t;
-            }).toList();
-            state = state.copyWith(
-              tiles: _hidePeekedTiles(
-                cleared,
-                onlyTileUids: {firstUid, uid},
-              ),
-            );
-          });
-          return;
-        }
+      if (state.freeUndosRemaining > 0) {
+        _undoSnapshot = _UndoSnapshot.fromState(state);
       }
-
       final matchedTiles = updatedTiles.map((t) {
         if (t.uid == firstUid || t.uid == uid) {
           return t.copyWith(
@@ -579,6 +586,8 @@ class GameNotifier extends StateNotifier<GameState> {
             style: matchAnimationStyle,
           ),
         ],
+        canUndo: state.freeUndosRemaining > 0,
+        recoveryNeeded: false,
       );
 
       Future.delayed(const Duration(milliseconds: 285), () {
@@ -685,20 +694,53 @@ class GameNotifier extends StateNotifier<GameState> {
       AnalyticsService.logHintUsed(state.levelId, state.difficulty.name);
     }
 
-    // Clear hint after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      final cleared = state.tiles.map((t) {
-        if (hintedIds.contains(t.uid)) return t.copyWith(isHinted: false);
-        return t;
-      }).toList();
-      state = state.copyWith(tiles: cleared);
-    });
     return true;
   }
 
   bool shuffleRemaining() {
     return _shuffleRemaining();
+  }
+
+  bool undoLastMatch() {
+    final snapshot = _undoSnapshot;
+    if (state.status != GameStatus.playing ||
+        !state.canUndo ||
+        state.freeUndosRemaining <= 0 ||
+        snapshot == null) {
+      return false;
+    }
+
+    _undoSnapshot = null;
+    state = state.copyWith(
+      tiles: snapshot.tiles,
+      score: snapshot.score,
+      moves: snapshot.moves,
+      currentStreak: snapshot.currentStreak,
+      bestStreak: snapshot.bestStreak,
+      freeUndosRemaining: state.freeUndosRemaining - 1,
+      canUndo: false,
+      recoveryNeeded: false,
+      clearSelectedTile: true,
+      pendingScorePops: const [],
+      pendingMatchAnimations: const [],
+    );
+    HapticService.selectionClick(_hapticIntensity);
+    return true;
+  }
+
+  bool recoverWithShuffle() {
+    if (!state.recoveryNeeded) return false;
+    return _shuffleRemaining();
+  }
+
+  bool recoverWithOpenPath() {
+    if (!state.recoveryNeeded) return false;
+    final shuffled = _shuffleRemaining(
+      penalizeScore: false,
+      logUsage: false,
+    );
+    if (!shuffled) return false;
+    return useOpenPath();
   }
 
   bool useOpenPath() {
@@ -742,7 +784,10 @@ class GameNotifier extends StateNotifier<GameState> {
       currentStreak: newStreak,
       bestStreak: newStreak > state.bestStreak ? newStreak : state.bestStreak,
       clearSelectedTile: true,
+      canUndo: false,
+      recoveryNeeded: false,
     );
+    _undoSnapshot = null;
     _checkWin();
     _checkStuck();
     return true;
@@ -805,7 +850,10 @@ class GameNotifier extends StateNotifier<GameState> {
       clearSelectedTile: true,
       currentStreak: 0,
       shufflesUsed: logUsage ? state.shufflesUsed + 1 : state.shufflesUsed,
+      canUndo: false,
+      recoveryNeeded: false,
     );
+    _undoSnapshot = null;
     if (logUsage && !_isDeveloperTest) {
       AnalyticsService.logShuffleUsed(state.levelId, state.difficulty.name);
     }
@@ -824,6 +872,7 @@ class GameNotifier extends StateNotifier<GameState> {
     _audio.stopGameAudio();
     state = GameState.initial();
     _isDeveloperTest = false;
+    _undoSnapshot = null;
   }
 
   void resumeGame() {
@@ -833,7 +882,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
   void _checkWin() {
     if (!state.hasWon) return;
-    state = state.copyWith(status: GameStatus.won);
+    state = state.copyWith(
+      status: GameStatus.won,
+      recoveryNeeded: false,
+      canUndo: false,
+    );
+    _undoSnapshot = null;
 
     _audio.playWin();
     _audio.stopBackgroundMusic();
@@ -843,38 +897,12 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.status != GameStatus.playing) return;
     _debugFinalTileState();
     if (state.isStuck) {
-      final recovered = _shuffleRemaining(
-        penalizeScore: false,
-        logUsage: false,
+      state = state.copyWith(
+        recoveryNeeded: true,
+        canUndo: state.canUndo && _undoSnapshot != null,
       );
-      if (recovered) {
-        debugPrint('No moves remained; board automatically reshuffled.');
-        return;
-      }
-
-      state = state.copyWith(status: GameStatus.lost);
-      if (!_isDeveloperTest) {
-        AnalyticsService.logLevelFailed(
-          state.levelId,
-          state.difficulty.name,
-          state.score,
-          'no_moves',
-        );
-      }
-      _audio.playLose();
-      _audio.stopBackgroundMusic();
+      debugPrint('No moves remained; waiting for player recovery choice.');
     }
-  }
-
-  bool _hasSafeMatchingMove(List<TileModel> tiles) {
-    return _findRevealedMatchingPairs(tiles).any(
-      (pair) => BoardSolver.isSafeMove(
-        tiles,
-        pair.first,
-        pair.second,
-        maxSearchNodes: _moveSearchNodes,
-      ),
-    );
   }
 
   void _debugFinalTileState() {
@@ -946,16 +974,6 @@ class GameNotifier extends StateNotifier<GameState> {
       AnalyticsService.logHintUsed(state.levelId, state.difficulty.name);
     }
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      final cleared = state.tiles.map((tile) {
-        if (hintedIds.contains(tile.uid)) {
-          return tile.copyWith(isHinted: false);
-        }
-        return tile;
-      }).toList();
-      state = state.copyWith(tiles: cleared);
-    });
     return true;
   }
 
@@ -990,4 +1008,38 @@ class GameNotifier extends StateNotifier<GameState> {
       return tile;
     }).toList();
   }
+}
+
+class _UndoSnapshot {
+  const _UndoSnapshot({
+    required this.tiles,
+    required this.score,
+    required this.moves,
+    required this.currentStreak,
+    required this.bestStreak,
+  });
+
+  factory _UndoSnapshot.fromState(GameState state) {
+    return _UndoSnapshot(
+      tiles: state.tiles.map((tile) {
+        return tile.copyWith(
+          isSelected: false,
+          isHinted: false,
+          isMismatched: false,
+          isPeeked: false,
+          visibility: tile.isPeeked ? TileVisibility.covered : tile.visibility,
+        );
+      }).toList(),
+      score: state.score,
+      moves: state.moves,
+      currentStreak: state.currentStreak,
+      bestStreak: state.bestStreak,
+    );
+  }
+
+  final List<TileModel> tiles;
+  final int score;
+  final int moves;
+  final int currentStreak;
+  final int bestStreak;
 }

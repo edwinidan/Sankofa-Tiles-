@@ -1,10 +1,11 @@
 import 'layout_data.dart';
 import 'level_data.dart';
 
-/// Developer-only design source for the Chapter 13 and Chapter 14 roadmap.
+/// Approved and frozen production source for Chapters 13 and 14.
 ///
-/// This file is intentionally not imported by [kLevels]. These definitions are
-/// human-review candidates, not playable campaign content.
+/// [kLevels] assigns these definitions directly, while this retained catalogue
+/// keeps the reviewed metadata and stable signatures available to regression
+/// tests and production artifact tooling.
 class RoadmapLayoutCandidate {
   const RoadmapLayoutCandidate({
     required this.level,
@@ -121,7 +122,7 @@ NamedLayout _layeredMaskLayout({
   }
   return namedLayout(
     'roadmap$level$idStem',
-    'Developer-only Chapter ${level <= 260 ? 13 : 14} candidate',
+    'Approved Chapter ${level <= 260 ? 13 : 14} production layout',
     [
       ...base,
       for (final tile in base)

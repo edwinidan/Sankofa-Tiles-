@@ -65,7 +65,8 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
     final GameState gameState =
         widget.previewState ?? ref.watch<GameState>(gameProvider);
     final levelDef = getLevelById(gameState.levelId);
-    if (levelDef == null || gameState.status == GameStatus.idle) {
+    if ((levelDef == null && widget.previewState == null) ||
+        gameState.status == GameStatus.idle) {
       return const SizedBox.shrink();
     }
 
@@ -180,10 +181,6 @@ class _BoardWidgetState extends ConsumerState<BoardWidget> {
                     });
                   },
                 );
-
-                if (!tile.isMatched && !isAvail) {
-                  child = IgnorePointer(child: child);
-                }
 
                 final activeMatchAnimation = matchAnimation;
                 if (activeMatchAnimation != null && collisionOffset != null) {

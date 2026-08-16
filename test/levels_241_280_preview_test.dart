@@ -34,7 +34,7 @@ void main() {
   });
 
   for (final candidate in kLevels241To280Candidates) {
-    testWidgets('render isolated Level ${candidate.level} candidate previews',
+    testWidgets('render approved Level ${candidate.level} production previews',
         (tester) async {
       await _render(tester, candidate, const Size(390, 844));
       await _render(tester, candidate, const Size(390, 844), diagnostic: true);
@@ -123,7 +123,7 @@ Future<void> _render(
                           child: Padding(
                             padding: const EdgeInsets.all(6),
                             child: Text(
-                              'DEVELOPER-ONLY L${candidate.level} · '
+                              'PRODUCTION L${candidate.level} · '
                               '${candidate.proposedName}\n'
                               'CH ${candidate.chapter} · ${candidate.family} · '
                               '${candidate.fullnessClass} · '
@@ -170,7 +170,7 @@ Future<void> _render(
           ? 'diagnostic'
           : '${size.width.toInt()}x${size.height.toInt()}';
   final file = File(
-    'artifacts/layout-previews/levels-241-280-candidates/'
+    'artifacts/layout-previews/levels-241-280-production/'
     '${candidate.layout.id}_$suffix.png',
   );
   await tester.runAsync(() async {

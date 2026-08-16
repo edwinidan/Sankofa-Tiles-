@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/level_data.dart';
 import '../constants/tile_unlock_data.dart';
 import '../economy/economy_models.dart';
 import '../../models/level_model.dart';
+import '../../models/game_state.dart';
+import '../../models/saved_game.dart';
 import 'crash_reporting_service.dart';
 import 'haptic_service.dart';
 
@@ -45,6 +49,7 @@ class StorageService {
   static const _keyLastRewardedAdMillis =
       'monetization_last_rewarded_ad_millis';
   static const _keyFirstSessionCompleted = 'first_session_completed';
+  static const _keyActiveGame = 'active_game_v1';
   static const _campaignProgressSchemaVersion = 4;
 
   late SharedPreferences _prefs;
@@ -150,6 +155,44 @@ class StorageService {
       rethrow;
     }
   }
+
+  Future<void> saveActiveGame(GameState state) async {
+    if (state.tiles.isEmpty ||
+        (state.status != GameStatus.playing &&
+            state.status != GameStatus.paused)) {
+      return;
+    }
+    final snapshot = SavedGameSnapshot.fromState(state);
+    await _prefs.setString(_keyActiveGame, jsonEncode(snapshot.toJson()));
+  }
+
+  SavedGameSnapshot? getActiveGame() {
+    final encoded = _prefs.getString(_keyActiveGame);
+    if (encoded == null) return null;
+    try {
+      final decoded = jsonDecode(encoded);
+      if (decoded is! Map) return null;
+      return SavedGameSnapshot.fromJson(Map<String, dynamic>.from(decoded));
+    } catch (error, stackTrace) {
+      CrashReportingService.recordNonFatal(
+        error,
+        stackTrace,
+        reason: 'Saved game restoration failed',
+      );
+      return null;
+    }
+  }
+
+  SavedGameSummary? getActiveGameSummary() {
+    final snapshot = getActiveGame();
+    if (snapshot == null) return null;
+    return SavedGameSummary(
+      levelId: snapshot.levelId,
+      remainingTiles: snapshot.tiles.where((tile) => !tile.isMatched).length,
+    );
+  }
+
+  Future<void> clearActiveGame() => _prefs.remove(_keyActiveGame);
 
   int getBestScore(int levelId) =>
       _prefs.getInt('$_prefixBestScore$levelId') ?? 0;

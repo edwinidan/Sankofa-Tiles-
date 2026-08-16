@@ -40,6 +40,11 @@ class GameState {
   final int currentStreak;
   final int bestStreak;
   final int shufflesUsed;
+  final bool recoveryNeeded;
+  final bool canUndo;
+  final int freeUndosRemaining;
+  final String? blockedTileUid;
+  final Set<String> blockingTileUids;
 
   const GameState({
     required this.tiles,
@@ -57,6 +62,11 @@ class GameState {
     this.currentStreak = 0,
     this.bestStreak = 0,
     this.shufflesUsed = 0,
+    this.recoveryNeeded = false,
+    this.canUndo = false,
+    this.freeUndosRemaining = 1,
+    this.blockedTileUid,
+    this.blockingTileUids = const {},
   });
 
   int get remainingPairs => tiles.where((t) => !t.isMatched).length ~/ 2;
@@ -115,6 +125,12 @@ class GameState {
     int? currentStreak,
     int? bestStreak,
     int? shufflesUsed,
+    bool? recoveryNeeded,
+    bool? canUndo,
+    int? freeUndosRemaining,
+    String? blockedTileUid,
+    bool clearBlockedTile = false,
+    Set<String>? blockingTileUids,
   }) =>
       GameState(
         tiles: tiles ?? this.tiles,
@@ -135,6 +151,14 @@ class GameState {
         currentStreak: currentStreak ?? this.currentStreak,
         bestStreak: bestStreak ?? this.bestStreak,
         shufflesUsed: shufflesUsed ?? this.shufflesUsed,
+        recoveryNeeded: recoveryNeeded ?? this.recoveryNeeded,
+        canUndo: canUndo ?? this.canUndo,
+        freeUndosRemaining: freeUndosRemaining ?? this.freeUndosRemaining,
+        blockedTileUid:
+            clearBlockedTile ? null : (blockedTileUid ?? this.blockedTileUid),
+        blockingTileUids: clearBlockedTile
+            ? const {}
+            : (blockingTileUids ?? this.blockingTileUids),
       );
 
   static GameState initial() => const GameState(
@@ -149,5 +173,8 @@ class GameState {
         levelId: 1,
         bestStreak: 0,
         shufflesUsed: 0,
+        recoveryNeeded: false,
+        canUndo: false,
+        freeUndosRemaining: 1,
       );
 }

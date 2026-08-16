@@ -51,6 +51,40 @@ class BoardSolver {
     return !leftBlocked || !rightBlocked;
   }
 
+  static Set<String> blockingTileUids(
+    TileModel tile,
+    List<TileModel> tiles,
+  ) {
+    final unmatched = tiles.where((other) => !other.isMatched).toList();
+    final above = unmatched.where(
+      (other) =>
+          other.uid != tile.uid &&
+          other.layer > tile.layer &&
+          _overlaps(tile.row, tile.col, other.row, other.col),
+    );
+    if (above.isNotEmpty) return above.map((tile) => tile.uid).toSet();
+
+    final left = unmatched.where(
+      (other) =>
+          other.uid != tile.uid &&
+          other.layer == tile.layer &&
+          other.col + _tileSpan == tile.col &&
+          _axisOverlaps(tile.row, other.row),
+    );
+    final right = unmatched.where(
+      (other) =>
+          other.uid != tile.uid &&
+          other.layer == tile.layer &&
+          other.col == tile.col + _tileSpan &&
+          _axisOverlaps(tile.row, other.row),
+    );
+    if (left.isEmpty || right.isEmpty) return const {};
+    return {
+      ...left.map((tile) => tile.uid),
+      ...right.map((tile) => tile.uid),
+    };
+  }
+
   static List<TilePair> findAvailableMatchingPairs(List<TileModel> tiles) {
     final freeTiles = getFreeTiles(tiles);
     final pairs = <TilePair>[];

@@ -44,7 +44,10 @@ Run these tests on a physical Android device before each milestone.
 
 - **Test ad units**: Debug builds automatically use Google's official test ad-unit IDs (`ca-app-pub-3940256099942544/*`). These show test banners/content, not real ads.
 - **EEA debug geography**: Debug builds automatically configure UMP with `DebugGeography.debugGeographyEea` so the consent form always appears.
-- **Production ads**: Only enabled with `flutter build appbundle --release --dart-define=USE_PRODUCTION_ADS=true`. Never use this for automated testing.
+- **Production ads**: Every release build automatically selects the configured
+  platform-specific production IDs. TestFlight/release testing must use an
+  AdMob-registered test device. Verify the **Test Ad** or **Test mode** indicator
+  before interacting, and never click your own live production ads.
 
 ## Sign-off
 

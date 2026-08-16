@@ -1,7 +1,7 @@
-# Levels 241–280 candidate design
+# Levels 241–280 approved production design
 
-Status: complete developer-only human-review package. Production remains
-Levels 1–240 and `getLevelById(241)` remains `null`.
+Status: approved, assigned, and frozen in production. Production is contiguous
+through Level 280; `getLevelById(281)` remains `null`.
 
 ## Roadmap interpretation
 
@@ -66,25 +66,24 @@ is below the 0.750 offset gate and the two silhouettes are plainly distinct.
 - Maximum exact silhouette score against production Levels 1–240 is 0.763,
   below the 0.900 near-clone gate.
 
-The existing collection schedule would place milestones at Levels 243, 248,
-253, 257, 262, 266, 271, 276, and 280. These remain inactive because the
-levels are not production content. No tile face, migration, entitlement,
-monetisation, solver, projection, or saved-progress logic changed.
+The existing collection schedule places milestones at Levels 243, 248, 253,
+257, 262, 266, 271, 276, and 280. These pre-existing additive milestones are
+now reachable. No tile face or earlier ownership rule changed.
 
 Final repository verification:
 
 - Full Flutter suite: 1,564 tests passed in 6:12.
 - `flutter analyze --no-pub`: no issues found.
 - `git diff --check`: clean.
-- Implemented production boundary: 240.
+- Implemented production boundary: 280.
 - Planned campaign and collection horizons: 400.
-- Levels 241–280: developer-only; Levels 281–400: unavailable.
+- Levels 241–280: approved production; Levels 281–400: roadmap-only and unavailable.
 
 ## Review artifacts
 
 The detailed matrix, symbol plans, seed ranges, metrics, warnings/resolutions,
 and every coordinate grouped by layer are in
-`artifacts/layout-previews/levels-241-280-candidates/levels-241-280-candidate-report.md`.
+`artifacts/layout-previews/levels-241-280-production/levels-241-280-production-assignment.md`.
 The same directory contains per-level clean, diagnostic, silhouette, 360×640,
 and 430×932 renders plus all contact sheets, chapter overviews, distributions,
 cross-batch comparisons, boundary comparison, and finale comparison.

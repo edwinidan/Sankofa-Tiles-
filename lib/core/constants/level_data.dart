@@ -4,6 +4,7 @@ import 'chapter2_layout_data.dart';
 import 'tile_data.dart';
 import 'levels_41_80_candidate_data.dart';
 import 'levels_201_240_candidate_data.dart';
+import 'levels_241_280_candidate_data.dart';
 
 class SymbolCopyPlan {
   final int symbolPoolSize;
@@ -275,6 +276,21 @@ List<LevelDefinition> _approvedLevels201To240() => List.unmodifiable([
         ),
     ]);
 
+List<LevelDefinition> _approvedLevels241To280() => List.unmodifiable([
+      for (var index = 0; index < kLevels241To280Candidates.length; index++)
+        LevelDefinition(
+          id: kLevels241To280Candidates[index].level,
+          name: kLevels241To280Candidates[index].proposedName,
+          chapter: index < 20 ? 'Rivers of Counsel' : 'Forest of Ancestors',
+          namedLayout: kLevels241To280Candidates[index].layout,
+          unlockRequirement: kLevels241To280Candidates[index].level - 1,
+          symbolPlan: kLevels241To280Candidates[index].symbolPlan,
+          difficultyCategory:
+              kLevels241To280Candidates[index].difficultyCategory,
+          symbolStartIndex: 208 + index * 3,
+        ),
+    ]);
+
 final List<LevelDefinition> kLevels = [
   _level(1, 'First Symbols', 'Accra', earlyOpenDiamond01Layout, 7, 'Novice'),
   _level(2, 'New Roots', 'Accra', earlyOpenDiamond02Layout, 8, 'Novice'),
@@ -401,6 +417,7 @@ final List<LevelDefinition> kLevels = [
       symbolStart: 86),
   ..._extendedCampaignLevels(),
   ..._approvedLevels201To240(),
+  ..._approvedLevels241To280(),
 ];
 
 /// Long-term target. Never use this to index [kLevels] or render level cards.

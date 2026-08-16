@@ -6,15 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/game_state.dart';
 import '../../models/game_launch_config.dart';
+import '../../core/economy/economy_models.dart';
+import '../../core/monetization/monetization_models.dart';
 import '../../core/utils/haptic_service.dart';
 import '../../core/utils/audio_service.dart';
 import '../../core/utils/analytics_service.dart';
 import '../../providers/game_provider.dart';
+import '../../providers/economy_provider.dart';
+import '../../providers/monetization_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
+import '../../widgets/kente_button.dart';
 import 'widgets/board_widget.dart';
 import 'widgets/game_control_dock.dart';
 import 'widgets/game_header.dart';
@@ -34,14 +39,21 @@ class GameScreen extends ConsumerStatefulWidget {
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen>
+    with WidgetsBindingObserver {
   bool _showCombo = false;
   int _displayedStreak = 0;
   late final Stopwatch _levelLoadStopwatch;
   late final AudioService _audioService;
   bool _reportedReadyFrame = false;
 
-  void _leaveGame() {
+  Future<void> _leaveGame() async {
+    if (!widget.launchConfig.isDeveloperTest) {
+      await ref
+          .read(storageServiceProvider)
+          .saveActiveGame(ref.read(gameProvider));
+    }
+    if (!mounted) return;
     ref.read(gameProvider.notifier).leaveGame();
     context.go(
       widget.launchConfig.isDeveloperTest ? '/developer/levels' : '/',
@@ -158,12 +170,26 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     // Stop music whenever we leave the game screen — covers quit dialog,
     // back navigation, and the post-game result redirect.
     _audioService.stopBackgroundMusic();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      final game = ref.read(gameProvider);
+      if (!widget.launchConfig.isDeveloperTest) {
+        unawaited(ref.read(storageServiceProvider).saveActiveGame(game));
+      }
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _levelLoadStopwatch = Stopwatch()..start();
     _audioService = ref.read(audioServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -171,11 +197,20 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         '[LEVEL_LOAD] level=${widget.levelId} first game screen frame took '
         '${_levelLoadStopwatch.elapsedMilliseconds} ms',
       );
-      ref.read(gameProvider.notifier).startLevel(
-            widget.levelId,
-            DifficultyMode.normal,
-            isDeveloperTest: widget.launchConfig.isDeveloperTest,
-          );
+      final notifier = ref.read(gameProvider.notifier);
+      final saved = widget.launchConfig.resumeSavedGame
+          ? ref.read(storageServiceProvider).getActiveGame()
+          : null;
+      final restored = saved != null &&
+          saved.levelId == widget.levelId &&
+          notifier.restoreSavedGame(saved.toGameState());
+      if (!restored) {
+        notifier.startLevel(
+          widget.levelId,
+          DifficultyMode.normal,
+          isDeveloperTest: widget.launchConfig.isDeveloperTest,
+        );
+      }
     });
   }
 
@@ -195,6 +230,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     }
 
     ref.listen<GameState>(gameProvider, (prev, next) {
+      if (!widget.launchConfig.isDeveloperTest) {
+        if (next.status == GameStatus.won) {
+          unawaited(ref.read(storageServiceProvider).clearActiveGame());
+        } else {
+          unawaited(ref.read(storageServiceProvider).saveActiveGame(next));
+        }
+      }
+
       // Navigate to result when game ends
       if (prev?.status != next.status &&
           (next.status == GameStatus.won || next.status == GameStatus.lost)) {
@@ -291,6 +334,24 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                     ),
                             onBack: _leaveGame,
                           ),
+                        if (gameState.recoveryNeeded)
+                          Positioned.fill(
+                            child: _RecoveryOverlay(
+                              onRestart: _confirmRestart,
+                            ),
+                          ),
+                        if (gameState.blockedTileUid != null &&
+                            !gameState.recoveryNeeded)
+                          Positioned(
+                            left: 20,
+                            right: 20,
+                            top: 12,
+                            child: IgnorePointer(
+                              child: _BlockedTileMessage(
+                                blockerCount: gameState.blockingTileUids.length,
+                              ),
+                            ),
+                          ),
                         if (_showCombo)
                           IgnorePointer(
                             child: _ComboOverlay(
@@ -319,6 +380,180 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         ),
       ),
     );
+  }
+}
+
+class _BlockedTileMessage extends StatelessWidget {
+  const _BlockedTileMessage({required this.blockerCount});
+
+  final int blockerCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = blockerCount == 1
+        ? 'This tile is blocked by 1 tile'
+        : blockerCount > 1
+            ? 'This tile is blocked by $blockerCount tiles'
+            : 'Open either side of this tile first';
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
+        child: Text(
+          message,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: SankofaGameTheme.parchmentLight,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ).animate().fadeIn(duration: 160.ms).slideY(begin: -0.2);
+  }
+}
+
+class _RecoveryOverlay extends ConsumerStatefulWidget {
+  const _RecoveryOverlay({required this.onRestart});
+
+  final VoidCallback onRestart;
+
+  @override
+  ConsumerState<_RecoveryOverlay> createState() => _RecoveryOverlayState();
+}
+
+class _RecoveryOverlayState extends ConsumerState<_RecoveryOverlay> {
+  bool _working = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = ref.watch(gameProvider);
+    final economy = ref.watch(economyProvider);
+    final shuffleCount = economy.boosterCount(BoosterType.shuffle);
+    final openPathCount = economy.boosterCount(BoosterType.openPath);
+
+    return ColoredBox(
+      color: Colors.black.withValues(alpha: 0.58),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(22),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+            decoration: SankofaGameTheme.appParchmentPanelDecoration,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.route_outlined,
+                  color: SankofaGameTheme.mutedGold,
+                  size: 46,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'No Available Matches',
+                  style: AppTextStyles.archiveDisplaySmall.copyWith(
+                    color: SankofaGameTheme.darkText,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your progress is safe. Choose a way to open another path.',
+                  style: AppTextStyles.archiveBodyMedium.copyWith(
+                    color: SankofaGameTheme.mutedGold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                if (game.canUndo)
+                  KenteButton(
+                    label: 'UNDO LAST MATCH — FREE',
+                    icon: Icons.undo_rounded,
+                    width: double.infinity,
+                    onTap: _working
+                        ? null
+                        : () => ref.read(gameProvider.notifier).undoLastMatch(),
+                  ),
+                if (game.canUndo) const SizedBox(height: 10),
+                KenteButton(
+                  label: shuffleCount > 0
+                      ? 'SHUFFLE BOARD ($shuffleCount)'
+                      : 'WATCH AD FOR A SHUFFLE',
+                  icon: shuffleCount > 0
+                      ? Icons.shuffle_rounded
+                      : Icons.ondemand_video_outlined,
+                  width: double.infinity,
+                  onTap: _working ? null : _shuffle,
+                ),
+                if (openPathCount > 0) ...[
+                  const SizedBox(height: 10),
+                  KenteButton(
+                    label: 'REVEAL A PATH ($openPathCount)',
+                    icon: Icons.auto_fix_high_outlined,
+                    width: double.infinity,
+                    onTap: _working ? null : _openPath,
+                  ),
+                ],
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: _working ? null : widget.onRestart,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Restart level'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shuffle() async {
+    setState(() => _working = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final economy = ref.read(economyProvider);
+
+    if (economy.boosterCount(BoosterType.shuffle) <= 0) {
+      final result =
+          await ref.read(monetizationProvider.notifier).completeRewardedAd(
+                placement: RewardedPlacement.freeRescueShuffle,
+              );
+      if (!mounted) return;
+      if (!result.completed) {
+        setState(() => _working = false);
+        messenger.showSnackBar(SnackBar(content: Text(result.message)));
+        return;
+      }
+    }
+
+    final economyNotifier = ref.read(economyProvider.notifier);
+    if (await economyNotifier.spendBooster(BoosterType.shuffle)) {
+      final recovered = ref.read(gameProvider.notifier).recoverWithShuffle();
+      if (!recovered) {
+        await economyNotifier.addBooster(
+          BoosterType.shuffle,
+          1,
+          reason: 'recovery_shuffle_refund',
+        );
+      }
+    }
+    if (mounted) setState(() => _working = false);
+  }
+
+  Future<void> _openPath() async {
+    setState(() => _working = true);
+    final economyNotifier = ref.read(economyProvider.notifier);
+    if (await economyNotifier.spendBooster(BoosterType.openPath)) {
+      final recovered = ref.read(gameProvider.notifier).recoverWithOpenPath();
+      if (!recovered) {
+        await economyNotifier.addBooster(
+          BoosterType.openPath,
+          1,
+          reason: 'recovery_open_path_refund',
+        );
+      }
+    }
+    if (mounted) setState(() => _working = false);
   }
 }
 

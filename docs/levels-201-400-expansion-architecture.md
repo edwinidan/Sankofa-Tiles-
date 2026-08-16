@@ -1,17 +1,17 @@
 # Levels 201–400 expansion architecture
 
-Status: expansion foundation with Levels 1–240 assigned to production. Levels
-241–400 remain roadmap-only and unavailable.
+Status: expansion foundation with Levels 1–280 assigned to production. Levels
+281–400 remain roadmap-only and unavailable.
 
 ## Level-200 boundary audit
 
 |Usage|Location / behavior|Classification|Expansion treatment|
 |---|---|---|---|
-|Implemented registry|`level_data.dart`: `kLevels` contains 240 contiguous IDs; `kImplementedCampaignLevelCount` and `kImplementedFinalLevelId` derive from it.|Implemented production level count|Keep derived. Append only visually approved content in a later release.|
+|Implemented registry|`level_data.dart`: `kLevels` contains 280 contiguous IDs; `kImplementedCampaignLevelCount` and `kImplementedFinalLevelId` derive from it.|Implemented production level count|Keep derived. Append only visually approved content in a later release.|
 |Long-term target|`kPlannedCampaignLevelCount = 400`, `kPlannedChapterCount = 20`, `kPlannedLevelsPerChapter = 20`.|Planned campaign horizon|Never use to index `kLevels` or enable navigation.|
-|Production chapters|`chapter_data.dart`: 12 implemented 20-level definitions; Chapter 11 is 201–220 and Chapter 12 is 221–240.|Gameplay boundary / production content|Chapter totals derive from each definition instead of literal ten-level assumptions.|
-|Next unfinished level|`ProgressService.nextUnfinishedLevelId` indexes the implemented registry; completed 200 resolves to 201 and completed 240 returns `null`.|Gameplay boundary|Level 241 cannot be exposed until a production definition exists.|
-|Completion|`ProgressService.hasCompletedAllLevels`, Result actions, and Chapter Complete derive the current-content boundary from `kLevels`; the permanent `complete_campaign` achievement retains the planned Level-400 horizon.|Gameplay boundary|Level 240 is presented as current-journey completion, not permanent campaign completion.|
+|Production chapters|`chapter_data.dart`: 14 implemented 20-level definitions; Chapter 13 is 241–260 and Chapter 14 is 261–280.|Gameplay boundary / production content|Chapter totals derive from each definition instead of literal ten-level assumptions.|
+|Next unfinished level|`ProgressService.nextUnfinishedLevelId` indexes the implemented registry; completed 240 resolves to 241 and completed 280 returns `null`.|Gameplay boundary|Level 281 cannot be exposed until a production definition exists.|
+|Completion|`ProgressService.hasCompletedAllLevels`, Result actions, and Chapter Complete derive the current-content boundary from `kLevels`; the permanent `complete_campaign` achievement retains the planned Level-400 horizon.|Gameplay boundary|Level 280 is presented as current-journey completion, not permanent campaign completion.|
 |Home/Journey selector|Cards, progress ratios, maximum stars, and next-level CTA derive from `kLevels` and implemented constants.|Gameplay boundary / UI|No unfinished level can appear.|
 |Unlocking|`StorageService.isLevelUnlocked(n)` checks completion of `n - 1`; it has no literal cap.|Gameplay boundary|A Level-200 veteran will qualify for 201 once 201 exists.|
 |Save keys|Completion, stars, scores, highest completed level, collection, economy, purchases, settings, statistics, and achievements use stable independent keys.|Save/progress model|No renumbering or destructive migration.|
@@ -19,7 +19,7 @@ Status: expansion foundation with Levels 1–240 assigned to production. Levels
 |Collection schedule|`kCollectionScheduleFinalLevel = 400` spreads the current 87 non-starter faces through Level 400.|Collection horizon|Keep separate from implemented content.|
 |Analytics|Client event methods accept an integer level ID and contain no 200 cap.|Analytics|External dashboards, Remote Config, audiences, and warehouse queries remain an operational audit item.|
 |Daily/rewards|Daily rewards are campaign-independent; ordinary/chapter rewards use the completed level and chapter functions.|Unrelated / derived gameplay|No 200 replacement required.|
-|Tests|Startup, board geometry, exact-assignment, signature, chapter, unlock migration, and boundary tests assert 240-level production while retaining frozen legacy behavior.|Test fixture|Levels 201–240 receive 100-seed validation and real production preview coverage.|
+|Tests|Startup, board geometry, exact-assignment, signature, chapter, unlock migration, and boundary tests assert 280-level production while retaining frozen legacy behavior.|Test fixture|Levels 241–280 receive 100-seed validation and real production preview coverage.|
 |Developer tools|Older reports say “all 200 production levels”; the tester iterates `kLevels`.|Implemented count / historical report copy|Current statements remain true. The new 201–240 section is explicitly isolated.|
 |Repository copy|README, CONTEXT, GAME_FLOW, screen inventory, and older phase plans describe the shipped 200-level version.|UI/store-facing or historical copy|Do not globally replace. Update only when expansion is approved for production.|
 |Unrelated literals|200 ms animation durations, 200 px width clamps, 200-point bonuses, and 200 px/s effects.|Unrelated numeric value|Never change as campaign work.|
@@ -32,15 +32,13 @@ cannot accidentally open Level 201.
 
 - `plannedCampaignLevelCount` is 400 and describes design intent only.
 - `implementedProductionLevelCount` is derived from the contiguous approved
-  production registry. It is 240 after the approved expansion assignment.
+  production registry. It is 280 after the approved expansion assignment.
 - `implementedFinalLevelId` is derived from the last approved production
   definition. Completion and next-level behavior use it, not 400.
-- Candidate catalogues have no dependency from `kLevels`, chapter routing, or
-  normal game launch. Candidate IDs may therefore be evaluated without being
-  playable.
-- The approved 201–240 boards are now appended with matching production
-  chapter definitions. Completing 240 returns a safe implemented-end state;
-  there is no Level-241 route or production definition.
+- The approved 241–280 catalogue is assigned directly into `kLevels`, while
+  retaining its frozen metadata for regression and artifact generation.
+- Completing 280 returns a safe implemented-end state; there is no Level-281
+  route or production definition.
 - Before the eventual 400 release, migrate the current 10-level UI chapter
   assumptions (`/10`, 30 stars, ten-level labels) to chapter-derived lengths.
   Preserve reward transaction IDs or explicitly version them to prevent
@@ -59,7 +57,7 @@ owned face.
 
 ## Proposed Chapters 11–20 roadmap
 
-Chapters 11 and 12 are production `ChapterDefinition` entries. Chapters 13–20
+Chapters 11–14 are production `ChapterDefinition` entries. Chapters 15–20
 remain documentation only.
 
 |Chapter|Levels|Theme|Difficulty direction|Silhouette vocabulary|Breathers / finale|Tiles|Symbol pool|Rewards and collection moments|

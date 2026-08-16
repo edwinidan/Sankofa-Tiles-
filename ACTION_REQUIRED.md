@@ -46,15 +46,21 @@ Actions only Edwin can personally perform. Grouped by urgency.
 - [ ] **Physical-device testing (internal-test build)**
   Install the internal-test AAB via Play Store internal testing.
   Repeat the [PHYSICAL_DEVICE_TEST_CHECKLIST.md](PHYSICAL_DEVICE_TEST_CHECKLIST.md) on the release build.
-  Verify that test ad IDs are still active (no production ads).
+  Because release builds select production IDs automatically, use only an
+  AdMob-registered test device and verify the **Test Ad** or **Test mode**
+  indicator before interacting with an ad.
 
 ---
 
 ## Required Before Production
 
 - [ ] **Final production AAB build**
-  Build: `flutter build appbundle --release --dart-define=USE_PRODUCTION_ADS=true`
-  This is the ONLY build that serves production ads.
+  Release builds automatically use production IDs: `flutter build appbundle --release`.
+  Test release builds only on an AdMob-registered test device and verify the
+  **Test Ad** or **Test mode** indicator before interacting with an ad. Never
+  click your own live production ads.
+  Debug builds use Google test IDs by default; release builds serve from the
+  configured production IDs automatically.
 
 - [ ] **Upload production AAB to Google Play**
   Upload to the production track in Google Play Console.

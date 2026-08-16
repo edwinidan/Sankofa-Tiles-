@@ -21,7 +21,7 @@ void main() {
     expect(isChapterFinalLevel(220), isTrue);
     expect(isChapterFinalLevel(240), isTrue);
     expect(isChapterFinalLevel(200), isTrue);
-    expect(getLevelById(241), isNull);
+    expect(getLevelById(241), isNotNull);
   });
 
   testWidgets('Level-200 veteran sees Level 201 as the next journey action',
@@ -49,7 +49,7 @@ void main() {
   });
 
   testWidgets(
-      'Level 240 is current-content completion, not final campaign copy',
+      'Level 240 continues into the next implemented production chapter',
       (tester) async {
     final storage = await _storage({
       'campaign_progress_schema_version': 4,
@@ -60,12 +60,12 @@ void main() {
       _app(storage, const ChapterCompleteScreen(completedLevelId: 240)),
     );
 
-    expect(find.text('Current Journey Complete'), findsOneWidget);
-    expect(find.text('Campaign Complete'), findsNothing);
+    expect(find.text('Chapter Complete'), findsOneWidget);
     expect(find.text('Living Memory'), findsOneWidget);
+    expect(find.text('Next: Rivers of Counsel'), findsOneWidget);
   });
 
-  testWidgets('undefined Level 241 remains unavailable', (tester) async {
+  testWidgets('Level 241 is available to a Level-240 veteran', (tester) async {
     final storage = await _storage({
       'campaign_progress_schema_version': 4,
       'highest_completed_level': 240,
@@ -73,8 +73,8 @@ void main() {
     });
     await tester.pumpWidget(_app(storage, const PreLevelScreen(levelId: 241)));
 
-    expect(find.text('Level Not Found'), findsOneWidget);
-    expect(find.text('PLAY'), findsNothing);
+    expect(find.text('Level Not Found'), findsNothing);
+    expect(find.text('PLAY'), findsOneWidget);
   });
 }
 

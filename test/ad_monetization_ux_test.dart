@@ -381,6 +381,11 @@ Future<void> _pumpResult(
             Text('Level ${state.pathParameters['levelId']}'),
       ),
       GoRoute(
+        path: '/game/:levelId',
+        builder: (context, state) =>
+            Text('Game ${state.pathParameters['levelId']}'),
+      ),
+      GoRoute(
         path: '/',
         builder: (context, state) => const Text('Home'),
       ),
@@ -632,7 +637,7 @@ void main() {
 
       expect(ads.interstitialPlacements,
           [InterstitialPlacement.afterCompletedLevels]);
-      expect(find.text('Level 4'), findsOneWidget);
+      expect(find.text('Game 4'), findsOneWidget);
     });
 
     testWidgets(
@@ -644,6 +649,10 @@ void main() {
       final ads = _FakeAdMobService();
 
       await _pumpResult(tester, storage: storage, ads: ads);
+      await Scrollable.ensureVisible(
+        tester.element(find.text('DOUBLE COWRIES')),
+        alignment: 0.5,
+      );
       await tester.tap(find.text('DOUBLE COWRIES'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('NEXT LEVEL'));
@@ -652,7 +661,7 @@ void main() {
       expect(
           ads.rewardedPlacements, [RewardedPlacement.doubleCompletionCowries]);
       expect(ads.interstitialPlacements, isEmpty);
-      expect(find.text('Level 4'), findsOneWidget);
+      expect(find.text('Game 4'), findsOneWidget);
     });
 
     testWidgets('navigation continues when the interstitial is unavailable',
@@ -668,7 +677,7 @@ void main() {
 
       expect(ads.interstitialPlacements,
           [InterstitialPlacement.afterCompletedLevels]);
-      expect(find.text('Level 4'), findsOneWidget);
+      expect(find.text('Game 4'), findsOneWidget);
     });
   });
 

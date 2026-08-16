@@ -48,7 +48,7 @@ class SeedMetrics {
 
 void main() {
   final directory =
-      Directory('artifacts/layout-previews/levels-241-280-candidates')
+      Directory('artifacts/layout-previews/levels-241-280-production')
         ..createSync(recursive: true);
   final seeds = <int, SeedMetrics>{};
   final coarse = <int, CoarseSilhouetteMetrics>{};
@@ -80,11 +80,15 @@ void main() {
         'hullFill,emptyArea,holes,largeOpenings,connectedMasses,leftRight,'
         'topBottom,coarseClass,breather,showcase,anchor');
   final report = StringBuffer()
-    ..writeln('# Levels 241–280 developer candidate report')
+    ..writeln('# Levels 241–280 production assignment report')
     ..writeln()
-    ..writeln('Status: isolated developer-only human-review candidates. ')
-    ..writeln(
-        'Production remains Levels 1–240; Level 241 has no production route.')
+    ..writeln('Status: approved, production-assigned, and signature-frozen.')
+    ..writeln()
+    ..writeln('- `implementedProductionLevelCount`: '
+        '$kImplementedCampaignLevelCount.')
+    ..writeln('- `plannedCampaignLevelCount`: $kPlannedCampaignLevelCount.')
+    ..writeln('- Production IDs are contiguous through Level '
+        '$kImplementedFinalLevelId; `getLevelById(281)` returns `null`.')
     ..writeln()
     ..writeln('## Roadmap audit and chapter grammar')
     ..writeln()
@@ -100,10 +104,10 @@ void main() {
         'Negative space behaves as clearings, trunk chambers, and branch '
         'windows. It is slightly more guardian-heavy and wide; Level 280 is '
         'the Great Ancestral Tree sanctuary.')
-    ..writeln('- Roadmap moments retained for future production decisions: '
+    ..writeln('- Existing collection schedule moments now activated: '
         'discovery near 248, booster cache at 250, Chapter-13 reveal/chest at '
         '260, collection moments at 268 and 278, and canopy cosmetic/chest at '
-        '280. None are activated by this developer-only catalogue.')
+        '280. No new tile faces were added by this assignment.')
     ..writeln()
     ..writeln('## Candidate matrix')
     ..writeln()
@@ -291,7 +295,7 @@ void main() {
   var maximumProduction = 0.0;
   var maximumProductionPair = '';
   for (final candidate in kLevels241To280Candidates) {
-    for (final production in kLevels) {
+    for (final production in kLevels.where((level) => level.id <= 240)) {
       final score = compareLayoutSilhouettes(
         candidate.layout,
         production.namedLayout,
@@ -359,14 +363,14 @@ void main() {
         '280 pass the five-pair finale gate.')
     ..writeln('- All 40 pass even-count, unique-coordinate, three-layer, '
         'immediate-support, same-layer-overlap, half-grid, projected-bounds, '
-        'symbol-plan, viewport, and production-isolation checks.')
+        'symbol-plan, viewport, and exact production-assignment checks.')
     ..writeln('- Compact 360×640, standard 390×844, and tall 430×932 fits are '
         'clean; all standard effective tile widths are 64.0 px.')
     ..writeln()
-    ..writeln('## Planned collection milestones in 241–280')
+    ..writeln('## Activated collection milestones in 241–280')
     ..writeln()
-    ..writeln('These existing schedule entries are documented but inactive '
-        'because the candidate levels are not production content.');
+    ..writeln('These are pre-existing additive schedule entries. The '
+        'assignment adds no tile faces and does not alter prior ownership.');
   for (final milestone in kTileUnlockMilestones.where(
     (milestone) =>
         milestone.completedLevel >= 241 && milestone.completedLevel <= 280,
@@ -393,9 +397,11 @@ void main() {
   }
 
   File('${directory.path}/metrics.csv').writeAsStringSync(csv.toString());
-  File('${directory.path}/levels-241-280-candidate-report.md')
+  File('${directory.path}/production-assignment-matrix.csv')
+      .writeAsStringSync(csv.toString());
+  File('${directory.path}/levels-241-280-production-assignment.md')
       .writeAsStringSync(report.toString());
-  print('Wrote report for ${kLevels241To280Candidates.length} candidates; '
+  print('Wrote report for ${kLevels241To280Candidates.length} levels; '
       '$generatedTotal generated, $solvedTotal solved.');
 }
 

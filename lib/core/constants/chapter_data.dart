@@ -294,6 +294,22 @@ const kChapters = [
     featuredSymbol: 'Adinkrahene',
     meaning: 'Build living memory into a sanctuary for every path behind you.',
   ),
+  ChapterDefinition(
+    index: 13,
+    title: 'Rivers of Counsel',
+    levelStart: 241,
+    levelEnd: 260,
+    featuredSymbol: 'Nkyinkyim',
+    meaning: 'Read the branching currents and choose each crossing with care.',
+  ),
+  ChapterDefinition(
+    index: 14,
+    title: 'Forest of Ancestors',
+    levelStart: 261,
+    levelEnd: 280,
+    featuredSymbol: 'Nyame Dua',
+    meaning: 'Walk beneath the ancestral canopy and safeguard living memory.',
+  ),
 ];
 
 ChapterDefinition chapterForLevel(int levelId) {

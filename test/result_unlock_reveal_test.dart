@@ -101,6 +101,8 @@ void main() {
 
   testWidgets('already unlocked symbols do not repeat the reveal popup',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     final storage = await _storage(_starterCollectionUnlocked());
 
     await tester.pumpWidget(_resultHarness(storage));
@@ -110,5 +112,11 @@ void main() {
     expect(
         find.textContaining('new symbols added to Collection'), findsNothing);
     expect(find.text('NEXT LEVEL'), findsOneWidget);
+    final logicalScreenHeight =
+        tester.getSize(find.byType(Scaffold).first).height;
+    expect(
+      tester.getBottomRight(find.text('NEXT LEVEL')).dy,
+      lessThanOrEqualTo(logicalScreenHeight),
+    );
   });
 }

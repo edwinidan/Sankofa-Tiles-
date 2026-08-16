@@ -84,6 +84,19 @@ void main() {
     expect(resultScreen, isNot(contains('ca-app-pub-')));
   });
 
+  test('iOS Info.plist contains the production AdMob app ID', () {
+    final iosInfo = File('ios/Runner/Info.plist').readAsStringSync();
+    final appIdMatch = RegExp(
+      r'<key>GADApplicationIdentifier</key>\s*<string>([^<]+)</string>',
+    ).firstMatch(iosInfo);
+
+    expect(appIdMatch, isNotNull);
+    final appId = appIdMatch!.group(1)!;
+    expect(appId, 'ca-app-pub-5484820744037011~2607546687');
+    expect(appId, contains('~'));
+    expect(appId, isNot(contains('/')));
+  });
+
   test('interstitial call site passes real tutorial and first-session state',
       () {
     final resultScreen =
