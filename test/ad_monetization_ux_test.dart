@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sankofa_tiles/core/ads/admob_service.dart';
+import 'package:sankofa_tiles/core/constants/level_data.dart';
 import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/economy/economy_models.dart';
 import 'package:sankofa_tiles/core/monetization/monetization_models.dart';
@@ -354,10 +355,13 @@ Future<ProviderContainer> _pumpDock(
   return container;
 }
 
-Future<void> _pumpResult(
+Future<GoRouter> _pumpResult(
   WidgetTester tester, {
   required _MemoryStorage storage,
   required _FakeAdMobService ads,
+  GameState? gameState,
+  bool settle = true,
+  bool disableAnimations = false,
 }) async {
   await tester.binding.setSurfaceSize(const Size(900, 1100));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -368,7 +372,7 @@ Future<void> _pumpResult(
       GoRoute(
         path: '/result',
         builder: (context, state) => ResultScreen(
-          gameState: _wonState(),
+          gameState: gameState ?? _wonState(),
           launchConfig: const GameLaunchConfig(
             levelId: 3,
             launchMode: GameLaunchMode.normalProgression,
@@ -404,10 +408,19 @@ Future<void> _pumpResult(
         adMobServiceProvider.overrideWithValue(ads),
         audioServiceProvider.overrideWithValue(_SilentAudioService()),
       ],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        routerConfig: router,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            disableAnimations: disableAnimations,
+          ),
+          child: child!,
+        ),
+      ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
+  return router;
 }
 
 Future<ProviderContainer> _pumpProvidedScreen(
@@ -610,6 +623,201 @@ void main() {
     });
   });
 
+  group('ResultScreen star celebration', () {
+    double starOpacity(WidgetTester tester, int star) => tester
+        .widget<Opacity>(
+          find.byKey(ValueKey('result-star-opacity-$star')),
+        )
+        .opacity;
+
+    testWidgets('earned stars reveal sequentially about 200ms apart',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService();
+
+      await _pumpResult(
+        tester,
+        storage: storage,
+        ads: ads,
+        gameState: _wonState().copyWith(
+          score: getLevelById(3)!.starThresholds[2],
+        ),
+        settle: false,
+      );
+
+      expect(starOpacity(tester, 1), 0);
+      expect(starOpacity(tester, 2), 0);
+      expect(starOpacity(tester, 3), 0);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(starOpacity(tester, 1), greaterThan(0));
+      expect(starOpacity(tester, 2), 0);
+
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(starOpacity(tester, 2), greaterThan(0));
+      expect(starOpacity(tester, 3), 0);
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(starOpacity(tester, 3), greaterThan(0));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('unearned stars stay visible and do not animate',
+        (tester) async {
+      final level = getLevelById(3)!;
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService();
+      final twoStarState = _wonState().copyWith(
+        score: level.starThresholds[1],
+      );
+
+      await _pumpResult(
+        tester,
+        storage: storage,
+        ads: ads,
+        gameState: twoStarState,
+        settle: false,
+      );
+
+      final semantics = tester.widget<Semantics>(
+        find.byKey(const ValueKey('result-stars')),
+      );
+      expect(semantics.properties.label, '2 of 3 stars earned');
+      expect(starOpacity(tester, 3), 1);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(starOpacity(tester, 3), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('reduced motion displays earned stars immediately',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService();
+
+      await _pumpResult(
+        tester,
+        storage: storage,
+        ads: ads,
+        gameState: _wonState().copyWith(
+          score: getLevelById(3)!.starThresholds[2],
+        ),
+        settle: false,
+        disableAnimations: true,
+      );
+
+      expect(starOpacity(tester, 1), 1);
+      expect(starOpacity(tester, 2), 1);
+      expect(starOpacity(tester, 3), 1);
+    });
+  });
+
+  group('ResultScreen X2 Cowries reward', () {
+    testWidgets('shows the dynamically doubled completion reward',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService();
+
+      await _pumpResult(tester, storage: storage, ads: ads);
+
+      expect(
+        find.text('X2 CLAIM ${storage.cowries * 2} COWRIES'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('completion grants only one additional base reward',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService();
+
+      await _pumpResult(tester, storage: storage, ads: ads);
+      final baseReward = storage.cowries;
+      final claimLabel = 'X2 CLAIM ${baseReward * 2} COWRIES';
+      await Scrollable.ensureVisible(tester.element(find.text(claimLabel)));
+      await tester.tap(find.text(claimLabel));
+      await tester.pumpAndSettle();
+
+      expect(storage.cowries, baseReward * 2);
+      expect(storage.rewardedClaims, hasLength(1));
+      expect(find.text('X2 REWARD CLAIMED'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('double-cowries-reward-button')),
+      );
+      await tester.pump();
+      expect(ads.rewardedPlacements, hasLength(1));
+      expect(storage.cowries, baseReward * 2);
+    });
+
+    testWidgets('rapid taps start one ad and grant one additional reward',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService()..rewardedCompleter = Completer<bool>();
+
+      await _pumpResult(tester, storage: storage, ads: ads);
+      final baseReward = storage.cowries;
+      final button = find.byKey(
+        const ValueKey('double-cowries-reward-button'),
+      );
+      await Scrollable.ensureVisible(tester.element(button));
+      await tester.tap(button);
+      await tester.tap(button);
+      await tester.pump();
+
+      expect(
+        ads.rewardedPlacements,
+        [RewardedPlacement.doubleCompletionCowries],
+      );
+      expect(storage.cowries, baseReward);
+
+      ads.rewardedCompleter!.complete(true);
+      await tester.pumpAndSettle();
+      expect(storage.cowries, baseReward * 2);
+      expect(storage.rewardedClaims, hasLength(1));
+    });
+
+    testWidgets('cancelled or failed ads do not grant Cowries', (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService()..rewardedResult = false;
+
+      await _pumpResult(tester, storage: storage, ads: ads);
+      final baseReward = storage.cowries;
+      final claimLabel = 'X2 CLAIM ${baseReward * 2} COWRIES';
+      await Scrollable.ensureVisible(tester.element(find.text(claimLabel)));
+      await tester.tap(find.text(claimLabel));
+      await tester.pumpAndSettle();
+
+      expect(storage.cowries, baseReward);
+      expect(storage.rewardedClaims, isEmpty);
+      expect(find.text(claimLabel), findsOneWidget);
+    });
+
+    testWidgets('navigation during an ad is safe and preserves earned callback',
+        (tester) async {
+      final storage = _MemoryStorage();
+      final ads = _FakeAdMobService()..rewardedCompleter = Completer<bool>();
+
+      final router = await _pumpResult(tester, storage: storage, ads: ads);
+      final baseReward = storage.cowries;
+      final button = find.byKey(
+        const ValueKey('double-cowries-reward-button'),
+      );
+      await Scrollable.ensureVisible(tester.element(button));
+      await tester.tap(button);
+      await tester.pump();
+
+      router.go('/');
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+
+      ads.rewardedCompleter!.complete(true);
+      await tester.pumpAndSettle();
+      expect(storage.cowries, baseReward * 2);
+      expect(storage.rewardedClaims, hasLength(1));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('ResultScreen completed-level interstitial timing', () {
     testWidgets('does not trigger interstitial automatically on entry',
         (tester) async {
@@ -649,11 +857,12 @@ void main() {
       final ads = _FakeAdMobService();
 
       await _pumpResult(tester, storage: storage, ads: ads);
+      final claimLabel = 'X2 CLAIM ${storage.cowries * 2} COWRIES';
       await Scrollable.ensureVisible(
-        tester.element(find.text('DOUBLE COWRIES')),
+        tester.element(find.text(claimLabel)),
         alignment: 0.5,
       );
-      await tester.tap(find.text('DOUBLE COWRIES'));
+      await tester.tap(find.text(claimLabel));
       await tester.pumpAndSettle();
       await tester.tap(find.text('NEXT LEVEL'));
       await tester.pumpAndSettle();

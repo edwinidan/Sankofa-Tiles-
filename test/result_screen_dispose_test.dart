@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
+import 'package:sankofa_tiles/core/utils/haptic_service.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/core/economy/economy_models.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
@@ -56,6 +57,9 @@ class _RecordingStorage extends StorageService {
 
   @override
   LevelResult? getLevelResult(int levelId) => null;
+
+  @override
+  HapticIntensity getHapticIntensity() => HapticIntensity.off;
 
   @override
   int getCowries() => cowries;

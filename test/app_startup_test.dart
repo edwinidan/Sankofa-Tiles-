@@ -125,7 +125,10 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(AppBootstrapper(controller: controller));
-    await _pumpUntilFound(tester, find.text('Tap to continue'));
+    await _pumpUntilFound(tester, find.text('TAP TO BEGIN'));
+    expect(find.byKey(const ValueKey('entry-opening-tiles')), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('entry-opening-wordmark')), findsOneWidget);
     final destination = tester.widget<TickerMode>(
       find.byKey(const ValueKey('entry-flow-destination')),
     );
@@ -147,8 +150,8 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(AppBootstrapper(controller: controller));
-    await _pumpUntilFound(tester, find.text('Tap to continue'));
-    await tester.tap(find.text('Tap to continue'));
+    await _pumpUntilFound(tester, find.text('TAP TO BEGIN'));
+    await tester.tap(find.text('TAP TO BEGIN'));
     await _pumpUntilGone(
       tester,
       find.byKey(const ValueKey('entry-flow-overlay')),
@@ -201,5 +204,29 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 2));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ceremonial opening fits compact and tall phone viewports',
+      (tester) async {
+    final storage = await _storageWithPrefs({'onboarding_complete': true});
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    for (final size in const [Size(320, 568), Size(430, 932)]) {
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: EntryFlowDirector(
+            storage: storage,
+            child: const Scaffold(body: Text('Destination')),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(find.text('ADINKRA TILES'), findsOneWidget);
+      expect(find.text('TAP TO BEGIN'), findsOneWidget);
+      expect(find.byKey(const ValueKey('entry-opening-tiles')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
   });
 }

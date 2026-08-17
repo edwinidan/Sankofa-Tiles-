@@ -417,24 +417,7 @@ class _WinContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (i) {
-              return ScaleTransition(
-                scale: scaleAnim,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(
-                    i < stars ? Icons.star : Icons.star_border,
-                    color: i < stars
-                        ? SankofaGameTheme.antiqueGold
-                        : SankofaGameTheme.mutedText.withValues(alpha: 0.55),
-                    size: 34,
-                  ),
-                ),
-              );
-            }),
-          ),
+          _CelebrationStars(stars: stars),
           const SizedBox(height: 14),
           _CompactResultStats(
             score: gameState.score,
@@ -463,6 +446,286 @@ class _WinContent extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CelebrationStars extends ConsumerStatefulWidget {
+  const _CelebrationStars({required this.stars});
+
+  final int stars;
+
+  @override
+  ConsumerState<_CelebrationStars> createState() => _CelebrationStarsState();
+}
+
+class _CelebrationStarsState extends ConsumerState<_CelebrationStars>
+    with SingleTickerProviderStateMixin {
+  static const _revealGap = Duration(milliseconds: 200);
+  static const _starDuration = Duration(milliseconds: 460);
+
+  late final AnimationController _controller;
+  final List<Timer> _hapticTimers = [];
+  bool _started = false;
+
+  int get _earnedStars => widget.stars.clamp(0, 3);
+
+  Duration get _totalDuration => Duration(
+        milliseconds: _starDuration.inMilliseconds +
+            math.max(0, _earnedStars - 1) * _revealGap.inMilliseconds,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: _totalDuration,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+
+    if (_earnedStars == 0 || MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+      return;
+    }
+
+    _controller.forward();
+    final intensity = ref.read(storageServiceProvider).getHapticIntensity();
+    for (var index = 0; index < _earnedStars; index++) {
+      _hapticTimers.add(Timer(_revealGap * index, () {
+        if (mounted) HapticService.selectionClick(intensity);
+      }));
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final timer in _hapticTimers) {
+      timer.cancel();
+    }
+    _controller.dispose();
+    super.dispose();
+  }
+
+  double _progressFor(int index) {
+    if (index >= _earnedStars) return 1;
+    final elapsed = _controller.value * _totalDuration.inMilliseconds;
+    final local = (elapsed - index * _revealGap.inMilliseconds) /
+        _starDuration.inMilliseconds;
+    return local.clamp(0.0, 1.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final availableWidth = MediaQuery.sizeOf(context).width;
+    final starSize = (availableWidth * 0.156).clamp(52.8, 67.2);
+
+    return Semantics(
+      key: const ValueKey('result-stars'),
+      label: '$_earnedStars of 3 stars earned',
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(3, (index) {
+                final earned = index < _earnedStars;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _MetallicResultStar(
+                    key: ValueKey('result-star-${index + 1}'),
+                    opacityKey: ValueKey('result-star-opacity-${index + 1}'),
+                    earned: earned,
+                    size: starSize,
+                    progress: _progressFor(index),
+                  ),
+                );
+              }),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _MetallicResultStar extends StatelessWidget {
+  const _MetallicResultStar({
+    super.key,
+    required this.opacityKey,
+    required this.earned,
+    required this.size,
+    required this.progress,
+  });
+
+  final Key opacityKey;
+  final bool earned;
+  final double size;
+  final double progress;
+
+  double get _scale {
+    if (!earned) return 1;
+    return TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.66, end: 1.14)
+            .chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 62,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.14, end: 0.97)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 22,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.97, end: 1),
+        weight: 16,
+      ),
+    ]).transform(progress);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final glow = earned ? math.sin(math.pi * progress).clamp(0.0, 1.0) : 0.0;
+    final particleProgress = Curves.easeOut.transform(progress);
+
+    return SizedBox(
+      width: size + 18,
+      height: size + 20,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          if (earned)
+            Opacity(
+              opacity: glow * 0.72,
+              child: Container(
+                width: size * 1.12,
+                height: size * 1.12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFE9B94F)
+                          .withValues(alpha: 0.52 * glow),
+                      blurRadius: 20,
+                      spreadRadius: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (earned)
+            CustomPaint(
+              size: Size.square(size + 18),
+              painter: _StarSparklePainter(
+                progress: particleProgress,
+                opacity: math.sin(math.pi * progress).clamp(0.0, 1.0),
+              ),
+            ),
+          Transform.scale(
+            scale: _scale,
+            child: Opacity(
+              key: opacityKey,
+              opacity: earned ? Curves.easeOut.transform(progress) : 1,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Transform.translate(
+                    offset: Offset(0, size * 0.075),
+                    child: Opacity(
+                      opacity: earned ? 0.5 : 0.2,
+                      child: ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          SankofaGameTheme.darkText,
+                          BlendMode.srcIn,
+                        ),
+                        child: Image.asset(
+                          'assets/images/level_complete_star.png',
+                          width: size,
+                          height: size,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (earned)
+                    Image.asset(
+                      'assets/images/level_complete_star.png',
+                      width: size,
+                      height: size,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                    )
+                  else
+                    Opacity(
+                      opacity: 0.42,
+                      child: ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          SankofaGameTheme.mutedText,
+                          BlendMode.srcIn,
+                        ),
+                        child: Image.asset(
+                          'assets/images/level_complete_star.png',
+                          width: size,
+                          height: size,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StarSparklePainter extends CustomPainter {
+  const _StarSparklePainter({required this.progress, required this.opacity});
+
+  final double progress;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (opacity <= 0) return;
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide * (0.24 + progress * 0.22);
+    const angles = [-2.7, -1.8, -0.8, 0.15, 0.9, 2.15];
+    final paint = Paint()
+      ..color = const Color(0xFFE7B84E).withValues(alpha: opacity * 0.82);
+
+    for (var index = 0; index < angles.length; index++) {
+      final point = center +
+          Offset(math.cos(angles[index]), math.sin(angles[index])) * radius;
+      final particleSize = index.isEven ? 2.2 : 1.5;
+      canvas.save();
+      canvas.translate(point.dx, point.dy);
+      canvas.rotate(math.pi / 4);
+      canvas.drawRect(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: particleSize * 1.25,
+          height: particleSize * 1.25,
+        ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _StarSparklePainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.opacity != opacity;
 }
 
 class _CompactResultStats extends StatelessWidget {
@@ -1190,7 +1453,6 @@ class _DoubleCowriesReward extends ConsumerStatefulWidget {
 class _DoubleCowriesRewardState extends ConsumerState<_DoubleCowriesReward> {
   bool _loading = false;
   bool _rewardGranted = false;
-  bool _adUnavailable = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1204,33 +1466,28 @@ class _DoubleCowriesRewardState extends ConsumerState<_DoubleCowriesReward> {
               RewardedPlacement.doubleCompletionCowries,
               claimKey: claimKey,
             );
-    final canRequest = availability.canRequest && !_rewardGranted;
+    final canRequest = availability.canRequest && !_rewardGranted && !_loading;
+    final doubledReward = widget.cowries * 2;
     final label = _loading
-        ? 'LOADING…'
-        : _adUnavailable
-            ? 'AD UNAVAILABLE'
-            : canRequest
-                ? 'DOUBLE COWRIES'
-                : 'ALREADY CLAIMED';
+        ? 'LOADING REWARDED VIDEO…'
+        : canRequest
+            ? 'X2 CLAIM $doubledReward COWRIES'
+            : 'X2 REWARD CLAIMED';
 
-    return KenteButton(
+    return _RewardedCowriesButton(
       label: label,
-      icon: canRequest && !_adUnavailable
-          ? Icons.ondemand_video_outlined
-          : Icons.check,
-      width: double.infinity,
-      onTap: canRequest && !_loading && !_adUnavailable
-          ? () => _watchAd(claimKey)
-          : null,
+      loading: _loading,
+      claimed: !availability.canRequest || _rewardGranted,
+      doubledReward: doubledReward,
+      onTap: canRequest ? () => _watchAd(claimKey) : null,
     );
   }
 
   Future<void> _watchAd(String claimKey) async {
+    if (_loading || _rewardGranted) return;
     setState(() {
       _loading = true;
-      _adUnavailable = false;
     });
-    final messenger = ScaffoldMessenger.of(context);
     final result =
         await ref.read(monetizationProvider.notifier).completeRewardedAd(
               placement: RewardedPlacement.doubleCompletionCowries,
@@ -1241,12 +1498,128 @@ class _DoubleCowriesRewardState extends ConsumerState<_DoubleCowriesReward> {
     setState(() {
       _loading = false;
       _rewardGranted = result.completed;
-      _adUnavailable = !result.completed &&
-          result.status != PurchaseStatus.unavailable &&
-          result.status != PurchaseStatus.loading;
     });
-    messenger.showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.message)),
+    );
+  }
+}
+
+class _RewardedCowriesButton extends StatelessWidget {
+  const _RewardedCowriesButton({
+    required this.label,
+    required this.loading,
+    required this.claimed,
+    required this.doubledReward,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool loading;
+  final bool claimed;
+  final int doubledReward;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final radius = BorderRadius.circular(15);
+    final foreground = enabled
+        ? const Color(0xFF1E291F)
+        : SankofaGameTheme.mutedText.withValues(alpha: 0.82);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: claimed
+          ? 'Double Cowries reward already claimed'
+          : loading
+              ? 'Loading rewarded video'
+              : 'Watch a rewarded video to claim $doubledReward Cowries total',
+      child: Container(
+        key: const ValueKey('double-cowries-reward-button'),
+        width: double.infinity,
+        height: 58,
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFCE9A35)
+                  .withValues(alpha: enabled ? 0.25 : 0.08),
+              blurRadius: enabled ? 16 : 8,
+              spreadRadius: enabled ? 1 : 0,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: enabled ? 0.28 : 0.16),
+              blurRadius: 8,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: enabled
+                  ? const Color(0xFFD9A43B)
+                  : SankofaGameTheme.parchmentDark.withValues(alpha: 0.68),
+              borderRadius: radius,
+              border: Border.all(
+                color: enabled
+                    ? const Color(0xFFFFEDAE).withValues(alpha: 0.92)
+                    : SankofaGameTheme.mutedText.withValues(alpha: 0.26),
+                width: 1.5,
+              ),
+            ),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (loading)
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: foreground,
+                        ),
+                      )
+                    else
+                      Icon(
+                        claimed
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.play_circle_fill_rounded,
+                        size: 23,
+                        color: foreground,
+                      ),
+                    const SizedBox(width: 9),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: AppTextStyles.archiveButtonText.copyWith(
+                            color: foreground,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.55,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
