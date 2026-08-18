@@ -96,19 +96,6 @@ class LevelDefinition {
       startIndex: symbolStartIndex,
     );
   }
-
-  List<int> get starThresholds {
-    final coveredTiles = tileCount - stats.startingFreeTileCount;
-    final complexity = tileCount * 36 +
-        layerCount * 180 +
-        coveredTiles * 9 +
-        symbolPoolSize * 22 +
-        stats.maxLayer * 120;
-    final oneStar = ((complexity * 0.72) / 50).round() * 50;
-    final twoStar = ((complexity * 1.02) / 50).round() * 50;
-    final threeStar = ((complexity * 1.28) / 50).round() * 50;
-    return [oneStar, twoStar, threeStar];
-  }
 }
 
 List<String> _progressiveTileIds(

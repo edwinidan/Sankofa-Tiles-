@@ -1,5 +1,6 @@
 import '../constants/chapter_data.dart';
 import '../constants/level_data.dart';
+import '../scoring/level_scoring.dart';
 import '../constants/tile_data.dart';
 import '../constants/tile_unlock_data.dart';
 import '../utils/storage_service.dart';
@@ -281,11 +282,7 @@ class EconomyService {
   int _computeStarsForLevel(GameState state) {
     final level = getLevelById(state.levelId);
     if (level == null) return 0;
-    final thresholds = level.starThresholds;
-    if (state.score >= thresholds[2]) return 3;
-    if (state.score >= thresholds[1]) return 2;
-    if (state.score >= thresholds[0]) return 1;
-    return 0;
+    return starsForCompletedLevel(state, level);
   }
 
   String collectionUnlockSource(String tileId) {

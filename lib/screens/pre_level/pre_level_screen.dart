@@ -4,21 +4,31 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/chapter_data.dart';
 import '../../core/constants/level_data.dart';
+import '../../core/scoring/level_scoring.dart';
 import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../models/game_launch_config.dart';
+import '../../models/game_state.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
-class PreLevelScreen extends ConsumerWidget {
+class PreLevelScreen extends ConsumerStatefulWidget {
   const PreLevelScreen({super.key, required this.levelId});
 
   final int levelId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PreLevelScreen> createState() => _PreLevelScreenState();
+}
+
+class _PreLevelScreenState extends ConsumerState<PreLevelScreen> {
+  DifficultyMode _difficulty = DifficultyMode.normal;
+  int get levelId => widget.levelId;
+
+  @override
+  Widget build(BuildContext context) {
     final level = getLevelById(levelId);
     final progress = ref.watch(progressProvider);
     final unlocked = level != null && progress.isLevelUnlocked(levelId);
@@ -141,6 +151,12 @@ class PreLevelScreen extends ConsumerWidget {
                     _BestResult(
                         score: result?.bestScore ?? 0,
                         stars: result?.stars ?? 0),
+                    const SizedBox(height: 18),
+                    _PlayStyleSelector(
+                      difficulty: _difficulty,
+                      level: level,
+                      onChanged: (value) => setState(() => _difficulty = value),
+                    ),
                     const SizedBox(height: 22),
                     KenteButton(
                       label: 'PLAY',
@@ -151,6 +167,7 @@ class PreLevelScreen extends ConsumerWidget {
                         extra: GameLaunchConfig(
                           levelId: levelId,
                           launchMode: GameLaunchMode.normalProgression,
+                          difficulty: _difficulty,
                         ),
                       ),
                     ),
@@ -160,6 +177,69 @@ class PreLevelScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PlayStyleSelector extends StatelessWidget {
+  const _PlayStyleSelector({
+    required this.difficulty,
+    required this.level,
+    required this.onChanged,
+  });
+
+  final DifficultyMode difficulty;
+  final LevelDefinition level;
+  final ValueChanged<DifficultyMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final requirements = starRequirementsForLevel(level, difficulty);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: SankofaGameTheme.darkPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PLAY STYLE',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: SankofaGameTheme.mutedLightText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<DifficultyMode>(
+            segments: const [
+              ButtonSegment(
+                value: DifficultyMode.normal,
+                label: Text('Classic'),
+                icon: Icon(Icons.timer_outlined),
+              ),
+              ButtonSegment(
+                value: DifficultyMode.relaxed,
+                label: Text('Relaxed'),
+                icon: Icon(Icons.spa_outlined),
+              ),
+            ],
+            selected: {difficulty},
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) => onChanged(selection.first),
+          ),
+          const SizedBox(height: 12),
+          for (final requirement in requirements)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                requirement,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: SankofaGameTheme.parchmentLight,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

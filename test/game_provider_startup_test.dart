@@ -87,7 +87,7 @@ void main() {
     }
   });
 
-  test('layered levels start with a mixed face-up and back-tile layout', () {
+  test('classic levels start with every tile face visible', () {
     final container = ProviderContainer(
       overrides: [
         audioServiceProvider.overrideWithValue(
@@ -102,27 +102,14 @@ void main() {
         .startLevel(10, DifficultyMode.relaxed);
 
     final state = container.read(gameProvider);
-    final freeUids =
-        BoardSolver.getFreeTiles(state.tiles).map((tile) => tile.uid).toSet();
-    final blockedTiles =
-        state.tiles.where((tile) => !freeUids.contains(tile.uid)).toList();
-
     expect(state.status, GameStatus.playing);
     expect(
       state.tiles.where((tile) => tile.visibility == TileVisibility.revealed),
-      isNotEmpty,
+      hasLength(state.tiles.length),
     );
     expect(
       state.tiles.where((tile) => tile.visibility == TileVisibility.covered),
-      isNotEmpty,
-    );
-    expect(
-      blockedTiles.where((tile) => tile.visibility == TileVisibility.revealed),
-      isNotEmpty,
-    );
-    expect(
-      blockedTiles.where((tile) => tile.visibility == TileVisibility.covered),
-      isNotEmpty,
+      isEmpty,
     );
     expect(state.availableTileUids, isNotEmpty);
     expect(BoardSolver.isSolvable(state.tiles), isTrue);

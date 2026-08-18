@@ -51,7 +51,7 @@ void main() {
         );
         expect(find.text('LEVEL'), findsOneWidget);
         expect(find.text('SCORE'), findsOneWidget);
-        expect(find.text('MATCHES'), findsOneWidget);
+        expect(find.text('TIME'), findsOneWidget);
         expect(
             find.byKey(const Key('developer-test-mode-label')), findsOneWidget);
         expect(find.byKey(const Key('gameplay-progress-bar')), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/level_data.dart';
+import '../../../core/scoring/level_scoring.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/sankofa_game_theme.dart';
@@ -94,8 +95,8 @@ class GameHeader extends ConsumerWidget {
                           const _StatDivider(),
                           Expanded(
                             child: _HeaderStat(
-                              label: 'Matches',
-                              value: completedMatches.toString(),
+                              label: 'Time',
+                              value: formatClock(gameState.secondsElapsed),
                             ),
                           ),
                         ],

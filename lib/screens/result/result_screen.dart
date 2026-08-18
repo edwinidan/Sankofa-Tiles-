@@ -8,6 +8,7 @@ import '../../core/constants/chapter_data.dart';
 import '../../core/constants/level_data.dart';
 import '../../core/constants/tile_data.dart';
 import '../../core/economy/economy_models.dart';
+import '../../core/scoring/level_scoring.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../core/utils/analytics_service.dart';
@@ -103,7 +104,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     if (level == null) return;
     _resultHandled = true;
 
-    _stars = computeStars(widget.gameState.score, level.starThresholds);
+    _stars = starsForCompletedLevel(widget.gameState, level);
     if (widget.launchConfig.isDeveloperTest) return;
     final progress = ref.read(progressProvider);
     final previousStars = progress.getStars(widget.gameState.levelId);
@@ -267,6 +268,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                                   bestScore: bestScore,
                                   rewardSummary: _rewardSummary,
                                   scaleAnim: _scaleAnim,
+                                  celebrateWithHaptics:
+                                      !widget.launchConfig.isDeveloperTest,
                                 )
                               : _LoseContent(
                                   gameState: widget.gameState,
@@ -370,6 +373,7 @@ class _WinContent extends StatelessWidget {
   final int bestScore;
   final RewardGrantSummary? rewardSummary;
   final Animation<double> scaleAnim;
+  final bool celebrateWithHaptics;
 
   const _WinContent({
     required this.gameState,
@@ -377,6 +381,7 @@ class _WinContent extends StatelessWidget {
     required this.bestScore,
     required this.rewardSummary,
     required this.scaleAnim,
+    required this.celebrateWithHaptics,
   });
 
   @override
@@ -417,7 +422,10 @@ class _WinContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _CelebrationStars(stars: stars),
+          _CelebrationStars(
+            stars: stars,
+            celebrateWithHaptics: celebrateWithHaptics,
+          ),
           const SizedBox(height: 14),
           _CompactResultStats(
             score: gameState.score,
@@ -428,6 +436,8 @@ class _WinContent extends StatelessWidget {
           _ResultDetails(
             pairsCleared: pairsCleared,
             shufflesUsed: gameState.shufflesUsed,
+            hintsUsed: gameState.hintsUsed,
+            secondsElapsed: gameState.secondsElapsed,
             bestScore: bestScore,
           ),
           const SizedBox(height: 12),
@@ -449,9 +459,13 @@ class _WinContent extends StatelessWidget {
 }
 
 class _CelebrationStars extends ConsumerStatefulWidget {
-  const _CelebrationStars({required this.stars});
+  const _CelebrationStars({
+    required this.stars,
+    required this.celebrateWithHaptics,
+  });
 
   final int stars;
+  final bool celebrateWithHaptics;
 
   @override
   ConsumerState<_CelebrationStars> createState() => _CelebrationStarsState();
@@ -494,6 +508,7 @@ class _CelebrationStarsState extends ConsumerState<_CelebrationStars>
     }
 
     _controller.forward();
+    if (!widget.celebrateWithHaptics) return;
     final intensity = ref.read(storageServiceProvider).getHapticIntensity();
     for (var index = 0; index < _earnedStars; index++) {
       _hapticTimers.add(Timer(_revealGap * index, () {
@@ -786,11 +801,15 @@ class _ResultDetails extends StatelessWidget {
   const _ResultDetails({
     required this.pairsCleared,
     required this.shufflesUsed,
+    required this.hintsUsed,
+    required this.secondsElapsed,
     required this.bestScore,
   });
 
   final int pairsCleared;
   final int shufflesUsed;
+  final int hintsUsed;
+  final int secondsElapsed;
   final int bestScore;
 
   @override
@@ -815,6 +834,12 @@ class _ResultDetails extends StatelessWidget {
         children: [
           _ScoreRow(label: 'Pairs cleared', value: '', score: pairsCleared),
           _ScoreRow(label: 'Shuffles used', value: '', score: shufflesUsed),
+          _ScoreRow(label: 'Hints used', value: '', score: hintsUsed),
+          _ScoreRow(
+            label: 'Time',
+            value: formatClock(secondsElapsed),
+            score: 0,
+          ),
           _ScoreRow(label: 'Best score', value: '', score: bestScore),
         ],
       ),
@@ -1984,17 +2009,8 @@ class _ScoreRow extends StatelessWidget {
       child: Row(
         children: [
           Text(label, style: style),
-          if (value.isNotEmpty) ...[
-            const SizedBox(width: 4),
-            Text(
-              value,
-              style: AppTextStyles.archiveBodySmall.copyWith(
-                color: SankofaGameTheme.mutedText,
-              ),
-            ),
-          ],
           const Spacer(),
-          Text(score.toString(), style: style),
+          Text(value.isNotEmpty ? value : score.toString(), style: style),
         ],
       ),
     );

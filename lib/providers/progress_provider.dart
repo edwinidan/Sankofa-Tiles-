@@ -66,11 +66,3 @@ class ProgressService {
   Future<void> saveLevelResult(int levelId, int score, int stars) =>
       _storage.saveLevelResult(levelId, score, stars);
 }
-
-// Helper: compute star count from score and thresholds
-int computeStars(int score, List<int> thresholds) {
-  if (score >= thresholds[2]) return 3;
-  if (score >= thresholds[1]) return 2;
-  if (score >= thresholds[0]) return 1;
-  return 0;
-}

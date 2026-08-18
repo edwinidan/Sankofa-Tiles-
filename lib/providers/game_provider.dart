@@ -6,6 +6,7 @@ import '../models/tile_model.dart';
 import '../core/constants/layout_data.dart';
 import '../core/constants/tile_data.dart';
 import '../core/constants/level_data.dart';
+import '../core/scoring/level_scoring.dart';
 import '../core/utils/analytics_service.dart';
 import '../core/utils/audio_service.dart';
 import '../core/utils/board_solver.dart';
@@ -178,7 +179,11 @@ class GameNotifier extends StateNotifier<GameState> {
         return;
       }
 
-      final preparedTiles = _applyInitialPeekCoverage(tiles, levelDef);
+      // New games use classic Mahjong Solitaire presentation: every face is
+      // visible. Covered tiles are still understood when restoring old saves.
+      final preparedTiles = tiles
+          .map((tile) => tile.copyWith(visibility: TileVisibility.revealed))
+          .toList();
 
       final stateStopwatch = Stopwatch()..start();
       state = GameState(
@@ -379,65 +384,6 @@ class GameNotifier extends StateNotifier<GameState> {
     return pairs;
   }
 
-  List<TileModel> _applyInitialPeekCoverage(
-    List<TileModel> tiles,
-    LevelDefinition levelDef,
-  ) {
-    final rng = Random(levelDef.id * 9973 + tiles.length);
-    final freeUids =
-        BoardSolver.getFreeTiles(tiles).map((tile) => tile.uid).toSet();
-    final freeTiles = tiles
-        .where((tile) => freeUids.contains(tile.uid))
-        .toList()
-      ..shuffle(rng);
-    final blockedTiles = tiles
-        .where((tile) => !freeUids.contains(tile.uid))
-        .toList()
-      ..shuffle(rng);
-
-    final coverage = _peekCoverageForLevel(levelDef);
-    final freeTarget = freeTiles.isEmpty
-        ? 0
-        : max(1, (freeTiles.length * coverage * 0.55).round());
-    final blockedTarget = blockedTiles.isEmpty
-        ? 0
-        : (blockedTiles.length * coverage).round().clamp(
-              1,
-              max(1, blockedTiles.length - 1),
-            ) as int;
-
-    final coveredUids = <String>{
-      ...freeTiles.take(freeTarget).map((tile) => tile.uid),
-      ...blockedTiles.take(blockedTarget).map((tile) => tile.uid),
-    };
-
-    return tiles.map((tile) {
-      return tile.copyWith(
-        visibility: coveredUids.contains(tile.uid)
-            ? TileVisibility.covered
-            : TileVisibility.revealed,
-        isPeeked: false,
-      );
-    }).toList();
-  }
-
-  double _peekCoverageForLevel(LevelDefinition levelDef) {
-    final base = switch (levelDef.difficultyCategory) {
-      'Novice' => 0.14,
-      'Apprentice' => 0.18,
-      'Strategic' => 0.22,
-      'Advanced' => 0.26,
-      'Master' => 0.30,
-      'Expert' => 0.32,
-      'Elder' => 0.34,
-      'Legendary' => 0.35,
-      _ => 0.18,
-    };
-    final progressionBonus =
-        ((levelDef.id - 1) / kImplementedFinalLevelId).clamp(0.0, 0.07);
-    return (base + progressionBonus).clamp(0.10, 0.35);
-  }
-
   void selectTile(String uid) {
     if (state.status != GameStatus.playing) return;
     if (state.animatingMatchedTileIds.contains(uid)) return;
@@ -558,17 +504,11 @@ class GameNotifier extends StateNotifier<GameState> {
       final matchAnimationStyle = matchAnimationId % 4 == 3
           ? MatchAnimationStyle.secondHitsFirst
           : MatchAnimationStyle.directCollision;
-      final streakBonus = newStreak >= 5
-          ? 200
-          : newStreak == 4
-              ? 100
-              : newStreak == 3
-                  ? 50
-                  : 0;
+      final streakBonus = comboBonusForStreak(newStreak);
 
       state = state.copyWith(
         tiles: matchedTiles,
-        score: state.score + 100 + streakBonus,
+        score: state.score + pairScore + streakBonus,
         moves: state.moves + 1,
         clearSelectedTile: true,
         currentStreak: newStreak,
@@ -688,6 +628,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
     state = state.copyWith(
       tiles: hintedTiles,
+      score: (state.score - hintScorePenalty).clamp(0, 999999),
       hintsUsed: state.hintsUsed + 1,
     );
     if (!_isDeveloperTest) {
@@ -779,7 +720,7 @@ class GameNotifier extends StateNotifier<GameState> {
     _audio.playMatch();
     state = state.copyWith(
       tiles: updatedTiles,
-      score: state.score + 100,
+      score: state.score + pairScore,
       moves: state.moves + 1,
       currentStreak: newStreak,
       bestStreak: newStreak > state.bestStreak ? newStreak : state.bestStreak,
@@ -846,7 +787,9 @@ class GameNotifier extends StateNotifier<GameState> {
 
     state = state.copyWith(
       tiles: solvableShuffle,
-      score: penalizeScore ? (state.score - 50).clamp(0, 999999) : state.score,
+      score: penalizeScore
+          ? (state.score - shuffleScorePenalty).clamp(0, 999999)
+          : state.score,
       clearSelectedTile: true,
       currentStreak: 0,
       shufflesUsed: logUsage ? state.shufflesUsed + 1 : state.shufflesUsed,
@@ -882,8 +825,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
   void _checkWin() {
     if (!state.hasWon) return;
+    final level = getLevelById(state.levelId);
+    final completionBonus =
+        level == null ? 0 : completionBonusForState(state, level);
     state = state.copyWith(
       status: GameStatus.won,
+      score: state.score + completionBonus,
       recoveryNeeded: false,
       canUndo: false,
     );
@@ -968,6 +915,7 @@ class GameNotifier extends StateNotifier<GameState> {
 
     state = state.copyWith(
       tiles: hintedTiles,
+      score: (state.score - hintScorePenalty).clamp(0, 999999),
       hintsUsed: state.hintsUsed + 1,
     );
     if (!_isDeveloperTest) {
@@ -1007,6 +955,12 @@ class GameNotifier extends StateNotifier<GameState> {
       }
       return tile;
     }).toList();
+  }
+
+  void tickSecond() {
+    if (state.status == GameStatus.playing) {
+      state = state.copyWith(secondsElapsed: state.secondsElapsed + 1);
+    }
   }
 }
 

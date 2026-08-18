@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sankofa_tiles/core/ads/admob_service.dart';
-import 'package:sankofa_tiles/core/constants/level_data.dart';
 import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/economy/economy_models.dart';
 import 'package:sankofa_tiles/core/monetization/monetization_models.dart';
@@ -639,9 +638,7 @@ void main() {
         tester,
         storage: storage,
         ads: ads,
-        gameState: _wonState().copyWith(
-          score: getLevelById(3)!.starThresholds[2],
-        ),
+        gameState: _wonState(),
         settle: false,
       );
 
@@ -664,11 +661,10 @@ void main() {
 
     testWidgets('unearned stars stay visible and do not animate',
         (tester) async {
-      final level = getLevelById(3)!;
       final storage = _MemoryStorage();
       final ads = _FakeAdMobService();
       final twoStarState = _wonState().copyWith(
-        score: level.starThresholds[1],
+        hintsUsed: 1,
       );
 
       await _pumpResult(
@@ -698,9 +694,7 @@ void main() {
         tester,
         storage: storage,
         ads: ads,
-        gameState: _wonState().copyWith(
-          score: getLevelById(3)!.starThresholds[2],
-        ),
+        gameState: _wonState(),
         settle: false,
         disableAnimations: true,
       );

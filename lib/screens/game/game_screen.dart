@@ -45,7 +45,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   int _displayedStreak = 0;
   late final Stopwatch _levelLoadStopwatch;
   late final AudioService _audioService;
+  late final Timer _gameTimer;
   bool _reportedReadyFrame = false;
+  bool _pausedForLifecycle = false;
 
   Future<void> _leaveGame() async {
     if (!widget.launchConfig.isDeveloperTest) {
@@ -63,7 +65,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void _restartLevel() {
     ref.read(gameProvider.notifier).startLevel(
           widget.levelId,
-          DifficultyMode.normal,
+          widget.launchConfig.difficulty,
           isDeveloperTest: widget.launchConfig.isDeveloperTest,
         );
   }
@@ -170,6 +172,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     // Stop music whenever we leave the game screen — covers quit dialog,
     // back navigation, and the post-game result redirect.
     _audioService.stopBackgroundMusic();
+    _gameTimer.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -183,6 +186,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
       if (!widget.launchConfig.isDeveloperTest) {
         unawaited(ref.read(storageServiceProvider).saveActiveGame(game));
       }
+      if (game.status == GameStatus.playing) {
+        _pausedForLifecycle = true;
+        ref.read(gameProvider.notifier).pauseGame();
+      }
+    } else if (state == AppLifecycleState.resumed && _pausedForLifecycle) {
+      _pausedForLifecycle = false;
+      if (ref.read(gameProvider).status == GameStatus.paused) {
+        ref.read(gameProvider.notifier).resumeGame();
+      }
     }
   }
 
@@ -192,6 +204,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
     WidgetsBinding.instance.addObserver(this);
     _levelLoadStopwatch = Stopwatch()..start();
     _audioService = ref.read(audioServiceProvider);
+    _gameTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => ref.read(gameProvider.notifier).tickSecond(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       debugPrint(
         '[LEVEL_LOAD] level=${widget.levelId} first game screen frame took '
@@ -207,7 +223,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       if (!restored) {
         notifier.startLevel(
           widget.levelId,
-          DifficultyMode.normal,
+          widget.launchConfig.difficulty,
           isDeveloperTest: widget.launchConfig.isDeveloperTest,
         );
       }
@@ -233,7 +249,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
       if (!widget.launchConfig.isDeveloperTest) {
         if (next.status == GameStatus.won) {
           unawaited(ref.read(storageServiceProvider).clearActiveGame());
-        } else {
+        } else if (prev == null || prev.secondsElapsed == next.secondsElapsed) {
+          // Timer ticks update the header every second; gameplay actions and
+          // lifecycle changes persist the latest elapsed time without writing
+          // SharedPreferences once per second.
           unawaited(ref.read(storageServiceProvider).saveActiveGame(next));
         }
       }
@@ -328,7 +347,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             onRetry: () =>
                                 ref.read(gameProvider.notifier).startLevel(
                                       widget.levelId,
-                                      DifficultyMode.normal,
+                                      widget.launchConfig.difficulty,
                                       isDeveloperTest:
                                           widget.launchConfig.isDeveloperTest,
                                     ),
@@ -1017,10 +1036,12 @@ class _ComboOverlay extends StatelessWidget {
   String get _label => '${streak}x Combo!';
 
   int get _bonus => streak >= 5
-      ? 200
+      ? 100
       : streak == 4
-          ? 100
-          : 50;
+          ? 50
+          : streak == 3
+              ? 25
+              : 0;
 
   @override
   Widget build(BuildContext context) {

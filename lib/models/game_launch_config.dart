@@ -10,11 +10,13 @@ class GameLaunchConfig {
     required this.levelId,
     required this.launchMode,
     this.resumeSavedGame = false,
+    this.difficulty = DifficultyMode.normal,
   });
 
   final int levelId;
   final GameLaunchMode launchMode;
   final bool resumeSavedGame;
+  final DifficultyMode difficulty;
 
   bool get isDeveloperTest => launchMode == GameLaunchMode.developerTest;
 }
