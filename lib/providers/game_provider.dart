@@ -72,13 +72,14 @@ class GameNotifier extends StateNotifier<GameState> {
     state = savedState.copyWith(
       status: GameStatus.playing,
       canUndo: false,
-      recoveryNeeded: savedState.isStuck,
+      recoveryNeeded: false,
       clearSelectedTile: true,
       clearBlockedTile: true,
       pendingScorePops: const [],
       pendingMatchAnimations: const [],
     );
     _audio.startBackgroundMusic();
+    _checkStuck();
     return true;
   }
 
@@ -844,11 +845,25 @@ class GameNotifier extends StateNotifier<GameState> {
     if (state.status != GameStatus.playing) return;
     _debugFinalTileState();
     if (state.isStuck) {
+      final recoveredAutomatically = _shuffleRemaining(
+        penalizeScore: false,
+        logUsage: false,
+      );
+      if (recoveredAutomatically) {
+        debugPrint(
+          'No moves remained; automatically prepared a solvable continuation.',
+        );
+        return;
+      }
+
       state = state.copyWith(
         recoveryNeeded: true,
         canUndo: state.canUndo && _undoSnapshot != null,
       );
-      debugPrint('No moves remained; waiting for player recovery choice.');
+      debugPrint(
+        'No moves remained and automatic recovery failed; '
+        'waiting for player recovery choice.',
+      );
     }
   }
 

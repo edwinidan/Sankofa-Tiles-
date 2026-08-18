@@ -48,6 +48,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
   late final Timer _gameTimer;
   bool _reportedReadyFrame = false;
   bool _pausedForLifecycle = false;
+  bool _showingQuitDialog = false;
+  bool _showingSettingsSheet = false;
+
+  bool get _showingModalOverGame => _showingQuitDialog || _showingSettingsSheet;
 
   Future<void> _leaveGame() async {
     if (!widget.launchConfig.isDeveloperTest) {
@@ -71,20 +75,33 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   Future<void> _confirmQuit() async {
-    ref.read(gameProvider.notifier).pauseGame();
-    await showDialog<void>(
+    if (_showingQuitDialog) return;
+
+    final wasPlaying = ref.read(gameProvider).status == GameStatus.playing;
+    setState(() => _showingQuitDialog = true);
+    if (wasPlaying) {
+      ref.read(gameProvider.notifier).pauseGame();
+    }
+
+    final shouldQuit = await showDialog<bool>(
       context: context,
-      builder: (_) => _QuitDialog(
-        onResume: () {
-          Navigator.pop(context);
-          ref.read(gameProvider.notifier).resumeGame();
-        },
-        onQuit: () {
-          Navigator.pop(context);
-          _leaveGame();
-        },
+      barrierDismissible: false,
+      builder: (dialogContext) => _QuitDialog(
+        onResume: () => Navigator.pop(dialogContext, false),
+        onQuit: () => Navigator.pop(dialogContext, true),
       ),
     );
+
+    if (!mounted) return;
+    if (shouldQuit == true) {
+      await _leaveGame();
+      return;
+    }
+
+    setState(() => _showingQuitDialog = false);
+    if (wasPlaying && ref.read(gameProvider).status == GameStatus.paused) {
+      ref.read(gameProvider.notifier).resumeGame();
+    }
   }
 
   Future<void> _confirmRestart() async {
@@ -117,8 +134,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   Future<void> _openGameSettings() async {
+    if (_showingSettingsSheet) return;
+
     AnalyticsService.logSettingsOpened('game');
     final wasPlaying = ref.read(gameProvider).status == GameStatus.playing;
+    setState(() => _showingSettingsSheet = true);
     if (wasPlaying) {
       ref.read(gameProvider.notifier).pauseGame();
     }
@@ -135,6 +155,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     );
 
     if (!context.mounted) return;
+    setState(() => _showingSettingsSheet = false);
     if (wasPlaying && ref.read(gameProvider).status == GameStatus.paused) {
       ref.read(gameProvider.notifier).resumeGame();
     }
@@ -321,7 +342,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             child: IgnorePointer(
                               ignoring: gameState.status == GameStatus.paused,
                               child: Visibility(
-                                visible: gameState.status != GameStatus.paused,
+                                visible:
+                                    gameState.status != GameStatus.paused ||
+                                        _showingModalOverGame,
                                 maintainState: true,
                                 maintainAnimation: true,
                                 maintainSize: true,
@@ -331,7 +354,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
                               ),
                             ),
                           ),
-                        if (gameState.status == GameStatus.paused)
+                        if (gameState.status == GameStatus.paused &&
+                            !_showingModalOverGame)
                           _PausedOverlay(
                             onResume: () =>
                                 ref.read(gameProvider.notifier).resumeGame(),

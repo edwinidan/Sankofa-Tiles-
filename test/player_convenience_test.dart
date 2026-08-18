@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/utils/audio_service.dart';
+import 'package:sankofa_tiles/core/utils/board_solver.dart';
 import 'package:sankofa_tiles/core/utils/storage_service.dart';
 import 'package:sankofa_tiles/models/game_state.dart';
 import 'package:sankofa_tiles/models/tile_model.dart';
@@ -156,6 +157,28 @@ void main() {
     expect(harness.state.status, GameStatus.playing);
     expect(harness.state.recoveryNeeded, isTrue);
     expect(harness.state.canUndo, isTrue);
+  });
+
+  test('solvable dead end is recovered automatically without a penalty', () {
+    final harness = _Harness(storage);
+    addTearDown(harness.dispose);
+    harness.load([
+      _tile('c1', kAllTiles[2], 0),
+      _tile('a1', kAllTiles[0], 2),
+      _tile('b1', kAllTiles[1], 4),
+      _tile('a2', kAllTiles[0], 6),
+      _tile('b2', kAllTiles[1], 8),
+      _tile('c2', kAllTiles[2], 10),
+    ]);
+
+    harness.notifier.selectTile('c1');
+    harness.notifier.selectTile('c2');
+
+    expect(harness.state.recoveryNeeded, isFalse);
+    expect(harness.state.shufflesUsed, 0);
+    expect(harness.state.score, 100);
+    expect(BoardSolver.isSolvable(harness.state.tiles), isTrue);
+    expect(BoardSolver.hasAvailableMove(harness.state.tiles), isTrue);
   });
 }
 
