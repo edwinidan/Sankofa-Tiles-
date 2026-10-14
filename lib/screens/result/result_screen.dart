@@ -1,3 +1,4 @@
+import '../../widgets/next_collection_unlock.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -50,7 +51,7 @@ Future<void> showDebugUnlockRevealPreview(
   final tile = _tileById(tileId);
   if (tile == null) return;
 
-  await showDialog<void>(
+  await showDialog<bool>(
     context: context,
     barrierDismissible: false,
     barrierColor: SankofaGameTheme.backgroundTop.withValues(alpha: 0.88),
@@ -71,6 +72,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   int _stars = 0;
   bool _resultHandled = false;
   bool _unlockRevealInProgress = false;
+  bool _skipUnlockReveals = false;
   RewardGrantSummary? _rewardSummary;
   final Set<String> _shownUnlockRevealIds = {};
   Future<void>? _saveResultFuture;
@@ -158,6 +160,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     _primaryActionInProgress = true;
 
     try {
+      _skipUnlockReveals = true;
       await _saveResultFuture;
       if (widget.gameState.status == GameStatus.won &&
           !widget.launchConfig.isDeveloperTest) {
@@ -177,7 +180,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   }
 
   void _scheduleUnlockReveal(List<String> unlockedSymbols) {
-    if (unlockedSymbols.isEmpty || _unlockRevealInProgress) return;
+    if (unlockedSymbols.isEmpty ||
+        _unlockRevealInProgress ||
+        _primaryActionInProgress ||
+        _skipUnlockReveals) {
+      return;
+    }
     final revealIds = [
       for (final id in unlockedSymbols)
         if (_shownUnlockRevealIds.add(id)) id,
@@ -195,10 +203,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     _unlockRevealInProgress = true;
     try {
       for (var index = 0; index < tileIds.length; index++) {
-        if (!mounted) return;
+        if (!mounted || _skipUnlockReveals) return;
         final tile = _tileById(tileIds[index]);
         if (tile == null) continue;
-        await showDialog<void>(
+        final skipRemaining = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
           barrierColor: SankofaGameTheme.backgroundTop.withValues(alpha: 0.88),
@@ -210,6 +218,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             );
           },
         );
+        if (skipRemaining == true) _skipUnlockReveals = true;
       }
     } finally {
       _unlockRevealInProgress = false;
@@ -297,10 +306,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         levelId: gameState.levelId,
         includeNext: gameState.levelId < kLevels.last.id,
       );
-    } else if (isChapterFinalLevel(gameState.levelId)) {
+    } else if (gameState.levelId == kLevels.last.id) {
       actions = _ResultActions(
-        primaryLabel:
-            gameState.levelId == kLevels.last.id ? 'FINISH' : 'CONTINUE',
+        primaryLabel: 'FINISH',
         primaryIcon: Icons.auto_awesome,
         onPrimary: () => _continueAfterInterstitial(
           () => context.go('/chapter-complete/${gameState.levelId}'),
@@ -319,6 +327,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             extra: GameLaunchConfig(
               levelId: nextLevelId,
               launchMode: GameLaunchMode.normalProgression,
+              difficulty: gameState.difficulty,
             ),
           );
         }),
@@ -346,7 +355,34 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       );
     }
 
-    return _PersistentActionBar(child: actions);
+    return _PersistentActionBar(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!widget.launchConfig.isDeveloperTest &&
+              gameState.levelId < kLevels.last.id)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Next: Level ${gameState.levelId + 1} · ${getLevelById(gameState.levelId + 1)?.name ?? ""}',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: SankofaGameTheme.parchmentLight),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          actions,
+          if (!widget.launchConfig.isDeveloperTest &&
+              isChapterFinalLevel(gameState.levelId) &&
+              gameState.levelId < kLevels.last.id)
+            TextButton(
+              onPressed: () => context.push(
+                  '/chapter-complete/${gameState.levelId}',
+                  extra: gameState.difficulty),
+              child: const Text('View chapter recap'),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -451,6 +487,10 @@ class _WinContent extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
+          if (rewardSummary != null) ...[
+            const NextCollectionUnlock(),
+            const SizedBox(height: 12),
+          ],
           _ChapterProgressCard(levelId: gameState.levelId),
         ],
       ),
@@ -956,18 +996,19 @@ class _RewardReveal extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (summary!.cowries > 0)
-                Expanded(
-                  child: CowrieAmount(
-                    amount: summary!.cowries,
-                    prefix: '+',
-                    iconSize: 20,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: SankofaGameTheme.parchmentLight,
-                      fontWeight: FontWeight.w700,
-                    ),
+                CowrieAmount(
+                  amount: summary!.cowries,
+                  prefix: '+',
+                  iconSize: 20,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: SankofaGameTheme.parchmentLight,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               Text(
@@ -1149,102 +1190,110 @@ class _UnlockRevealDialogState extends ConsumerState<_UnlockRevealDialog>
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _finishReveal,
-        child: FadeTransition(
-          opacity: _cardOpacity,
-          child: SlideTransition(
-            position: _cardOffset,
-            child: Semantics(
-              liveRegion: true,
-              label:
-                  'New Adinkra symbol unlocked: ${tile.name}. ${tile.meaning}',
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 420),
-                padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-                decoration: SankofaGameTheme.appParchmentPanelDecoration,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FadeTransition(
-                      opacity: _headingOpacity,
-                      child: Column(
-                        children: [
-                          Text(
-                            'New Symbol Unlocked',
-                            style: AppTextStyles.archiveTitleLarge.copyWith(
-                              color: SankofaGameTheme.mutedGold,
+      child: SingleChildScrollView(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _finishReveal,
+          child: FadeTransition(
+            opacity: _cardOpacity,
+            child: SlideTransition(
+              position: _cardOffset,
+              child: Semantics(
+                liveRegion: true,
+                label:
+                    'New Adinkra symbol unlocked: ${tile.name}. ${tile.meaning}',
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+                  decoration: SankofaGameTheme.appParchmentPanelDecoration,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        key: const ValueKey('skip-unlock-celebrations'),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text(
+                            'Skip celebrations · saved in Collection'),
+                      ),
+                      FadeTransition(
+                        opacity: _headingOpacity,
+                        child: Column(
+                          children: [
+                            Text(
+                              'New Symbol Unlocked',
+                              style: AppTextStyles.archiveTitleLarge.copyWith(
+                                color: SankofaGameTheme.mutedGold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (widget.totalCount > 1) ...[
+                              const SizedBox(height: 7),
+                              _UnlockProgressPill(
+                                currentIndex: widget.currentIndex,
+                                totalCount: widget.totalCount,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _ArtifactTileReveal(
+                        tile: tile,
+                        controller: _revealController,
+                        turn: _tileTurn,
+                        scale: _tileScale,
+                      ),
+                      const SizedBox(height: 8),
+                      FadeTransition(
+                        opacity: _nameOpacity,
+                        child: SlideTransition(
+                          position: _nameOffset,
+                          child: Text(
+                            tile.name,
+                            key: const ValueKey('unlock-symbol-name'),
+                            style: AppTextStyles.archiveDisplayMedium.copyWith(
+                              color: SankofaGameTheme.darkText,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          if (widget.totalCount > 1) ...[
-                            const SizedBox(height: 7),
-                            _UnlockProgressPill(
-                              currentIndex: widget.currentIndex,
-                              totalCount: widget.totalCount,
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    _ArtifactTileReveal(
-                      tile: tile,
-                      controller: _revealController,
-                      turn: _tileTurn,
-                      scale: _tileScale,
-                    ),
-                    const SizedBox(height: 8),
-                    FadeTransition(
-                      opacity: _nameOpacity,
-                      child: SlideTransition(
-                        position: _nameOffset,
+                      const SizedBox(height: 8),
+                      FadeTransition(
+                        opacity: _meaningOpacity,
                         child: Text(
-                          tile.name,
-                          key: const ValueKey('unlock-symbol-name'),
-                          style: AppTextStyles.archiveDisplayMedium.copyWith(
-                            color: SankofaGameTheme.darkText,
+                          tile.meaning,
+                          key: const ValueKey('unlock-symbol-meaning'),
+                          style: AppTextStyles.archiveBodyMedium.copyWith(
+                            color: SankofaGameTheme.mutedGold,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    FadeTransition(
-                      opacity: _meaningOpacity,
-                      child: Text(
-                        tile.meaning,
-                        key: const ValueKey('unlock-symbol-meaning'),
-                        style: AppTextStyles.archiveBodyMedium.copyWith(
-                          color: SankofaGameTheme.mutedGold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    FadeTransition(
-                      opacity: _buttonOpacity,
-                      child: AnimatedBuilder(
-                        animation: _revealController,
-                        builder: (context, child) => IgnorePointer(
-                          key: const ValueKey('unlock-reveal-action-gate'),
-                          ignoring: _revealController.value < 0.88,
-                          child: child,
-                        ),
-                        child: KenteButton(
-                          label: widget.currentIndex == widget.totalCount
-                              ? 'CONTINUE'
-                              : 'NEXT SYMBOL',
-                          icon: widget.currentIndex == widget.totalCount
-                              ? Icons.check
-                              : Icons.arrow_forward,
-                          width: double.infinity,
-                          onTap: _continue,
+                      const SizedBox(height: 20),
+                      FadeTransition(
+                        opacity: _buttonOpacity,
+                        child: AnimatedBuilder(
+                          animation: _revealController,
+                          builder: (context, child) => IgnorePointer(
+                            key: const ValueKey('unlock-reveal-action-gate'),
+                            ignoring: _revealController.value < 0.88,
+                            child: child,
+                          ),
+                          child: KenteButton(
+                            label: widget.currentIndex == widget.totalCount
+                                ? 'CONTINUE'
+                                : 'NEXT SYMBOL',
+                            icon: widget.currentIndex == widget.totalCount
+                                ? Icons.check
+                                : Icons.arrow_forward,
+                            width: double.infinity,
+                            onTap: _continue,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -850,6 +850,8 @@ class GameNotifier extends StateNotifier<GameState> {
         logUsage: false,
       );
       if (recoveredAutomatically) {
+        state =
+            state.copyWith(automaticRefreshes: state.automaticRefreshes + 1);
         debugPrint(
           'No moves remained; automatically prepared a solvable continuation.',
         );

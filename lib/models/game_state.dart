@@ -40,6 +40,8 @@ class GameState {
   final int currentStreak;
   final int bestStreak;
   final int shufflesUsed;
+  // Presentation signal only; not persisted or counted as a manual shuffle.
+  final int automaticRefreshes;
   final bool recoveryNeeded;
   final bool canUndo;
   final int freeUndosRemaining;
@@ -62,6 +64,7 @@ class GameState {
     this.currentStreak = 0,
     this.bestStreak = 0,
     this.shufflesUsed = 0,
+    this.automaticRefreshes = 0,
     this.recoveryNeeded = false,
     this.canUndo = false,
     this.freeUndosRemaining = 1,
@@ -125,6 +128,7 @@ class GameState {
     int? currentStreak,
     int? bestStreak,
     int? shufflesUsed,
+    int? automaticRefreshes,
     bool? recoveryNeeded,
     bool? canUndo,
     int? freeUndosRemaining,
@@ -151,6 +155,7 @@ class GameState {
         currentStreak: currentStreak ?? this.currentStreak,
         bestStreak: bestStreak ?? this.bestStreak,
         shufflesUsed: shufflesUsed ?? this.shufflesUsed,
+        automaticRefreshes: automaticRefreshes ?? this.automaticRefreshes,
         recoveryNeeded: recoveryNeeded ?? this.recoveryNeeded,
         canUndo: canUndo ?? this.canUndo,
         freeUndosRemaining: freeUndosRemaining ?? this.freeUndosRemaining,

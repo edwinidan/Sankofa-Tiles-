@@ -267,6 +267,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
 
     ref.listen<GameState>(gameProvider, (prev, next) {
+      if (next.automaticRefreshes > (prev?.automaticRefreshes ?? 0)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'No pairs left - board refreshed. No booster or score cost.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       if (!widget.launchConfig.isDeveloperTest) {
         if (next.status == GameStatus.won) {
           unawaited(ref.read(storageServiceProvider).clearActiveGame());

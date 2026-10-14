@@ -1,3 +1,4 @@
+import '../../widgets/next_collection_unlock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/tile_data.dart';
@@ -100,6 +101,8 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
     final economy = ref.watch(economyProvider);
     final service = ref.read(economyServiceProvider);
     final unlocked = economy.unlockedCollectionIds.contains(def.id);
+    final nextUnlock = ref.watch(nextCollectionUnlockProvider);
+    final isNextPreview = nextUnlock?.tileId == def.id;
 
     return Scaffold(
       backgroundColor: SankofaGameTheme.backgroundTop,
@@ -123,165 +126,178 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
       body: SankofaBackground(
         child: SafeArea(
           top: false,
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView.builder(
-                  key: const ValueKey('tile-preview-page-view'),
-                  controller: _previewController,
-                  itemCount: kAllTiles.length,
-                  onPageChanged: (index) =>
-                      _selectTile(index, animatePreview: false),
-                  itemBuilder: (context, index) {
-                    final previewDef = kAllTiles[index];
-                    final previewUnlocked =
-                        economy.unlockedCollectionIds.contains(previewDef.id);
-                    final previewTile =
-                        TileModel(def: previewDef, row: 0, col: 0);
-                    final previewAssetPath = previewDef.assetPath;
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: NextCollectionUnlock(onPreview: (id) {
+                    _selectTile(kAllTiles.indexWhere((tile) => tile.id == id));
+                  }),
+                ),
+                SizedBox(
+                  height: 240,
+                  child: PageView.builder(
+                    key: const ValueKey('tile-preview-page-view'),
+                    controller: _previewController,
+                    itemCount: kAllTiles.length,
+                    onPageChanged: (index) =>
+                        _selectTile(index, animatePreview: false),
+                    itemBuilder: (context, index) {
+                      final previewDef = kAllTiles[index];
+                      final previewUnlocked =
+                          economy.unlockedCollectionIds.contains(previewDef.id);
+                      final previewTile =
+                          TileModel(def: previewDef, row: 0, col: 0);
+                      final previewAssetPath = previewDef.assetPath;
+                      final canPreview = previewUnlocked ||
+                          nextUnlock?.tileId == previewDef.id;
 
-                    return Center(
-                      child: Container(
-                        margin: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-                        padding: const EdgeInsets.all(22),
-                        decoration:
-                            SankofaGameTheme.appParchmentPanelDecoration,
-                        child: previewUnlocked && previewAssetPath != null
-                            ? Image.asset(
-                                previewAssetPath,
-                                width: 180,
-                                height: 180,
-                                fit: BoxFit.contain,
-                              )
-                            : previewUnlocked
-                                ? IgnorePointer(
-                                    child: TileWidget(
-                                      tile: previewTile,
+                      return Center(
+                        child: Container(
+                          margin: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+                          padding: const EdgeInsets.all(22),
+                          decoration:
+                              SankofaGameTheme.appParchmentPanelDecoration,
+                          child: canPreview && previewAssetPath != null
+                              ? Image.asset(
+                                  previewAssetPath,
+                                  width: 180,
+                                  height: 180,
+                                  fit: BoxFit.contain,
+                                )
+                              : canPreview
+                                  ? IgnorePointer(
+                                      child: TileWidget(
+                                        tile: previewTile,
+                                        width: 128,
+                                        height: 170,
+                                        showSuitCode: false,
+                                        forceHideName: true,
+                                      ),
+                                    )
+                                  : const _LockedCollectionTile(
                                       width: 128,
                                       height: 170,
-                                      showSuitCode: false,
-                                      forceHideName: true,
+                                      lockSize: 38,
                                     ),
-                                  )
-                                : const _LockedCollectionTile(
-                                    width: 128,
-                                    height: 170,
-                                    lockSize: 38,
-                                  ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                decoration: SankofaGameTheme.darkPanelDecoration(),
-                child: Column(
-                  children: [
-                    Text(
-                      unlocked ? def.name : 'Undiscovered Symbol',
-                      style: AppTextStyles.titleLarge.copyWith(
-                        color: SankofaGameTheme.antiqueGold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      unlocked
-                          ? def.meaning
-                          : service.collectionUnlockSource(def.id),
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: SankofaGameTheme.parchmentLight,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (unlocked)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          service.collectionUnlockSource(def.id),
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: SankofaGameTheme.mutedLightText,
-                          ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                height: 100,
-                decoration: BoxDecoration(
-                  color: SankofaGameTheme.boardSurface,
-                  border: Border.symmetric(
-                    horizontal: BorderSide(
-                      color:
-                          SankofaGameTheme.antiqueGold.withValues(alpha: 0.3),
-                    ),
+                      );
+                    },
                   ),
                 ),
-                child: ListView.separated(
-                  controller: _thumbnailController,
-                  scrollDirection: Axis.horizontal,
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  itemCount: kAllTiles.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final t = kAllTiles[index];
-                    final isSelected = index == _selectedIndex;
-                    final tileUnlocked =
-                        economy.unlockedCollectionIds.contains(t.id);
-                    return GestureDetector(
-                      key: ValueKey('tile-preview-thumbnail-${t.id}'),
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _selectTile(index),
-                      child: SizedBox(
-                        width: _thumbnailWidth,
-                        height: double.infinity,
-                        child: Center(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: isSelected
-                                  ? Border.all(
-                                      color: SankofaGameTheme.antiqueGold,
-                                      width: 2.5,
-                                    )
-                                  : Border.all(
-                                      color: Colors.transparent,
-                                      width: 2.5,
-                                    ),
-                            ),
-                            child: IgnorePointer(
-                              child: tileUnlocked
-                                  ? TileWidget(
-                                      tile: TileModel(def: t, row: 0, col: 0),
-                                      width: isSelected ? 50 : 44,
-                                      height: isSelected ? 66 : 58,
-                                    )
-                                  : SizedBox(
-                                      width: isSelected ? 50 : 44,
-                                      height: isSelected ? 66 : 58,
-                                      child: _LockedCollectionTile(
-                                        width: isSelected ? 50 : 44,
-                                        height: isSelected ? 66 : 58,
-                                        lockSize: isSelected ? 18 : 16,
-                                      ),
-                                    ),
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  decoration: SankofaGameTheme.darkPanelDecoration(),
+                  child: Column(
+                    children: [
+                      Text(
+                        unlocked || isNextPreview
+                            ? def.name
+                            : 'Undiscovered Symbol',
+                        style: AppTextStyles.titleLarge.copyWith(
+                          color: SankofaGameTheme.antiqueGold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        unlocked
+                            ? def.meaning
+                            : '${service.collectionUnlockSource(def.id)}${isNextPreview ? " · Unlock to read its meaning" : ""}',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: SankofaGameTheme.parchmentLight,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (unlocked)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            service.collectionUnlockSource(def.id),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: SankofaGameTheme.mutedLightText,
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 10),
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: SankofaGameTheme.boardSurface,
+                    border: Border.symmetric(
+                      horizontal: BorderSide(
+                        color:
+                            SankofaGameTheme.antiqueGold.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
+                  child: ListView.separated(
+                    controller: _thumbnailController,
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    itemCount: kAllTiles.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final t = kAllTiles[index];
+                      final isSelected = index == _selectedIndex;
+                      final tileUnlocked =
+                          economy.unlockedCollectionIds.contains(t.id);
+                      return GestureDetector(
+                        key: ValueKey('tile-preview-thumbnail-${t.id}'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _selectTile(index),
+                        child: SizedBox(
+                          width: _thumbnailWidth,
+                          height: double.infinity,
+                          child: Center(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: isSelected
+                                    ? Border.all(
+                                        color: SankofaGameTheme.antiqueGold,
+                                        width: 2.5,
+                                      )
+                                    : Border.all(
+                                        color: Colors.transparent,
+                                        width: 2.5,
+                                      ),
+                              ),
+                              child: IgnorePointer(
+                                child: tileUnlocked
+                                    ? TileWidget(
+                                        tile: TileModel(def: t, row: 0, col: 0),
+                                        width: isSelected ? 50 : 44,
+                                        height: isSelected ? 66 : 58,
+                                      )
+                                    : SizedBox(
+                                        width: isSelected ? 50 : 44,
+                                        height: isSelected ? 66 : 58,
+                                        child: _LockedCollectionTile(
+                                          width: isSelected ? 50 : 44,
+                                          height: isSelected ? 66 : 58,
+                                          lockSize: isSelected ? 18 : 16,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

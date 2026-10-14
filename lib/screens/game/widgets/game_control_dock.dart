@@ -40,8 +40,20 @@ class GameControlDock extends ConsumerWidget {
                   label: gameState.freeUndosRemaining > 0
                       ? 'Undo (free)'
                       : 'Undo used',
-                  onTap: isPlaying && gameState.canUndo
+                  explanation:
+                      'Restore your last match. One free Undo per board.',
+                  onTap: isPlaying
                       ? () {
+                          if (!gameState.canUndo) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(gameState.freeUndosRemaining ==
+                                          0
+                                      ? 'Your free Undo has been used for this board.'
+                                      : 'Undo restores your last match. Make a match first; refreshing or resuming a board clears Undo.')),
+                            );
+                            return;
+                          }
                           final used = notifier.undoLastMatch();
                           if (used) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -228,12 +240,14 @@ class _ControlButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+  final String? explanation;
 
   const _ControlButton({
     required this.diameter,
     required this.icon,
     required this.label,
     this.onTap,
+    this.explanation,
   });
 
   @override
@@ -254,78 +268,102 @@ class _ControlButtonState extends State<_ControlButton> {
     final color =
         enabled ? SankofaGameTheme.antiqueGold : SankofaGameTheme.mutedText;
 
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: widget.label,
-      child: Tooltip(
-        message: widget.label,
-        excludeFromSemantics: true,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.92 : 1,
-          duration: const Duration(milliseconds: 110),
-          curve: Curves.easeOut,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: enabled ? 0.22 : 0.12),
-                  blurRadius: _isPressed ? 7 : 12,
-                  offset: Offset(0, _isPressed ? 3 : 6),
-                ),
-              ],
-            ),
-            child: Material(
-              shape: CircleBorder(
-                side: BorderSide(
-                  color: enabled
-                      ? SankofaGameTheme.antiqueGold.withValues(alpha: 0.68)
-                      : SankofaGameTheme.mutedText.withValues(alpha: 0.34),
-                  width: 1.25,
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              color: Colors.transparent,
-              child: Ink(
-                width: widget.diameter,
-                height: widget.diameter,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: enabled
-                        ? [
-                            SankofaGameTheme.parchmentLight,
-                            SankofaGameTheme.parchment,
-                            SankofaGameTheme.parchmentDark,
-                          ]
-                        : [
-                            SankofaGameTheme.parchmentLight
-                                .withValues(alpha: 0.66),
-                            SankofaGameTheme.parchment.withValues(alpha: 0.58),
-                          ],
+    return SizedBox(
+      width: widget.diameter + 12,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(
+            button: true,
+            enabled: enabled,
+            label: widget.label,
+            hint: widget.explanation,
+            child: Tooltip(
+              message: widget.explanation ?? widget.label,
+              excludeFromSemantics: true,
+              child: AnimatedScale(
+                scale: _isPressed ? 0.92 : 1,
+                duration: const Duration(milliseconds: 110),
+                curve: Curves.easeOut,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black
+                            .withValues(alpha: enabled ? 0.22 : 0.12),
+                        blurRadius: _isPressed ? 7 : 12,
+                        offset: Offset(0, _isPressed ? 3 : 6),
+                      ),
+                    ],
                   ),
-                ),
-                child: InkWell(
-                  onTap: widget.onTap,
-                  onHighlightChanged: enabled ? _setPressed : null,
-                  customBorder: const CircleBorder(),
-                  splashColor:
-                      SankofaGameTheme.antiqueGold.withValues(alpha: 0.16),
-                  highlightColor:
-                      SankofaGameTheme.antiqueGold.withValues(alpha: 0.08),
-                  child: Icon(
-                    widget.icon,
-                    color: color,
-                    size: widget.diameter * 0.38,
+                  child: Material(
+                    shape: CircleBorder(
+                      side: BorderSide(
+                        color: enabled
+                            ? SankofaGameTheme.antiqueGold
+                                .withValues(alpha: 0.68)
+                            : SankofaGameTheme.mutedText
+                                .withValues(alpha: 0.34),
+                        width: 1.25,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.transparent,
+                    child: Ink(
+                      width: widget.diameter,
+                      height: widget.diameter,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: enabled
+                              ? [
+                                  SankofaGameTheme.parchmentLight,
+                                  SankofaGameTheme.parchment,
+                                  SankofaGameTheme.parchmentDark,
+                                ]
+                              : [
+                                  SankofaGameTheme.parchmentLight
+                                      .withValues(alpha: 0.66),
+                                  SankofaGameTheme.parchment
+                                      .withValues(alpha: 0.58),
+                                ],
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: widget.onTap,
+                        onHighlightChanged: enabled ? _setPressed : null,
+                        customBorder: const CircleBorder(),
+                        splashColor: SankofaGameTheme.antiqueGold
+                            .withValues(alpha: 0.16),
+                        highlightColor: SankofaGameTheme.antiqueGold
+                            .withValues(alpha: 0.08),
+                        child: Icon(
+                          widget.icon,
+                          color: color,
+                          size: widget.diameter * 0.38,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 6),
+          ExcludeSemantics(
+            child: Text(
+              widget.label,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: SankofaGameTheme.parchmentLight,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

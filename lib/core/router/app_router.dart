@@ -173,7 +173,12 @@ GoRouter createAppRouter(
           return _fadePage(
             context,
             state,
-            ChapterCompleteScreen(completedLevelId: levelId ?? 1),
+            ChapterCompleteScreen(
+              completedLevelId: levelId ?? 1,
+              difficulty: state.extra is DifficultyMode
+                  ? state.extra as DifficultyMode
+                  : DifficultyMode.normal,
+            ),
           );
         },
       ),

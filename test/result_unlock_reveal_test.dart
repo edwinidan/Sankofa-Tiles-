@@ -9,6 +9,7 @@ import 'package:sankofa_tiles/models/game_state.dart';
 import 'package:sankofa_tiles/providers/game_provider.dart';
 import 'package:sankofa_tiles/providers/settings_provider.dart';
 import 'package:sankofa_tiles/screens/result/result_screen.dart';
+import 'package:sankofa_tiles/screens/preview/tile_preview_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<StorageService> _storage(Map<String, Object> values) async {
@@ -162,6 +163,77 @@ void main() {
     );
     expect(actionGate.ignoring, isFalse);
     expect(find.text('CONTINUE'), findsOneWidget);
+  });
+
+  testWidgets('skip celebrations keeps rewards and progress across reopening',
+      (tester) async {
+    final storage = await _storage({});
+    await tester.pumpWidget(_resultHarness(storage));
+    await _pumpUntilRevealAppears(tester);
+    // Skip before the reveal's normal Continue action becomes available.
+    final gate = tester.widget<IgnorePointer>(
+      find.byKey(const ValueKey('unlock-reveal-action-gate')),
+    );
+    expect(gate.ignoring, isTrue);
+    await tester.tap(find.byKey(const ValueKey('skip-unlock-celebrations')));
+    await tester.pumpAndSettle();
+    expect(find.text('New Symbol Unlocked'), findsNothing);
+    expect(find.text('NEXT LEVEL'), findsOneWidget);
+    expect(storage.isCollectionUnlocked('nea_onnim'), isTrue);
+    expect(storage.isLevelCompleted(4), isTrue);
+    final cowries = storage.getCowries();
+    expect(cowries, greaterThan(0));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(_resultHarness(storage));
+    await tester.pumpAndSettle();
+    expect(find.text('New Symbol Unlocked'), findsNothing);
+    expect(storage.getCowries(), cowries);
+    expect(storage.isCollectionUnlocked('nea_onnim'), isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(ProviderScope(
+      overrides: [storageServiceProvider.overrideWithValue(storage)],
+      child: const MaterialApp(home: TilePreviewScreen()),
+    ));
+    await tester.pumpAndSettle();
+    final thumbnail =
+        find.byKey(const ValueKey('tile-preview-thumbnail-nea_onnim'));
+    await tester.ensureVisible(thumbnail);
+    await tester.pumpAndSettle();
+    await tester.tap(thumbnail);
+    await tester.pumpAndSettle();
+    expect(find.text('He who does not know'), findsOneWidget);
+  });
+
+  testWidgets('skip remains reachable on a small screen with large text',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final storage = await _storage({});
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        storageServiceProvider.overrideWithValue(storage),
+        audioServiceProvider
+            .overrideWithValue(AudioService(sound: false, music: false)),
+      ],
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: const ResultScreen(
+            gameState: _wonUnlockLevel,
+            launchConfig: GameLaunchConfig(
+                levelId: 4, launchMode: GameLaunchMode.normalProgression)),
+      ),
+    ));
+    await _pumpUntilRevealAppears(tester);
+    await tester.tap(find.byKey(const ValueKey('skip-unlock-celebrations')));
+    await tester.pumpAndSettle();
+    expect(find.text('New Symbol Unlocked'), findsNothing);
+    expect(storage.isCollectionUnlocked('nea_onnim'), isTrue);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('reduced motion shows the completed reveal immediately',

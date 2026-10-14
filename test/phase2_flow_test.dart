@@ -124,7 +124,7 @@ void main() {
     expect(find.text('PLAY'), findsOneWidget);
   });
 
-  testWidgets('chapter-complete result routes to milestone screen',
+  testWidgets('chapter recap is optional and remains accessible from results',
       (tester) async {
     final storage = await _storage({
       'completed_19': true,
@@ -165,8 +165,9 @@ void main() {
 
     await tester.pumpWidget(_routerApp(storage: storage, router: router));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('CONTINUE'));
-    await tester.tap(find.text('CONTINUE'));
+    expect(find.text('NEXT LEVEL'), findsOneWidget);
+    await tester.ensureVisible(find.text('View chapter recap'));
+    await tester.tap(find.text('View chapter recap'));
     await tester.pumpAndSettle();
 
     expect(find.text('Chapter Complete'), findsOneWidget);

@@ -176,6 +176,7 @@ void main() {
 
     expect(harness.state.recoveryNeeded, isFalse);
     expect(harness.state.shufflesUsed, 0);
+    expect(harness.state.automaticRefreshes, 1);
     expect(harness.state.score, 100);
     expect(BoardSolver.isSolvable(harness.state.tiles), isTrue);
     expect(BoardSolver.hasAvailableMove(harness.state.tiles), isTrue);
