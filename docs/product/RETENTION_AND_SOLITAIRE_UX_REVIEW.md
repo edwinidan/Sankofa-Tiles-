@@ -5,10 +5,14 @@ Status: review retained as the planning baseline; selected recommendations imple
 
 ## Implementation progress - 14 October 2026
 
-- R06 implemented: persistent Next Level includes a next-board preview, retains the current play style, and bypasses chapter briefings. Chapter recaps remain optional. Unlock celebrations can be skipped after rewards are saved; reopening does not grant them twice.
-- R07 implemented: Undo and other dock controls have visible labels; unavailable Undo explains its conditions. Automatic board recovery announces its action and lack of booster/score cost. Existing mastery rules are preserved.
-- R14 partially implemented: home, results and Collection preview the next earnable symbol and its actual level requirement. Collection retains unlocked meanings, including after skipped celebrations. Cultural content was reused unchanged; a separate cultural review remains outstanding.
-- Verification: focused Flutter regression tests cover continuation, reward persistence, collection availability, mode preservation, recovery and small-screen layouts. Physical-device visual review remains a follow-up. The PDF preserves the original review.
+- [x] R06 implemented: persistent Next Level includes a next-board preview, retains the current play style, and bypasses chapter briefings. Chapter recaps remain optional. Unlock celebrations can be skipped after rewards are saved; reopening does not grant them twice.
+- [x] R07 implemented: Undo and other dock controls have visible labels; unavailable Undo explains its conditions. Automatic board recovery announces its action and lack of booster/score cost. Existing mastery rules are preserved.
+- [x] R14 feature portion: home, results and Collection preview the next earnable symbol and its actual level requirement. Collection retains unlocked meanings, including after skipped celebrations.
+- [ ] R14 remaining: a separate cultural review of names and meanings; existing content was reused unchanged.
+- [x] R10 Undo portion: visible labels and explanations for unavailable Undo; next-level continuation also retains the current play style.
+- [ ] R10 remaining: remember the mode across relaunches and clarify mode descriptions.
+- [ ] R01 home-screen redesign: visual concept shown only; not implemented.
+- Verification: focused Flutter regression tests cover continuation, reward persistence, collection availability, mode preservation, recovery and small-screen layouts. Physical-device visual review remains a follow-up. The PDF mirrors this updated checklist. Full recommendations R06 and R07 are complete; R10 and R14 remain partial.
 
 ## 1. Main finding
 
@@ -121,22 +125,22 @@ Reduce wallet prominence on home. Inventory matters when choosing assistance; it
 
 ## 9. Implementation backlog
 
-Effort is relative: S = localized UI/copy change; M = changes across several screens/state paths; L = new persistent game mode. Estimates require developer scoping. Checkboxes track implementation, not approval.
+Effort is relative: S = localized UI/copy change; M = changes across several screens/state paths; L = new persistent game mode. Estimates require developer scoping. Checkboxes track implementation, not approval. R06 and R07 are complete. R10 and R14 are partial: completed portions are ticked in the progress section above; the full items stay unchecked until their remaining work is finished.
 
 - [ ] R01 | P0 | M | Redesign home around a board preview and one Play/Resume action. Accept when small-screen and text-scale checks in section 3 pass.
 - [ ] R02 | P0 | S | Make new, returning, saved-board and campaign-complete CTA states explicit. Accept when every state leads to a playable destination and save replacement is clear.
 - [ ] R03 | P0 | S | Replace home campaign-wide progress emphasis with chapter-local progress and the next actual milestone. Accept when chapter boundaries and finale states are correct.
 - [ ] R04 | P0 | S | Compact wallet; demote Settings, version and Shop. Make help persistently reachable. Accept when the play action retains visual priority.
 - [ ] R05 | P0 | M | Instrument entry-to-first-match, resume, recovery and result continuation. Accept when events fire once per action and exclude developer test games.
-- [ ] R06 | P1 | M | Shorten result-to-next-board flow; keep rewards durable and celebrations skippable. Accept when skipping never loses or duplicates rewards.
-- [ ] R07 | P1 | S | Explain automatic reshuffles and confirm mastery policy. Accept when assist copy and star outcomes agree.
+- [x] R06 | P1 | M | Shorten result-to-next-board flow; keep rewards durable and celebrations skippable. Accept when skipping never loses or duplicates rewards.
+- [x] R07 | P1 | S | Explain automatic reshuffles and confirm mastery policy. Accept when assist copy and star outcomes agree.
 - [ ] R08 | P1 | M | Audit dense-board readability, free/blocked states, animation interference and reduced motion. Accept after representative low-end Android and small-screen checks.
 - [ ] R09 | P1 | M | Audit full first-install entry/tutorial path and returning opening; remove repeated teaching. Accept when first match and campaign-start metrics are available.
-- [ ] R10 | P1 | S | Clarify and remember Classic/Relaxed preference; improve existing Undo affordance. Accept when selected mode survives relaunch and unavailable actions explain why.
+- [ ] R10 | P1 | S | PARTIAL - Clarify and remember Classic/Relaxed preference; improve existing Undo affordance. Accept when selected mode survives relaunch and unavailable actions explain why.
 - [ ] R11 | P1 | M | Tune first-ten-level pacing using telemetry and playtests. Accept when each change has a stated learning goal and no generation/solvability regression.
 - [ ] R12 | P1 | M | Test first-session ad protection and monitor continuation around ads. Accept when exposure, next-board completion and revenue tradeoffs are reported together.
 - [ ] R13 | P2 | L | Add a daily seeded board with separate save and idempotent rewards. Depends on R05 and stable save handling. Accept after rollover, offline, upgrade and duplicate-claim checks.
-- [ ] R14 | P2 | M | Surface next collection unlock and review cultural content. Accept when previews match real unlock rules and meanings remain accessible after reveal.
+- [ ] R14 | P2 | M | PARTIAL - Surface next collection unlock and review cultural content. Accept when previews match real unlock rules and meanings remain accessible after reveal.
 - [ ] R15 | P2 | M | Test one forgiving weekly goal or an earnable visual theme. Depends on validated core/daily loops; select one initially.
 - [ ] R16 | P0 | S | Align public game name and update stale flow references. Accept when the store-facing name, home and entry agree and docs distinguish historical from current behavior.
 
