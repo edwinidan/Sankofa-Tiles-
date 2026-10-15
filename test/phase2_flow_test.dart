@@ -98,7 +98,7 @@ void main() {
       _scopedApp(storage: storage, child: const HomeScreen()),
     );
 
-    expect(find.textContaining('Next level: 2'), findsOneWidget);
+    expect(find.text('LEVEL 2'), findsOneWidget);
     expect(find.text('CONTINUE'), findsOneWidget);
   });
 
