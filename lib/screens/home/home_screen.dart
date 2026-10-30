@@ -20,6 +20,7 @@ abstract final class HomeArtwork {
   static const environment = 'assets/menu/misty_emerald_monument_courtyard.png';
   static const logo = 'assets/menu/adinkra_tiles_logo.png';
   static const medallion = 'assets/menu/wooden_medallion.png';
+  static const continueButton = 'assets/menu/golden_pill_button.png';
 }
 
 class HomeScreen extends ConsumerWidget {
@@ -121,6 +122,7 @@ class HomeScreen extends ConsumerWidget {
                               : 20),
                   child: GamePrimaryButton(
                     key: const ValueKey('home-continue'),
+                    artwork: HomeArtwork.continueButton,
                     label: savedGame != null
                         ? 'RESUME'
                         : actionLevel == null

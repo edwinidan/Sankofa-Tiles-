@@ -196,8 +196,13 @@ void main() {
       final playIcon = find.descendant(
           of: find.byKey(const ValueKey('home-continue')),
           matching: find.byIcon(Icons.play_arrow_rounded));
-      expect(tester.getCenter(playIcon).dx,
-          lessThan(tester.getCenter(find.text('CONTINUE')).dx));
+      if (scenario.$3 > 1.4) {
+        expect(tester.getBottomLeft(playIcon).dy,
+            lessThan(tester.getTopLeft(find.text('CONTINUE')).dy));
+      } else {
+        expect(tester.getCenter(playIcon).dx,
+            lessThan(tester.getCenter(find.text('CONTINUE')).dx));
+      }
       final navTop = tester.getTopLeft(navigationButtons.first).dy;
       expect(navTop - actionBounds.bottom, greaterThanOrEqualTo(20));
       for (final label in ['Daily', 'Journey', 'Collection']) {

@@ -157,8 +157,6 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                         child: Container(
                           margin: const EdgeInsets.fromLTRB(24, 20, 24, 10),
                           padding: const EdgeInsets.all(22),
-                          decoration:
-                              SankofaGameTheme.appParchmentPanelDecoration,
                           child: canPreview && previewAssetPath != null
                               ? Image.asset(
                                   previewAssetPath,

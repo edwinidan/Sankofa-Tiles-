@@ -146,11 +146,13 @@ class GamePrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.icon = Icons.play_arrow_rounded,
     this.detail,
+    this.artwork,
   });
 
   final String label;
   final IconData icon;
   final String? detail;
+  final String? artwork;
   final VoidCallback? onPressed;
 
   @override
@@ -160,15 +162,36 @@ class GamePrimaryButton extends StatelessWidget {
       children: [
         Text(label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 16, height: 1.15, fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                fontSize: artwork == null ? 16 : 20,
+                height: 1.15,
+                fontWeight: FontWeight.w700)),
         if (detail != null)
           Text(detail!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 20, height: 1.15, fontWeight: FontWeight.w700)),
+              style: TextStyle(
+                  fontSize: artwork == null ? 20 : 14,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700)),
       ],
     );
+    if (artwork != null) {
+      final largeText = MediaQuery.textScalerOf(context).scale(20) > 28;
+      return _ArtworkPrimaryButton(
+        artwork: artwork!,
+        onPressed: onPressed,
+        child: Flex(
+          direction: largeText ? Axis.vertical : Axis.horizontal,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28),
+            SizedBox(width: largeText ? 0 : 8, height: largeText ? 4 : 0),
+            if (largeText) text else Flexible(child: text),
+          ],
+        ),
+      );
+    }
     return ElevatedButton(
       onPressed: onPressed,
       style: GameMenuTheme.buttonStyle(primary: true),
@@ -182,6 +205,82 @@ class GamePrimaryButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ArtworkPrimaryButton extends StatefulWidget {
+  const _ArtworkPrimaryButton({
+    required this.artwork,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final String artwork;
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  State<_ArtworkPrimaryButton> createState() => _ArtworkPrimaryButtonState();
+}
+
+class _ArtworkPrimaryButtonState extends State<_ArtworkPrimaryButton> {
+  final _states = WidgetStatesController();
+
+  @override
+  void dispose() {
+    _states.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<Set<WidgetState>>(
+        valueListenable: _states,
+        builder: (context, states, _) => AnimatedScale(
+          scale: states.contains(WidgetState.pressed) ? .97 : 1,
+          duration: const Duration(milliseconds: 100),
+          child: LayoutBuilder(builder: (context, constraints) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    widget.artwork,
+                    scale: 2172 / constraints.maxWidth,
+                    // Stretch only the plain middle; keep the gold end caps.
+                    centerSlice: const Rect.fromLTWH(1000, 300, 100, 100),
+                    fit: BoxFit.fill,
+                    excludeFromSemantics: true,
+                  ),
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxWidth / 3,
+                    minWidth: constraints.maxWidth,
+                  ),
+                  child: TextButton(
+                    statesController: _states,
+                    onPressed: widget.onPressed,
+                    style: TextButton.styleFrom(
+                      foregroundColor: GameMenuTheme.ink,
+                      disabledForegroundColor: GameMenuTheme.mutedInk,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: MediaQuery.textScalerOf(context).scale(24),
+                      ),
+                      shape: const StadiumBorder(),
+                      textStyle: Theme.of(context)
+                          .textTheme
+                          .labelLarge
+                          ?.copyWith(letterSpacing: 1),
+                    ),
+                    child: widget.child,
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      );
 }
 
 class GameIconButton extends StatelessWidget {
