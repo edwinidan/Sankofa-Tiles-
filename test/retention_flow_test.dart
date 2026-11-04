@@ -40,7 +40,7 @@ void main() {
 
   for (final levelId in [1, 20]) {
     testWidgets(
-        'Next from level $levelId starts board directly in Relaxed mode',
+        'Next from a saved Classic level $levelId starts in Relaxed mode',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(360, 640));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -55,7 +55,7 @@ void main() {
                   gameState: GameState.initial().copyWith(
                       levelId: levelId,
                       status: GameStatus.won,
-                      difficulty: DifficultyMode.relaxed),
+                      difficulty: DifficultyMode.normal),
                   launchConfig: GameLaunchConfig(
                       levelId: levelId,
                       launchMode: GameLaunchMode.normalProgression),

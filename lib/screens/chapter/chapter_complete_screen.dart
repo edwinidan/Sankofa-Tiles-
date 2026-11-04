@@ -8,19 +8,14 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../providers/progress_provider.dart';
 import '../../models/game_launch_config.dart';
-import '../../models/game_state.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
 class ChapterCompleteScreen extends ConsumerWidget {
-  const ChapterCompleteScreen(
-      {super.key,
-      required this.completedLevelId,
-      this.difficulty = DifficultyMode.normal});
+  const ChapterCompleteScreen({super.key, required this.completedLevelId});
 
   final int completedLevelId;
-  final DifficultyMode difficulty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -120,7 +115,6 @@ class ChapterCompleteScreen extends ConsumerWidget {
                               extra: GameLaunchConfig(
                                 levelId: nextLevelId!,
                                 launchMode: GameLaunchMode.normalProgression,
-                                difficulty: difficulty,
                               ));
                         }
                       },

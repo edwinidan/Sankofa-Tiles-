@@ -66,7 +66,6 @@ Future<void> showDebugUnlockRevealPreview(
 class _ResultScreenState extends ConsumerState<ResultScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
   late final AudioService _audioService;
   int _stars = 0;
@@ -88,7 +87,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     if (widget.gameState.status == GameStatus.won) {
@@ -259,15 +257,20 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
               opacity: _fadeAnim,
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  final padding = isWin
+                      ? const EdgeInsets.fromLTRB(16, 8, 16, 12)
+                      : const EdgeInsets.fromLTRB(16, 16, 16, 24);
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    padding: padding,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight > 40
-                            ? constraints.maxHeight - 40
+                        minHeight: constraints.maxHeight > padding.vertical
+                            ? constraints.maxHeight - padding.vertical
                             : 0,
                       ),
-                      child: Center(
+                      child: Align(
+                        alignment:
+                            isWin ? Alignment.topCenter : Alignment.center,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 520),
                           child: isWin
@@ -276,7 +279,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                                   stars: _stars,
                                   bestScore: bestScore,
                                   rewardSummary: _rewardSummary,
-                                  scaleAnim: _scaleAnim,
                                   celebrateWithHaptics:
                                       !widget.launchConfig.isDeveloperTest,
                                 )
@@ -327,7 +329,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             extra: GameLaunchConfig(
               levelId: nextLevelId,
               launchMode: GameLaunchMode.normalProgression,
-              difficulty: gameState.difficulty,
             ),
           );
         }),
@@ -408,7 +409,6 @@ class _WinContent extends StatelessWidget {
   final int stars;
   final int bestScore;
   final RewardGrantSummary? rewardSummary;
-  final Animation<double> scaleAnim;
   final bool celebrateWithHaptics;
 
   const _WinContent({
@@ -416,7 +416,6 @@ class _WinContent extends StatelessWidget {
     required this.stars,
     required this.bestScore,
     required this.rewardSummary,
-    required this.scaleAnim,
     required this.celebrateWithHaptics,
   });
 
@@ -427,22 +426,11 @@ class _WinContent extends StatelessWidget {
         gameState.tiles.where((tile) => tile.isMatched).length ~/ 2;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: SankofaGameTheme.appParchmentPanelDecoration,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ScaleTransition(
-            scale: scaleAnim,
-            child: const Text(
-              '✦',
-              style: TextStyle(
-                fontSize: 38,
-                color: SankofaGameTheme.antiqueGold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
           Text(
             'Level Complete!',
             style: AppTextStyles.archiveDisplayMedium.copyWith(
@@ -450,25 +438,25 @@ class _WinContent extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             level?.name ?? '',
             style: AppTextStyles.archiveBodyMedium.copyWith(
               color: SankofaGameTheme.mutedGold,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _CelebrationStars(
             stars: stars,
             celebrateWithHaptics: celebrateWithHaptics,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 6),
           _CompactResultStats(
             score: gameState.score,
             moves: gameState.moves,
             streak: gameState.bestStreak,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
           _ResultDetails(
             pairsCleared: pairsCleared,
             shufflesUsed: gameState.shufflesUsed,
@@ -476,20 +464,20 @@ class _WinContent extends StatelessWidget {
             secondsElapsed: gameState.secondsElapsed,
             bestScore: bestScore,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _RewardReveal(summary: rewardSummary),
           if (rewardSummary != null && rewardSummary!.cowries > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
             _DoubleCowriesReward(
               gameState: gameState,
               stars: stars,
               cowries: rewardSummary!.cowries,
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           if (rewardSummary != null) ...[
-            const NextCollectionUnlock(),
-            const SizedBox(height: 12),
+            const NextCollectionUnlock(compact: true),
+            const SizedBox(height: 8),
           ],
           _ChapterProgressCard(levelId: gameState.levelId),
         ],
@@ -577,7 +565,7 @@ class _CelebrationStarsState extends ConsumerState<_CelebrationStars>
   @override
   Widget build(BuildContext context) {
     final availableWidth = MediaQuery.sizeOf(context).width;
-    final starSize = (availableWidth * 0.156).clamp(52.8, 67.2);
+    final starSize = (availableWidth * 0.14).clamp(48.0, 58.0);
 
     return Semantics(
       key: const ValueKey('result-stars'),
@@ -650,7 +638,7 @@ class _MetallicResultStar extends StatelessWidget {
 
     return SizedBox(
       width: size + 18,
-      height: size + 20,
+      height: size + 12,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -860,6 +848,7 @@ class _ResultDetails extends StatelessWidget {
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 6),
         dense: true,
+        minTileHeight: 40,
         visualDensity: VisualDensity.compact,
         iconColor: SankofaGameTheme.mutedGold,
         collapsedIconColor: SankofaGameTheme.mutedGold,
@@ -907,7 +896,7 @@ class _ChapterProgressCard extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: SankofaGameTheme.darkPanelDecoration(),
       child: Column(
         children: [
@@ -930,7 +919,7 @@ class _ChapterProgressCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           LinearProgressIndicator(
             value: levelCount == 0 ? 0 : completed / levelCount,
             backgroundColor: SankofaGameTheme.boardEdge,
@@ -938,7 +927,7 @@ class _ChapterProgressCard extends ConsumerWidget {
               SankofaGameTheme.antiqueGold,
             ),
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 5),
           Text(
             remainingLevels > 0
                 ? '$stars/$maximumStars stars · $remainingLevels levels to the chapter reward'
@@ -964,7 +953,7 @@ class _RewardReveal extends StatelessWidget {
     if (summary == null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: SankofaGameTheme.darkPanelDecoration(disabled: true),
         child: Text(
           'Revealing rewards...',
@@ -991,7 +980,7 @@ class _RewardReveal extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: SankofaGameTheme.darkPanelDecoration(emphasized: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1021,7 +1010,7 @@ class _RewardReveal extends StatelessWidget {
           ),
           if (lines.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: 4),
               child: Text(
                 lines.join(' · '),
                 style: AppTextStyles.bodySmall.copyWith(
@@ -1613,7 +1602,7 @@ class _RewardedCowriesButton extends StatelessWidget {
       child: Container(
         key: const ValueKey('double-cowries-reward-button'),
         width: double.infinity,
-        height: 58,
+        height: 48,
         decoration: BoxDecoration(
           borderRadius: radius,
           boxShadow: [
@@ -1929,7 +1918,11 @@ class _ResultActions extends StatelessWidget {
                 label: 'REPLAY',
                 icon: Icons.refresh,
                 small: true,
-                onTap: () => context.go('/level/$levelId'),
+                onTap: () => context.go('/game/$levelId',
+                    extra: GameLaunchConfig(
+                      levelId: levelId,
+                      launchMode: GameLaunchMode.normalProgression,
+                    )),
               ),
             ),
             const SizedBox(width: 10),

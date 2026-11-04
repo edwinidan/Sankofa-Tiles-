@@ -151,7 +151,11 @@ class HomeScreen extends ConsumerWidget {
                         );
                         return;
                       }
-                      context.push('/level/$levelId');
+                      context.push('/game/$levelId',
+                          extra: GameLaunchConfig(
+                            levelId: levelId,
+                            launchMode: GameLaunchMode.normalProgression,
+                          ));
                     },
                   ),
                 ),
@@ -161,7 +165,11 @@ class HomeScreen extends ConsumerWidget {
                   if (nextLevel != null)
                     _HomeTextAction(
                       label: 'Start another level',
-                      onPressed: () => context.push('/level/$nextLevel'),
+                      onPressed: () => context.push('/game/$nextLevel',
+                          extra: GameLaunchConfig(
+                            levelId: nextLevel,
+                            launchMode: GameLaunchMode.normalProgression,
+                          )),
                     ),
                 ],
                 SizedBox(height: navigationGap),

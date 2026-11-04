@@ -22,9 +22,10 @@ final nextCollectionUnlockProvider = Provider<TileUnlockMilestone?>((ref) {
 });
 
 class NextCollectionUnlock extends ConsumerWidget {
-  const NextCollectionUnlock({super.key, this.onPreview});
+  const NextCollectionUnlock({super.key, this.onPreview, this.compact = false});
 
   final ValueChanged<String>? onPreview;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,19 +33,27 @@ class NextCollectionUnlock extends ConsumerWidget {
     if (milestone == null) return const SizedBox.shrink();
     final tile = kAllTiles.firstWhere((tile) => tile.id == milestone.tileId);
 
+    void openCollection() {
+      if (onPreview != null) {
+        onPreview!(tile.id);
+      } else {
+        context.push('/tile-preview');
+      }
+    }
+
     return Container(
       key: const ValueKey('next-collection-unlock'),
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(compact ? 10 : 14),
       decoration: SankofaGameTheme.darkPanelDecoration(),
       child: Row(
         children: [
           if (tile.assetPath != null) ...[
             Image.asset(tile.assetPath!,
-                width: 48,
-                height: 58,
+                width: compact ? 36 : 48,
+                height: compact ? 44 : 58,
                 fit: BoxFit.contain,
                 excludeFromSemantics: true),
-            const SizedBox(width: 12),
+            SizedBox(width: compact ? 8 : 12),
           ],
           Expanded(
             child: Column(
@@ -58,23 +67,27 @@ class NextCollectionUnlock extends ConsumerWidget {
                     'Clear Level ${milestone.completedLevel} to add it to your Collection.',
                     style: AppTextStyles.bodySmall
                         .copyWith(color: SankofaGameTheme.parchmentLight)),
-                TextButton(
-                  style: TextButton.styleFrom(
+                if (!compact)
+                  TextButton(
+                    style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
-                      alignment: Alignment.centerLeft),
-                  onPressed: () {
-                    if (onPreview != null) {
-                      onPreview!(tile.id);
-                    } else {
-                      context.push('/tile-preview');
-                    }
-                  },
-                  child: Text(
-                      onPreview == null ? 'View Collection' : 'Preview symbol'),
-                ),
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: openCollection,
+                    child: Text(onPreview == null
+                        ? 'View Collection'
+                        : 'Preview symbol'),
+                  ),
               ],
             ),
           ),
+          if (compact)
+            IconButton(
+              tooltip: onPreview == null ? 'View Collection' : 'Preview symbol',
+              onPressed: openCollection,
+              icon: const Icon(Icons.chevron_right),
+              color: SankofaGameTheme.antiqueGold,
+            ),
         ],
       ),
     );

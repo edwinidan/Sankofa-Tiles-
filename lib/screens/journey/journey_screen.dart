@@ -7,6 +7,7 @@ import '../../core/router/navigation_helpers.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/sankofa_game_theme.dart';
 import '../../providers/progress_provider.dart';
+import '../../models/game_launch_config.dart';
 import '../../widgets/kente_button.dart';
 import '../../widgets/sankofa_background.dart';
 
@@ -43,7 +44,11 @@ class JourneyScreen extends ConsumerWidget {
                 label: 'CONTINUE LEVEL $nextLevelId',
                 icon: Icons.play_arrow_rounded,
                 width: double.infinity,
-                onTap: () => context.push('/level/$nextLevelId'),
+                onTap: () => context.push('/game/$nextLevelId',
+                    extra: GameLaunchConfig(
+                      levelId: nextLevelId,
+                      launchMode: GameLaunchMode.normalProgression,
+                    )),
               ),
             const SizedBox(height: 16),
             for (final chapter in kChapters) ...[
@@ -177,7 +182,13 @@ class _LevelChip extends StatelessWidget {
           ? 'Level $levelId, ${completed ? '$stars stars' : 'current'}'
           : 'Level $levelId locked',
       child: InkWell(
-        onTap: unlocked ? () => context.push('/level/$levelId') : null,
+        onTap: unlocked
+            ? () => context.push('/game/$levelId',
+                extra: GameLaunchConfig(
+                  levelId: levelId,
+                  launchMode: GameLaunchMode.normalProgression,
+                ))
+            : null,
         borderRadius: BorderRadius.circular(10),
         child: DecoratedBox(
           decoration: BoxDecoration(

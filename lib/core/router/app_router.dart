@@ -8,7 +8,6 @@ import '../../screens/home/home_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/tutorial/tutorial_screen.dart';
 import '../../screens/journey/journey_screen.dart';
-import '../../screens/pre_level/pre_level_screen.dart';
 import '../../screens/chapter/chapter_complete_screen.dart';
 import '../../screens/daily/daily_reward_screen.dart';
 import '../../screens/shop/shop_screen.dart';
@@ -95,14 +94,7 @@ GoRouter createAppRouter(
       GoRoute(
         name: 'pre_level',
         path: '/level/:levelId',
-        pageBuilder: (context, state) {
-          final levelId = int.tryParse(state.pathParameters['levelId'] ?? '');
-          return _slideFadePage(
-            context,
-            state,
-            PreLevelScreen(levelId: levelId ?? -1),
-          );
-        },
+        redirect: (_, state) => '/game/${state.pathParameters['levelId']}',
       ),
       GoRoute(
         name: 'game',
@@ -111,16 +103,18 @@ GoRouter createAppRouter(
           final suppliedConfig = state.extra is GameLaunchConfig
               ? state.extra as GameLaunchConfig
               : null;
-          final nextIndex =
-              storage.getHighestCompletedLevel().clamp(0, kLevels.length);
-          final progressionLevelId = nextIndex < kLevels.length
-              ? kLevels[nextIndex].id
-              : kLevels.last.id;
+          final requestedId =
+              int.tryParse(state.pathParameters['levelId'] ?? '');
           final launchConfig = suppliedConfig ??
               GameLaunchConfig(
-                levelId: progressionLevelId,
+                levelId: requestedId ?? -1,
                 launchMode: GameLaunchMode.normalProgression,
               );
+          if (getLevelById(launchConfig.levelId) == null ||
+              (!launchConfig.isDeveloperTest &&
+                  !storage.isLevelUnlocked(launchConfig.levelId))) {
+            return _fadePage(context, state, const HomeScreen());
+          }
           if (launchConfig.isDeveloperTest && !developerToolsEnabled) {
             return _fadePage(context, state, const HomeScreen());
           }
@@ -175,9 +169,6 @@ GoRouter createAppRouter(
             state,
             ChapterCompleteScreen(
               completedLevelId: levelId ?? 1,
-              difficulty: state.extra is DifficultyMode
-                  ? state.extra as DifficultyMode
-                  : DifficultyMode.normal,
             ),
           );
         },

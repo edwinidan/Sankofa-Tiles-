@@ -10,7 +10,7 @@ class GameLaunchConfig {
     required this.levelId,
     required this.launchMode,
     this.resumeSavedGame = false,
-    this.difficulty = DifficultyMode.normal,
+    this.difficulty = DifficultyMode.relaxed,
   });
 
   final int levelId;

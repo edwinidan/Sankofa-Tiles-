@@ -69,7 +69,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void _restartLevel() {
     ref.read(gameProvider.notifier).startLevel(
           widget.levelId,
-          widget.launchConfig.difficulty,
+          DifficultyMode.relaxed,
           isDeveloperTest: widget.launchConfig.isDeveloperTest,
         );
   }
@@ -244,7 +244,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
       if (!restored) {
         notifier.startLevel(
           widget.levelId,
-          widget.launchConfig.difficulty,
+          widget.launchConfig.isDeveloperTest
+              ? widget.launchConfig.difficulty
+              : DifficultyMode.relaxed,
           isDeveloperTest: widget.launchConfig.isDeveloperTest,
         );
       }
@@ -380,7 +382,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             onRetry: () =>
                                 ref.read(gameProvider.notifier).startLevel(
                                       widget.levelId,
-                                      widget.launchConfig.difficulty,
+                                      DifficultyMode.relaxed,
                                       isDeveloperTest:
                                           widget.launchConfig.isDeveloperTest,
                                     ),

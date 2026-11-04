@@ -24,7 +24,6 @@ class PreLevelScreen extends ConsumerStatefulWidget {
 }
 
 class _PreLevelScreenState extends ConsumerState<PreLevelScreen> {
-  DifficultyMode _difficulty = DifficultyMode.normal;
   int get levelId => widget.levelId;
 
   @override
@@ -152,11 +151,7 @@ class _PreLevelScreenState extends ConsumerState<PreLevelScreen> {
                         score: result?.bestScore ?? 0,
                         stars: result?.stars ?? 0),
                     const SizedBox(height: 18),
-                    _PlayStyleSelector(
-                      difficulty: _difficulty,
-                      level: level,
-                      onChanged: (value) => setState(() => _difficulty = value),
-                    ),
+                    _StarRequirements(level: level),
                     const SizedBox(height: 22),
                     KenteButton(
                       label: 'PLAY',
@@ -167,7 +162,6 @@ class _PreLevelScreenState extends ConsumerState<PreLevelScreen> {
                         extra: GameLaunchConfig(
                           levelId: levelId,
                           launchMode: GameLaunchMode.normalProgression,
-                          difficulty: _difficulty,
                         ),
                       ),
                     ),
@@ -182,20 +176,15 @@ class _PreLevelScreenState extends ConsumerState<PreLevelScreen> {
   }
 }
 
-class _PlayStyleSelector extends StatelessWidget {
-  const _PlayStyleSelector({
-    required this.difficulty,
-    required this.level,
-    required this.onChanged,
-  });
+class _StarRequirements extends StatelessWidget {
+  const _StarRequirements({required this.level});
 
-  final DifficultyMode difficulty;
   final LevelDefinition level;
-  final ValueChanged<DifficultyMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final requirements = starRequirementsForLevel(level, difficulty);
+    final requirements =
+        starRequirementsForLevel(level, DifficultyMode.relaxed);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -204,31 +193,13 @@ class _PlayStyleSelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'PLAY STYLE',
+            'STARS',
             style: AppTextStyles.labelSmall.copyWith(
               color: SankofaGameTheme.mutedLightText,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          SegmentedButton<DifficultyMode>(
-            segments: const [
-              ButtonSegment(
-                value: DifficultyMode.normal,
-                label: Text('Classic'),
-                icon: Icon(Icons.timer_outlined),
-              ),
-              ButtonSegment(
-                value: DifficultyMode.relaxed,
-                label: Text('Relaxed'),
-                icon: Icon(Icons.spa_outlined),
-              ),
-            ],
-            selected: {difficulty},
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) => onChanged(selection.first),
-          ),
-          const SizedBox(height: 12),
           for (final requirement in requirements)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),

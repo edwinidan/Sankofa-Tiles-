@@ -243,12 +243,12 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('Continue opens the actual next pre-level without changing saves',
+  testWidgets('Continue opens the actual next board without changing saves',
       (tester) async {
     final storage = await _storage();
     await _mount(tester, storage);
     await _tapText(tester, 'CONTINUE');
-    expect(find.text('Destination /level/9'), findsOneWidget);
+    expect(find.text('Destination /game/9'), findsOneWidget);
     expect(storage.getHighestCompletedLevel(), 8);
     expect(storage.getCowries(), 731);
   });
@@ -289,7 +289,7 @@ void main() {
     ));
     await _mount(tester, storage);
     await _tapText(tester, 'Start another level');
-    expect(find.text('Destination /level/9'), findsOneWidget);
+    expect(find.text('Destination /game/9'), findsOneWidget);
     expect(storage.getActiveGameSummary()!.levelId, 7);
   });
 
