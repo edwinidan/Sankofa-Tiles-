@@ -24,7 +24,7 @@ void main() {
         orderedEquals(List.generate(20, (index) => 301 + index)));
     expect(isChapterFinalLevel(300), isTrue);
     expect(isChapterFinalLevel(320), isTrue);
-    expect(getLevelById(321), isNull);
+    expect(getLevelById(321), isNotNull);
   });
 
   testWidgets('Level-280 veteran sees Level 281 as the next journey action',
@@ -55,8 +55,7 @@ void main() {
     expect(find.text('Next: Voices of the Drum'), findsOneWidget);
   });
 
-  testWidgets('Level 320 enters current-content completion with no 321 route',
-      (tester) async {
+  testWidgets('Level 320 now continues to Northern Weaves', (tester) async {
     final storage = await _storage({
       'campaign_progress_schema_version': 4,
       'highest_completed_level': 320,
@@ -66,20 +65,20 @@ void main() {
       _app(storage, const ChapterCompleteScreen(completedLevelId: 320)),
     );
 
-    expect(find.text('Current Journey Complete'), findsOneWidget);
+    expect(find.text('Chapter Complete'), findsOneWidget);
     expect(find.text('Voices of the Drum'), findsOneWidget);
-    expect(find.text('RETURN HOME'), findsOneWidget);
-    expect(find.textContaining('Next:'), findsNothing);
-    expect(getLevelById(321), isNull);
+    expect(find.text('NEXT LEVEL'), findsOneWidget);
+    expect(find.text('Next: Northern Weaves'), findsOneWidget);
+    expect(getLevelById(321), isNotNull);
   });
 
-  testWidgets('Level 321 remains unavailable', (tester) async {
+  testWidgets('Level 361 remains unavailable', (tester) async {
     final storage = await _storage({
       'campaign_progress_schema_version': 4,
       'highest_completed_level': 320,
       'completed_320': true,
     });
-    await tester.pumpWidget(_app(storage, const PreLevelScreen(levelId: 321)));
+    await tester.pumpWidget(_app(storage, const PreLevelScreen(levelId: 361)));
 
     expect(find.text('Level Not Found'), findsOneWidget);
     expect(find.text('PLAY'), findsNothing);

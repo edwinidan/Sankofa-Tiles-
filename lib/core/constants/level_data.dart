@@ -6,6 +6,7 @@ import 'levels_41_80_candidate_data.dart';
 import 'levels_201_240_candidate_data.dart';
 import 'levels_241_280_candidate_data.dart';
 import 'levels_281_320_data.dart';
+import 'levels_321_360_data.dart';
 
 class SymbolCopyPlan {
   final int symbolPoolSize;
@@ -416,6 +417,17 @@ final List<LevelDefinition> kLevels = [
       symbolPlan: design.symbolPlan,
       difficultyCategory: design.difficulty,
       symbolStartIndex: 35 + (design.level - 281) % 52,
+    ),
+  for (final design in kLevels321To360Designs)
+    LevelDefinition(
+      id: design.level,
+      name: design.name,
+      chapter: design.chapterTitle,
+      namedLayout: design.layout,
+      unlockRequirement: design.level - 1,
+      symbolPlan: design.symbolPlan,
+      difficultyCategory: design.difficulty,
+      symbolStartIndex: 45 + (design.level - 321) % 42,
     ),
 ];
 

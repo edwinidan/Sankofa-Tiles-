@@ -326,6 +326,23 @@ const kChapters = [
     featuredSymbol: 'Sankofa',
     meaning: 'Follow the rhythm of gathering, listening, and returning.',
   ),
+  ChapterDefinition(
+    index: 17,
+    title: 'Northern Weaves',
+    levelStart: 321,
+    levelEnd: 340,
+    featuredSymbol: 'Osram ne Nsoromma',
+    meaning:
+        'Follow woven paths through northern courts and gather each thread.',
+  ),
+  ChapterDefinition(
+    index: 18,
+    title: 'Festival of Light',
+    levelStart: 341,
+    levelEnd: 360,
+    featuredSymbol: 'Nsoromma',
+    meaning: 'Gather by the coast and carry the light of a shared celebration.',
+  ),
 ];
 
 ChapterDefinition chapterForLevel(int levelId) {

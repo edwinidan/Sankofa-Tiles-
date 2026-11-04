@@ -30,9 +30,9 @@ void main() {
       isEmpty,
       reason: issues.map((issue) => issue.toString()).join('\n'),
     );
-    expect(kLevels, hasLength(320));
+    expect(kLevels, hasLength(360));
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(320, (i) => i + 1)));
+        orderedEquals(List.generate(360, (i) => i + 1)));
     expect(kLevels.where((level) => level.layerCount <= 1),
         hasLength(lessThanOrEqualTo(2)));
   });
@@ -73,6 +73,10 @@ void main() {
       300,
       301,
       320,
+      321,
+      340,
+      341,
+      360,
     ]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
@@ -93,7 +97,7 @@ void main() {
   });
 
   test(
-      'all 40 new levels start in every difficulty with their production decks',
+      'all recent levels start in every difficulty with their production decks',
       () {
     final container = ProviderContainer(overrides: [
       audioServiceProvider
@@ -101,7 +105,7 @@ void main() {
     ]);
     addTearDown(container.dispose);
     final notifier = container.read(gameProvider.notifier);
-    for (var id = 281; id <= 320; id++) {
+    for (var id = 281; id <= 360; id++) {
       final level = getLevelById(id)!;
       for (final mode in DifficultyMode.values) {
         notifier.startLevel(id, mode, isDeveloperTest: true);

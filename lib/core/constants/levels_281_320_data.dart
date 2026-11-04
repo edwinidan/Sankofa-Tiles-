@@ -1,86 +1,9 @@
-import 'layout_data.dart';
-import 'level_data.dart';
+import 'campaign_board_design.dart';
 
-/// Production boards for Royal Roads and Voices of the Drum.
-/// Themes inform broad Mahjong masses, never thin literal outlines.
-class CampaignBoardDesign {
-  const CampaignBoardDesign({
-    required this.level,
-    required this.name,
-    required this.family,
-    required this.baseMask,
-    required this.layout,
-    required this.isBreather,
-    required this.isShowcase,
-  });
-
-  final int level;
-  final String name;
-  final String family;
-  final List<String> baseMask;
-  final NamedLayout layout;
-  final bool isBreather;
-  final bool isShowcase;
-
-  int get chapter => level <= 300 ? 15 : 16;
-  String get chapterTitle =>
-      level <= 300 ? 'Royal Roads' : 'Voices of the Drum';
-  String get difficulty => isBreather ? 'Expert breather' : 'Expert';
-  SymbolCopyPlan get symbolPlan => SymbolCopyPlan(
-        symbolPoolSize: isBreather ? 28 : 36 + (level - 281) ~/ 5,
-        preferredCopies: 4,
-      );
-}
-
-CampaignBoardDesign _board(
-  int level,
-  String name,
-  String family,
-  List<String> baseMask,
-  List<String> topMask, {
-  bool breather = false,
-  bool showcase = false,
-}) {
-  final positions = <TilePosition>[];
-  final width = baseMask.first.length;
-  for (var row = 0; row < baseMask.length; row++) {
-    if (baseMask[row].length != width || topMask[row].length != width) {
-      throw StateError('L$level has inconsistent mask widths');
-    }
-    for (var col = 0; col < width; col++) {
-      final x = 16 - (width - 1) + col * 2;
-      if (baseMask[row][col] == 'X') {
-        positions.add(TilePosition(row * 2, x, 0));
-        positions.add(TilePosition(row * 2, x, 1));
-      }
-      if (topMask[row][col] == 'X') {
-        if (baseMask[row][col] != 'X') {
-          throw StateError('L$level has an unsupported crown');
-        }
-        positions.add(TilePosition(row * 2, x, 2));
-      }
-    }
-  }
-  // Keep render and removal order consistent with the existing catalogue.
-  positions.sort((a, b) {
-    final layer = a.layer.compareTo(b.layer);
-    if (layer != 0) return layer;
-    final row = a.row.compareTo(b.row);
-    return row != 0 ? row : a.col.compareTo(b.col);
-  });
-  return CampaignBoardDesign(
-    level: level,
-    name: name,
-    family: family,
-    baseMask: List.unmodifiable(baseMask),
-    layout: namedLayout('journey${level}Board', '$name: $family', positions),
-    isBreather: breather,
-    isShowcase: showcase,
-  );
-}
+export 'campaign_board_design.dart';
 
 final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
-  _board(
+  campaignBoard(
     281,
     'Royal Welcome',
     'stepped court',
@@ -102,7 +25,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     282,
     'Seat of Counsel',
     'royal stool',
@@ -123,7 +46,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     283,
     'Palace Forecourt',
     'open courtyard',
@@ -146,7 +69,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     284,
     'Shield of Welcome',
     'broad shield',
@@ -169,7 +92,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     285,
     'Twin Royal Courts',
     'paired courts',
@@ -193,7 +116,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     286,
     'Resting Pavilion',
     'compact pavilion',
@@ -215,7 +138,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     287,
     'Processional Steps',
     'offset terraces',
@@ -238,7 +161,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     288,
     'Golden Threshold',
     'broad gate',
@@ -259,7 +182,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     289,
     'Council Chamber',
     'chambered terrace',
@@ -282,7 +205,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     290,
     'Royal Canopy',
     'pavilion crown',
@@ -306,7 +229,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     291,
     'Courtyard Crossing',
     'crossed terraces',
@@ -329,7 +252,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     292,
     'Quiet Audience',
     'compact audience',
@@ -351,7 +274,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     293,
     'Stepped Bastion',
     'broad bastion',
@@ -374,7 +297,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     294,
     'Banner Court',
     'banner terraces',
@@ -397,7 +320,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     295,
     'Palace Assembly',
     'tiered assembly',
@@ -421,7 +344,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     296,
     'Guardians Rest',
     'compact shield',
@@ -443,7 +366,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     297,
     'Royal Causeway',
     'wide causeway',
@@ -466,7 +389,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     298,
     'Crown Terrace',
     'open crown',
@@ -489,7 +412,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     299,
     'Hall of Elders',
     'deep chamber',
@@ -512,7 +435,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     300,
     'Golden Procession',
     'grand processional court',
@@ -536,7 +459,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     301,
     'The Rhythm Opens',
     'rounded drum',
@@ -558,7 +481,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     302,
     'Talking Drum',
     'waisted drum',
@@ -581,7 +504,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '.XXXX.',
     ],
   ),
-  _board(
+  campaignBoard(
     303,
     'Paired Bells',
     'joined bells',
@@ -602,7 +525,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     304,
     'Echo Terrace',
     'offset echo',
@@ -625,7 +548,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     305,
     'Ceremonial Fan',
     'full fan',
@@ -649,7 +572,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     306,
     'Soft Cadence',
     'compact rhythm',
@@ -671,7 +594,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     307,
     'Gathering Rhythm',
     'open drum circle',
@@ -694,7 +617,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     308,
     'Rolling Thunder',
     'stepped wave',
@@ -717,7 +640,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '.XX...',
     ],
   ),
-  _board(
+  campaignBoard(
     309,
     'Festival Calabash',
     'rounded bowl',
@@ -740,7 +663,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     310,
     'Chorus of Bells',
     'bell assembly',
@@ -764,7 +687,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     311,
     'Alternating Beats',
     'staggered shelves',
@@ -787,7 +710,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '.XXXX.',
     ],
   ),
-  _board(
+  campaignBoard(
     312,
     'Resonant Chamber',
     'hollow drum',
@@ -810,7 +733,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '..XX..',
     ],
   ),
-  _board(
+  campaignBoard(
     313,
     'Evening Refrain',
     'compact refrain',
@@ -832,7 +755,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     314,
     'Festival Steps',
     'rising rhythm',
@@ -855,7 +778,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '....XX',
     ],
   ),
-  _board(
+  campaignBoard(
     315,
     'Double Drum',
     'paired drum chambers',
@@ -879,7 +802,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     showcase: true,
   ),
-  _board(
+  campaignBoard(
     316,
     'Call and Response',
     'balanced chambers',
@@ -902,7 +825,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '....XX',
     ],
   ),
-  _board(
+  campaignBoard(
     317,
     'Moonlit Rhythm',
     'compact crescent',
@@ -924,7 +847,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
     ],
     breather: true,
   ),
-  _board(
+  campaignBoard(
     318,
     'Ceremonial Resonance',
     'sweeping fan',
@@ -947,7 +870,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '......',
     ],
   ),
-  _board(
+  campaignBoard(
     319,
     'Rhythm of Return',
     'returning waves',
@@ -970,7 +893,7 @@ final List<CampaignBoardDesign> kLevels281To320Designs = List.unmodifiable([
       '.XX...',
     ],
   ),
-  _board(
+  campaignBoard(
     320,
     'Grand Drum Assembly',
     'grand drum gathering',

@@ -3,8 +3,8 @@
 A Ghanaian Adinkra Mahjong solitaire tile-matching game built with Flutter.
 
 Match pairs of Adinkra symbol tiles on 3D-layered boards following classic
-Mahjong solitaire "free tile" rules. 320 playable levels spanning sixteen chapters, from novice boards to layered
-royal courts and drum assemblies. The planned campaign horizon is 400 levels.
+Mahjong solitaire "free tile" rules. 360 playable levels spanning eighteen chapters, from novice boards to layered
+royal courts, woven terraces, and lantern-lit festival grounds. The planned campaign horizon is 400 levels.
 
 **Version:** 1.0.0+3
 **Platforms:** Android, iOS (portrait only)
@@ -21,7 +21,7 @@ flutter run
 
 | Document | Purpose |
 |---|---|
-| `docs/levels-281-320-production-assignment.md` | Latest 40 boards, design constraints, previews, and validation |
+| `docs/levels-321-360-production-assignment.md` | Latest 40 boards, design constraints, previews, and validation |
 | `CONTEXT.md` | Architecture, state management, conventions (AI handoff) |
 | `docs/GAME_FLOW.md` | End-to-end user flow and experience mapping |
 | `docs/SANKOFA_TILES_APP_CONTEXT.md` | Full app reference (screens, assets, checklist) |

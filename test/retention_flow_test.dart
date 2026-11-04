@@ -38,7 +38,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   kRunningTests = true;
 
-  for (final levelId in [1, 20]) {
+  for (final levelId in [1, 20, 320, 340]) {
     testWidgets(
         'Next from a saved Classic level $levelId starts in Relaxed mode',
         (tester) async {
