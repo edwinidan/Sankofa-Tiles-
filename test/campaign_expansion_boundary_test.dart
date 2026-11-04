@@ -11,17 +11,17 @@ void main() {
 
   test('planned, implemented, and unavailable horizons stay separate', () {
     expect(kPlannedCampaignLevelCount, 400);
-    expect(kImplementedCampaignLevelCount, 280);
-    expect(kImplementedFinalLevelId, 280);
+    expect(kImplementedCampaignLevelCount, 320);
+    expect(kImplementedFinalLevelId, 320);
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(280, (index) => index + 1)));
+        orderedEquals(List.generate(320, (index) => index + 1)));
     expect(kLevels201To240Candidates.map((candidate) => candidate.level),
         orderedEquals(List.generate(40, (index) => index + 201)));
     expect(getLevelById(201), isNotNull);
     expect(getLevelById(240), isNotNull);
     expect(getLevelById(241), isNotNull);
     expect(getLevelById(280), isNotNull);
-    expect(getLevelById(281), isNull);
+    expect(getLevelById(321), isNull);
   });
 
   test('a schema-v4 Level-200 veteran retains progression and entitlements',
@@ -112,7 +112,54 @@ void main() {
     expect(storage.getHapticIntensity().name, 'low');
   });
 
-  test('implemented transitions are contiguous and stop safely after 280', () {
+  test('a Level-280 veteran continues at 281 without losing player state',
+      () async {
+    SharedPreferences.setMockInitialValues({
+      'campaign_progress_schema_version': 4,
+      'highest_completed_level': 280,
+      'completed_279': true,
+      'completed_280': true,
+      'stars_280': 3,
+      'best_score_280': 987654,
+      'economy_cowries': 7654,
+      'economy_booster_hint': 5,
+      'economy_tx_chapter:14:complete': true,
+      'monetization_entitlement_remove_ads': true,
+      'monetization_purchase_supporter_pack': true,
+      'collection_unlocked_gye_nyame': true,
+      'achievement_claimed_complete_200': true,
+      'sound_enabled': false,
+      'music_enabled': false,
+      'music_volume': .35,
+      'show_tile_names': false,
+      'haptic_intensity': 'low',
+    });
+    final storage = StorageService();
+    await storage.init();
+    final progress = ProgressService(storage);
+
+    expect(progress.highestCompletedLevel, 280);
+    expect(progress.nextUnfinishedLevelId, 281);
+    expect(progress.hasCompletedAllLevels, isFalse);
+    expect(storage.isLevelUnlocked(281), isTrue);
+    expect(storage.isLevelCompleted(280), isTrue);
+    expect(storage.getStars(280), 3);
+    expect(storage.getBestScore(280), 987654);
+    expect(storage.getCowries(), 7654);
+    expect(storage.getBooster(BoosterType.hint), 5);
+    expect(storage.hasEconomyTransaction('chapter:14:complete'), isTrue);
+    expect(storage.hasMonetizationEntitlement('remove_ads'), isTrue);
+    expect(storage.hasMonetizationPurchase('supporter_pack'), isTrue);
+    expect(storage.isCollectionUnlocked('gye_nyame'), isTrue);
+    expect(storage.isAchievementClaimed('complete_200'), isTrue);
+    expect(storage.isSoundEnabled(), isFalse);
+    expect(storage.isMusicEnabled(), isFalse);
+    expect(storage.getMusicVolume(), .35);
+    expect(storage.isShowTileNames(), isFalse);
+    expect(storage.getHapticIntensity().name, 'low');
+  });
+
+  test('implemented transitions are contiguous and stop safely after 320', () {
     for (final transition in const [
       (199, 200),
       (200, 201),
@@ -123,9 +170,13 @@ void main() {
       (259, 260),
       (260, 261),
       (279, 280),
+      (280, 281),
+      (299, 300),
+      (300, 301),
+      (319, 320),
     ]) {
       expect(getLevelById(transition.$1 + 1)?.id, transition.$2);
     }
-    expect(getLevelById(281), isNull);
+    expect(getLevelById(321), isNull);
   });
 }

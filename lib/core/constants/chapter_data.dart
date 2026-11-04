@@ -310,6 +310,22 @@ const kChapters = [
     featuredSymbol: 'Nyame Dua',
     meaning: 'Walk beneath the ancestral canopy and safeguard living memory.',
   ),
+  ChapterDefinition(
+    index: 15,
+    title: 'Royal Roads',
+    levelStart: 281,
+    levelEnd: 300,
+    featuredSymbol: 'Adinkrahene',
+    meaning: 'Gather wisdom in royal courts and follow the golden procession.',
+  ),
+  ChapterDefinition(
+    index: 16,
+    title: 'Voices of the Drum',
+    levelStart: 301,
+    levelEnd: 320,
+    featuredSymbol: 'Sankofa',
+    meaning: 'Follow the rhythm of gathering, listening, and returning.',
+  ),
 ];
 
 ChapterDefinition chapterForLevel(int levelId) {

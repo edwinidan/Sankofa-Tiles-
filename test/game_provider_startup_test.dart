@@ -30,9 +30,9 @@ void main() {
       isEmpty,
       reason: issues.map((issue) => issue.toString()).join('\n'),
     );
-    expect(kLevels, hasLength(280));
+    expect(kLevels, hasLength(320));
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(280, (i) => i + 1)));
+        orderedEquals(List.generate(320, (i) => i + 1)));
     expect(kLevels.where((level) => level.layerCount <= 1),
         hasLength(lessThanOrEqualTo(2)));
   });
@@ -68,6 +68,11 @@ void main() {
       220,
       221,
       240,
+      280,
+      281,
+      300,
+      301,
+      320,
     ]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
@@ -84,6 +89,30 @@ void main() {
         lessThan(const Duration(seconds: 1)),
         reason: 'Level $levelId startup regressed',
       );
+    }
+  });
+
+  test(
+      'all 40 new levels start in every difficulty with their production decks',
+      () {
+    final container = ProviderContainer(overrides: [
+      audioServiceProvider
+          .overrideWithValue(AudioService(sound: false, music: false)),
+    ]);
+    addTearDown(container.dispose);
+    final notifier = container.read(gameProvider.notifier);
+    for (var id = 281; id <= 320; id++) {
+      final level = getLevelById(id)!;
+      for (final mode in DifficultyMode.values) {
+        notifier.startLevel(id, mode, isDeveloperTest: true);
+        final state = container.read(gameProvider);
+        expect(state.status, GameStatus.playing, reason: 'L$id ${mode.name}');
+        expect(state.tiles, hasLength(level.tileCount));
+        expect(state.tiles.every((tile) => level.tileIds.contains(tile.def.id)),
+            isTrue);
+        expect(BoardSolver.isSolvable(state.tiles), isTrue);
+        expect(BoardSolver.findAvailableMatchingPairs(state.tiles), isNotEmpty);
+      }
     }
   });
 

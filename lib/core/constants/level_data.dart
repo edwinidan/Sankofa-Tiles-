@@ -5,6 +5,7 @@ import 'tile_data.dart';
 import 'levels_41_80_candidate_data.dart';
 import 'levels_201_240_candidate_data.dart';
 import 'levels_241_280_candidate_data.dart';
+import 'levels_281_320_data.dart';
 
 class SymbolCopyPlan {
   final int symbolPoolSize;
@@ -405,6 +406,17 @@ final List<LevelDefinition> kLevels = [
   ..._extendedCampaignLevels(),
   ..._approvedLevels201To240(),
   ..._approvedLevels241To280(),
+  for (final design in kLevels281To320Designs)
+    LevelDefinition(
+      id: design.level,
+      name: design.name,
+      chapter: design.chapterTitle,
+      namedLayout: design.layout,
+      unlockRequirement: design.level - 1,
+      symbolPlan: design.symbolPlan,
+      difficultyCategory: design.difficulty,
+      symbolStartIndex: 35 + (design.level - 281) % 52,
+    ),
 ];
 
 /// Long-term target. Never use this to index [kLevels] or render level cards.

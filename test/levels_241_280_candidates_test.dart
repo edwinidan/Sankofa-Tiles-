@@ -66,12 +66,14 @@ void main() {
     }
   });
 
-  test('approved catalogue is exactly assigned to production through 280', () {
-    expect(kLevels, hasLength(280));
-    expect(kImplementedCampaignLevelCount, 280);
-    expect(kImplementedFinalLevelId, 280);
+  test(
+      'approved catalogue is retained exactly as production expands through 320',
+      () {
+    expect(kLevels, hasLength(320));
+    expect(kImplementedCampaignLevelCount, 320);
+    expect(kImplementedFinalLevelId, 320);
     expect(kPlannedCampaignLevelCount, 400);
-    expect(getLevelById(281), isNull);
+    expect(getLevelById(281), isNotNull);
     expect(kLevels241To280Candidates, hasLength(40));
     expect(
       kLevels241To280Candidates.map((candidate) => candidate.level),
