@@ -22,6 +22,7 @@ flutter run
 | Document | Purpose |
 |---|---|
 | `docs/levels-321-360-production-assignment.md` | Latest 40 boards, design constraints, previews, and validation |
+| `docs/LOCAL_REMINDERS.md` | Opt-in local reminder schedule, copy, platform setup, and validation |
 | `CONTEXT.md` | Architecture, state management, conventions (AI handoff) |
 | `docs/GAME_FLOW.md` | End-to-end user flow and experience mapping |
 | `docs/SANKOFA_TILES_APP_CONTEXT.md` | Full app reference (screens, assets, checklist) |

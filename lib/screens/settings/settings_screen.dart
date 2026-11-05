@@ -11,6 +11,8 @@ import '../../core/utils/analytics_service.dart';
 import '../../core/utils/haptic_service.dart';
 import '../../providers/admob_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/reminder_provider.dart';
+import '../../core/reminders/local_reminder_service.dart';
 import '../../widgets/adinkra_divider.dart';
 import '../../widgets/sankofa_background.dart';
 import 'widgets/settings_banner_ad.dart';
@@ -26,6 +28,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final reminders = ref.watch(reminderSettingsProvider);
     final privacyOptionsRequired = ref.watch(privacyOptionsRequiredProvider);
 
     return PopScope(
@@ -106,6 +109,38 @@ class SettingsScreen extends ConsumerWidget {
                 label: 'Adinkra Collection',
                 description: 'Review symbols unlocked through your journey',
                 onTap: () => context.push('/tile-preview'),
+              ),
+              const SizedBox(height: 16),
+              const AdinkraDivider(),
+              const SizedBox(height: 16),
+              const _SectionHeader(title: 'Reminders'),
+              _ToggleTile(
+                icon: Icons.notifications_none_outlined,
+                label: 'Gentle reminders',
+                description:
+                    'Quiet invitations around 7 PM, with breaks built in',
+                value: reminders.enabled,
+                onChanged: reminders.busy
+                    ? null
+                    : (value) async {
+                        final result = await ref
+                            .read(reminderSettingsProvider.notifier)
+                            .setEnabled(value);
+                        if (!context.mounted) return;
+                        final message = switch (result) {
+                          ReminderSettingResult.denied =>
+                            'Notifications are off. You can allow them in your phone’s settings.',
+                          ReminderSettingResult.unavailable =>
+                            'Reminders are available on Android and iPhone.',
+                          ReminderSettingResult.failed =>
+                            'We couldn’t update reminders. Please try again.',
+                          _ => null,
+                        };
+                        if (message != null) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(message)));
+                        }
+                      },
               ),
               const SizedBox(height: 16),
               const AdinkraDivider(),
@@ -249,7 +284,7 @@ class _ToggleTile extends StatelessWidget {
   final String label;
   final String? description;
   final bool value;
-  final Future<void> Function(bool) onChanged;
+  final Future<void> Function(bool)? onChanged;
 
   const _ToggleTile({
     required this.icon,
@@ -387,10 +422,12 @@ class _HapticTile extends StatelessWidget {
                 color: SankofaGameTheme.antiqueGold,
               ),
               const SizedBox(width: 16),
-              Text(
-                'Haptic Feedback',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: SankofaGameTheme.parchmentLight,
+              Expanded(
+                child: Text(
+                  'Haptic Feedback',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: SankofaGameTheme.parchmentLight,
+                  ),
                 ),
               ),
             ],

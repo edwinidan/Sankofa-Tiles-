@@ -233,6 +233,20 @@ class StorageService {
     return highest;
   }
 
+  bool areGentleRemindersEnabled() =>
+      _prefs.getBool('gentle_reminders_enabled') ?? false;
+
+  Future<void> setGentleRemindersEnabled(bool enabled) =>
+      _prefs.setBool('gentle_reminders_enabled', enabled);
+
+  DateTime? getReminderLastActivity() {
+    final value = _prefs.getInt('gentle_reminders_last_activity');
+    return value == null ? null : DateTime.fromMillisecondsSinceEpoch(value);
+  }
+
+  Future<void> setReminderLastActivity(DateTime value) => _prefs.setInt(
+      'gentle_reminders_last_activity', value.millisecondsSinceEpoch);
+
   // Sound
   bool isSoundEnabled() => _prefs.getBool(_keySoundEnabled) ?? true;
   Future<void> setSoundEnabled(bool val) async =>
