@@ -12,13 +12,14 @@ import 'package:sankofa_tiles/models/tile_model.dart';
 import '../tool/levels_201_240_bulk_analysis.dart';
 
 void main() {
-  test('40 production boards extend two chapters and stop at 360', () {
-    expect(kImplementedCampaignLevelCount, 360);
-    expect(kImplementedFinalLevelId, 360);
+  test('40 production boards retain chapters 17 and 18 as the campaign expands',
+      () {
+    expect(kImplementedCampaignLevelCount, 380);
+    expect(kImplementedFinalLevelId, 380);
     expect(kPlannedCampaignLevelCount, 400);
-    expect(getLevelById(361), isNull);
+    expect(getLevelById(381), isNull);
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(360, (index) => index + 1)));
+        orderedEquals(List.generate(380, (index) => index + 1)));
     expect(kLevels321To360Designs, hasLength(40));
     expect(kLevels321To360Designs.where((board) => board.isBreather),
         hasLength(8));

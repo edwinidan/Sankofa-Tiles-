@@ -11,17 +11,17 @@ void main() {
 
   test('planned, implemented, and unavailable horizons stay separate', () {
     expect(kPlannedCampaignLevelCount, 400);
-    expect(kImplementedCampaignLevelCount, 360);
-    expect(kImplementedFinalLevelId, 360);
+    expect(kImplementedCampaignLevelCount, 380);
+    expect(kImplementedFinalLevelId, 380);
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(360, (index) => index + 1)));
+        orderedEquals(List.generate(380, (index) => index + 1)));
     expect(kLevels201To240Candidates.map((candidate) => candidate.level),
         orderedEquals(List.generate(40, (index) => index + 201)));
     expect(getLevelById(201), isNotNull);
     expect(getLevelById(240), isNotNull);
     expect(getLevelById(241), isNotNull);
     expect(getLevelById(280), isNotNull);
-    expect(getLevelById(361), isNull);
+    expect(getLevelById(381), isNull);
   });
 
   test('a schema-v4 Level-200 veteran retains progression and entitlements',
@@ -206,7 +206,61 @@ void main() {
     expect(storage.getHapticIntensity().name, 'low');
   });
 
-  test('implemented transitions are contiguous and stop safely after 360', () {
+  test('a Level-360 veteran continues at 361 without losing player state',
+      () async {
+    SharedPreferences.setMockInitialValues({
+      'campaign_progress_schema_version': 4,
+      'highest_completed_level': 360,
+      'completed_359': true,
+      'completed_360': true,
+      'stars_360': 3,
+      'best_score_360': 987654,
+      'economy_cowries': 7654,
+      'economy_booster_hint': 5,
+      'economy_tx_chapter:18:complete': true,
+      'monetization_entitlement_remove_ads': true,
+      'monetization_purchase_supporter_pack': true,
+      'collection_unlocked_gye_nyame': true,
+      'achievement_claimed_complete_200': true,
+      'achievement_claimed_complete_campaign': true,
+      'gentle_reminders_enabled': true,
+      'gentle_reminders_last_activity': 1793880000000,
+      'sound_enabled': false,
+      'music_enabled': false,
+      'music_volume': .35,
+      'show_tile_names': false,
+      'haptic_intensity': 'low',
+    });
+    final storage = StorageService();
+    await storage.init();
+    final progress = ProgressService(storage);
+
+    expect(progress.highestCompletedLevel, 360);
+    expect(progress.nextUnfinishedLevelId, 361);
+    expect(progress.hasCompletedAllLevels, isFalse);
+    expect(storage.isLevelUnlocked(361), isTrue);
+    expect(storage.isLevelCompleted(360), isTrue);
+    expect(storage.getStars(360), 3);
+    expect(storage.getBestScore(360), 987654);
+    expect(storage.getCowries(), 7654);
+    expect(storage.getBooster(BoosterType.hint), 5);
+    expect(storage.hasEconomyTransaction('chapter:18:complete'), isTrue);
+    expect(storage.hasMonetizationEntitlement('remove_ads'), isTrue);
+    expect(storage.hasMonetizationPurchase('supporter_pack'), isTrue);
+    expect(storage.isCollectionUnlocked('gye_nyame'), isTrue);
+    expect(storage.isAchievementClaimed('complete_200'), isTrue);
+    expect(storage.isAchievementClaimed('complete_campaign'), isTrue);
+    expect(storage.areGentleRemindersEnabled(), isTrue);
+    expect(storage.getReminderLastActivity()!.millisecondsSinceEpoch,
+        1793880000000);
+    expect(storage.isSoundEnabled(), isFalse);
+    expect(storage.isMusicEnabled(), isFalse);
+    expect(storage.getMusicVolume(), .35);
+    expect(storage.isShowTileNames(), isFalse);
+    expect(storage.getHapticIntensity().name, 'low');
+  });
+
+  test('implemented transitions are contiguous and stop safely after 380', () {
     for (final transition in const [
       (199, 200),
       (200, 201),
@@ -225,9 +279,11 @@ void main() {
       (339, 340),
       (340, 341),
       (359, 360),
+      (360, 361),
+      (379, 380),
     ]) {
       expect(getLevelById(transition.$1 + 1)?.id, transition.$2);
     }
-    expect(getLevelById(361), isNull);
+    expect(getLevelById(381), isNull);
   });
 }

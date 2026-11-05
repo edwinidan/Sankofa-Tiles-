@@ -30,9 +30,9 @@ void main() {
     expect(kJourneyCityNames, expectedCities);
     expect(kLegacyTenLevelChapters.map((chapter) => chapter.title),
         expectedCities);
-    expect(kChapters, hasLength(18));
+    expect(kChapters, hasLength(19));
     expect(kChapters.first.levelStart, 1);
-    expect(kChapters.last.levelEnd, 360);
+    expect(kChapters.last.levelEnd, 380);
     expect(kChapters[10].title, 'The Journey Reopens');
     expect(kChapters[10].levelStart, 201);
     expect(kChapters[10].levelEnd, 220);

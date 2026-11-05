@@ -21,8 +21,8 @@ const int kStarterTileUnlockCount = 10;
 final List<String> kStarterTileIds =
     List.unmodifiable(kTileIds.take(kStarterTileUnlockCount));
 
-/// Each non-starter collectible occurs exactly once, from Level 4 through
-/// Level 400 at an average cadence of approximately one face per 4.6 levels.
+/// Adinkra rewards retain their original schedule. Heritage rewards are
+/// additive at their debut levels and can share a level with an Adinkra reward.
 final List<TileUnlockMilestone> kTileUnlockMilestones =
     List.unmodifiable(_buildTileUnlockMilestones());
 
@@ -46,10 +46,10 @@ int? unlockLevelForTileId(String tileId) {
 }
 
 List<TileUnlockMilestone> _buildTileUnlockMilestones() {
-  final laterIds = kTileIds.skip(kStarterTileUnlockCount).toList();
+  final laterIds = kAdinkraTileIds.skip(kStarterTileUnlockCount).toList();
   const firstLevel = 4;
   const span = kCollectionScheduleFinalLevel - firstLevel;
-  return [
+  final milestones = [
     for (var index = 0; index < laterIds.length; index++)
       TileUnlockMilestone(
         completedLevel:
@@ -57,17 +57,27 @@ List<TileUnlockMilestone> _buildTileUnlockMilestones() {
         tileId: laterIds[index],
         rewardType: UnlockRewardType.ordinary,
       ),
+    for (final entry in kHeritageIntroductions.entries)
+      TileUnlockMilestone(
+        completedLevel: entry.value,
+        tileId: entry.key,
+        rewardType: UnlockRewardType.ordinary,
+      ),
   ];
+  milestones.sort((a, b) => a.completedLevel != b.completedLevel
+      ? a.completedLevel.compareTo(b.completedLevel)
+      : kTileIds.indexOf(a.tileId).compareTo(kTileIds.indexOf(b.tileId)));
+  return milestones;
 }
 
 /// Frozen version-1 entitlement calculation used only by migration. Never
 /// alter it when the live schedule changes: old earnings are permanent.
 List<String> legacyV1TileIdsUnlockedThroughLevel(int completedLevelId) {
   final rules = <({String tileId, int levelId})>[
-    for (final tileId in kTileIds.take(10)) (tileId: tileId, levelId: 1),
-    ..._legacySpread(kTileIds.sublist(10, 50), 2, 80),
-    ..._legacySpread(kTileIds.sublist(50, 80), 81, 150),
-    ..._legacySpread(kTileIds.sublist(80), 151, 200),
+    for (final tileId in kAdinkraTileIds.take(10)) (tileId: tileId, levelId: 1),
+    ..._legacySpread(kAdinkraTileIds.sublist(10, 50), 2, 80),
+    ..._legacySpread(kAdinkraTileIds.sublist(50, 80), 81, 150),
+    ..._legacySpread(kAdinkraTileIds.sublist(80), 151, 200),
   ];
   return [
     for (final rule in rules)

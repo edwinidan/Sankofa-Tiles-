@@ -8,6 +8,7 @@ class TileDefinition {
   final TileSuit suit;
   final int suitNumber;
   final String? assetPath;
+  final bool isHeritage;
 
   const TileDefinition({
     required this.id,
@@ -17,10 +18,12 @@ class TileDefinition {
     required this.suit,
     required this.suitNumber,
     this.assetPath,
+    this.isHeritage = false,
   });
 }
 
-const List<String> kTileIds = [
+/// Keep this order frozen: existing boards and collection schedules use it.
+const List<String> kAdinkraTileIds = [
   'aban',
   'abe_dua',
   'abode_santann',
@@ -119,6 +122,44 @@ const List<String> kTileIds = [
   'wo_nsa_da_mu_a',
   'woforo_dua_pa_a',
 ];
+
+/// Heritage portraits have a separate introduction schedule so adding them
+/// never shifts existing Adinkra boards or collection milestones.
+const kHeritageIntroductions = <String, int>{
+  'kwame_nkrumah': 21,
+  'yaa_asantewaa': 41,
+  'naa_dedei': 61,
+  'j_b_danquah': 81,
+  'edward_akufo_addo': 101,
+  'ebenezer_ako_adjei': 121,
+  'emmanuel_obetsebi_lamptey': 141,
+  'william_ofori_atta': 161,
+};
+
+const List<String> kTileIds = [
+  ...kAdinkraTileIds,
+  'kwame_nkrumah',
+  'yaa_asantewaa',
+  'naa_dedei',
+  'j_b_danquah',
+  'edward_akufo_addo',
+  'ebenezer_ako_adjei',
+  'emmanuel_obetsebi_lamptey',
+  'william_ofori_atta',
+];
+
+/// One heritage pair every five levels, beginning at Level 21. New portraits
+/// debut at their scheduled level; later appearances rotate eligible faces.
+String? heritageTileIdForLevel(int levelId) {
+  if (levelId < 21 || (levelId - 21) % 5 != 0) return null;
+  final eligible = kHeritageIntroductions.entries
+      .where((entry) => entry.value <= levelId)
+      .toList();
+  for (final entry in eligible) {
+    if (entry.value == levelId) return entry.key;
+  }
+  return eligible[((levelId - 21) ~/ 5) % eligible.length].key;
+}
 
 const List<TileDefinition> kAllTiles = [
   TileDefinition(
@@ -995,5 +1036,90 @@ const List<TileDefinition> kAllTiles = [
     suit: TileSuit.earth,
     suitNumber: 15,
     assetPath: 'assets/Tile v.5 png/woforo_dua_pa_a-removebg-preview.png',
+  ),
+  ...kHeritageTiles,
+];
+
+const List<TileDefinition> kHeritageTiles = [
+  TileDefinition(
+    id: 'kwame_nkrumah',
+    name: 'Kwame Nkrumah',
+    meaning: 'One of Ghana’s Big Six independence leaders.',
+    symbol: 'K',
+    suit: TileSuit.honor,
+    suitNumber: 1,
+    assetPath: 'assets/tiles/heritage/kwame_nkrumah.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'yaa_asantewaa',
+    name: 'Yaa Asantewaa',
+    meaning:
+        'Queen mother of Ejisu, remembered for her leadership in the 1900 resistance.',
+    symbol: 'Y',
+    suit: TileSuit.honor,
+    suitNumber: 2,
+    assetPath: 'assets/tiles/heritage/yaa_asantewaa.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'naa_dedei',
+    name: 'Naa Dedei',
+    meaning: 'Auntie Dedei — a Ghana Heritage tribute to women in trade.',
+    symbol: 'N',
+    suit: TileSuit.honor,
+    suitNumber: 3,
+    assetPath: 'assets/tiles/heritage/naa_dedei.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'j_b_danquah',
+    name: 'J. B. Danquah',
+    meaning: 'One of Ghana’s Big Six independence leaders.',
+    symbol: 'J',
+    suit: TileSuit.honor,
+    suitNumber: 4,
+    assetPath: 'assets/tiles/heritage/j_b_danquah.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'edward_akufo_addo',
+    name: 'Edward Akufo-Addo',
+    meaning: 'One of Ghana’s Big Six independence leaders.',
+    symbol: 'E',
+    suit: TileSuit.honor,
+    suitNumber: 5,
+    assetPath: 'assets/tiles/heritage/edward_akufo_addo.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'ebenezer_ako_adjei',
+    name: 'Ebenezer Ako-Adjei',
+    meaning: 'One of Ghana’s Big Six independence leaders.',
+    symbol: 'E',
+    suit: TileSuit.honor,
+    suitNumber: 6,
+    assetPath: 'assets/tiles/heritage/ebenezer_ako_adjei.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'emmanuel_obetsebi_lamptey',
+    name: 'Emmanuel Obetsebi-Lamptey',
+    meaning: 'One of Ghana’s Big Six independence leaders.',
+    symbol: 'E',
+    suit: TileSuit.honor,
+    suitNumber: 7,
+    assetPath: 'assets/tiles/heritage/emmanuel_obetsebi_lamptey.png',
+    isHeritage: true,
+  ),
+  TileDefinition(
+    id: 'william_ofori_atta',
+    name: 'William Ofori Atta',
+    meaning: 'One of Ghana’s Big Six independence leaders.',
+    symbol: 'W',
+    suit: TileSuit.honor,
+    suitNumber: 8,
+    assetPath: 'assets/tiles/heritage/william_ofori_atta.png',
+    isHeritage: true,
   ),
 ];

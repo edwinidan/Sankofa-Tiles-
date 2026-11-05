@@ -72,13 +72,13 @@ void main() {
     expect(getLevelById(321), isNotNull);
   });
 
-  testWidgets('Level 361 remains unavailable', (tester) async {
+  testWidgets('Level 381 remains unavailable', (tester) async {
     final storage = await _storage({
       'campaign_progress_schema_version': 4,
       'highest_completed_level': 320,
       'completed_320': true,
     });
-    await tester.pumpWidget(_app(storage, const PreLevelScreen(levelId: 361)));
+    await tester.pumpWidget(_app(storage, const PreLevelScreen(levelId: 381)));
 
     expect(find.text('Level Not Found'), findsOneWidget);
     expect(find.text('PLAY'), findsNothing);

@@ -67,11 +67,11 @@ void main() {
   });
 
   test(
-      'approved catalogue is retained exactly as production expands through 360',
+      'approved catalogue is retained exactly as production expands through 380',
       () {
-    expect(kLevels, hasLength(360));
-    expect(kImplementedCampaignLevelCount, 360);
-    expect(kImplementedFinalLevelId, 360);
+    expect(kLevels, hasLength(380));
+    expect(kImplementedCampaignLevelCount, 380);
+    expect(kImplementedFinalLevelId, 380);
     expect(kPlannedCampaignLevelCount, 400);
     expect(getLevelById(281), isNotNull);
     expect(kLevels241To280Candidates, hasLength(40));

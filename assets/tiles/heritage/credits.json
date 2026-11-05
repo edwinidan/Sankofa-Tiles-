@@ -1,0 +1,87 @@
+{
+  "description": "Generated carved-wood game artwork, adapted from the approved portrait samples. Credits describe the reference photographs; they do not assert verified photographic likeness for the artistic interpretations.",
+  "tiles": [
+    {
+      "id": "kwame_nkrumah",
+      "name": "Kwame Nkrumah",
+      "firstLevel": 21,
+      "asset": "kwame_nkrumah.png",
+      "approvedSample": "output/imagegen/big-six/kwame-nkrumah-approved.png"
+    },
+    {
+      "id": "yaa_asantewaa",
+      "name": "Yaa Asantewaa",
+      "firstLevel": 41,
+      "asset": "yaa_asantewaa.png",
+      "approvedSample": "output/imagegen/ghana-heritage/yaa-asantewaa-tile-v3.png"
+    },
+    {
+      "id": "naa_dedei",
+      "name": "Naa Dedei",
+      "firstLevel": 61,
+      "asset": "naa_dedei.png",
+      "approvedSample": "output/imagegen/ghana-heritage/naa-dedei-50-pesewa-tile-v1.png"
+    },
+    {
+      "id": "j_b_danquah",
+      "name": "J. B. Danquah",
+      "firstLevel": 81,
+      "asset": "j_b_danquah.png",
+      "approvedSample": "output/imagegen/big-six/j-b-danquah-v1.png"
+    },
+    {
+      "id": "edward_akufo_addo",
+      "name": "Edward Akufo-Addo",
+      "firstLevel": 101,
+      "asset": "edward_akufo_addo.png",
+      "approvedSample": "output/imagegen/big-six/edward-akufo-addo-v1.png"
+    },
+    {
+      "id": "ebenezer_ako_adjei",
+      "name": "Ebenezer Ako-Adjei",
+      "firstLevel": 121,
+      "asset": "ebenezer_ako_adjei.png",
+      "approvedSample": "output/imagegen/big-six/ebenezer-ako-adjei-v1.png"
+    },
+    {
+      "id": "emmanuel_obetsebi_lamptey",
+      "name": "Emmanuel Obetsebi-Lamptey",
+      "firstLevel": 141,
+      "asset": "emmanuel_obetsebi_lamptey.png",
+      "approvedSample": "output/imagegen/big-six/emmanuel-obetsebi-lamptey-v1.png"
+    },
+    {
+      "id": "william_ofori_atta",
+      "name": "William Ofori Atta",
+      "firstLevel": 161,
+      "asset": "william_ofori_atta.png",
+      "approvedSample": "output/imagegen/big-six/william-ofori-atta-v1.png"
+    }
+  ],
+  "references": [
+    {
+      "subjects": "The Big Six",
+      "url": "https://www.bog.gov.gh/bank-notes-coins/features-of-currency-notes/"
+    },
+    {
+      "subject": "Kwame Nkrumah photographic reference",
+      "author": "The National Archives UK",
+      "url": "https://commons.wikimedia.org/wiki/File:Kwame_Nkrumah_-_The_National_Archives_UK_-_CO_1069-50-1-crop.jpg",
+      "license": "Open Government Licence v1.0",
+      "licenseUrl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/1/"
+    },
+    {
+      "subject": "Naa Dedei coin photographic reference",
+      "author": "Xibitgh",
+      "url": "https://commons.wikimedia.org/wiki/File:Rebecca_Naa_Dedei_Aryeetey.jpg",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Coin portrait reinterpreted as carved-wood tile; lettering, denomination and background removed."
+    },
+    {
+      "subject": "Yaa Asantewaa portrait",
+      "source": "User-provided black-and-white reference adapted as a waist-up carved-wood tile. Photograph identity not independently verified.",
+      "biographyUrl": "https://encyclopaediaafricana.com/asantewaa-yaa/"
+    }
+  ]
+}

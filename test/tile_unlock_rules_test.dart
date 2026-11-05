@@ -3,12 +3,16 @@ import 'package:sankofa_tiles/core/constants/tile_data.dart';
 import 'package:sankofa_tiles/core/constants/tile_unlock_data.dart';
 
 void main() {
-  test('all 97 definitions are collectible and IDs are one-to-one', () {
-    expect(kTileIds, hasLength(97));
-    expect(kAllTiles, hasLength(97));
-    expect(kTileIds.toSet(), hasLength(kTileIds.length));
-    expect(kAllTiles.map((tile) => tile.id).toSet(), kTileIds.toSet());
-  });
+  test(
+    '97 Adinkra and 8 heritage definitions are collectible with unique IDs',
+    () {
+      expect(kAdinkraTileIds, hasLength(97));
+      expect(kTileIds, hasLength(105));
+      expect(kAllTiles, hasLength(105));
+      expect(kTileIds.toSet(), hasLength(kTileIds.length));
+      expect(kAllTiles.map((tile) => tile.id).toSet(), kTileIds.toSet());
+    },
+  );
 
   test('every collectible occurs exactly once in starter or milestones', () {
     final scheduledIds = [
@@ -21,14 +25,24 @@ void main() {
     expect(scheduledIds.toSet(), kTileIds.toSet());
   });
 
-  test('later milestones are ordered, individual, and span 4 to 400', () {
-    final levels =
-        kTileUnlockMilestones.map((milestone) => milestone.completedLevel);
-    expect(kTileUnlockMilestones, hasLength(87));
+  test('milestones are ordered and preserve the original Adinkra schedule', () {
+    final levels = kTileUnlockMilestones.map(
+      (milestone) => milestone.completedLevel,
+    );
+    expect(kTileUnlockMilestones, hasLength(95));
     expect(levels.first, 4);
     expect(levels.last, kCollectionScheduleFinalLevel);
     expect(levels, orderedEquals(levels.toList()..sort()));
-    expect(levels.toSet(), hasLength(levels.length));
+    final adinkraMilestones = kTileUnlockMilestones
+        .where((milestone) => kAdinkraTileIds.contains(milestone.tileId))
+        .toList();
+    expect(adinkraMilestones, hasLength(87));
+    for (var index = 0; index < adinkraMilestones.length; index++) {
+      expect(
+        adinkraMilestones[index].completedLevel,
+        4 + (index * 396 / 86).round(),
+      );
+    }
     expect(
       kTileUnlockMilestones,
       everyElement(
@@ -52,7 +66,7 @@ void main() {
     expect(legacyV1TileIdsUnlockedThroughLevel(1), hasLength(10));
     expect(
       legacyV1TileIdsUnlockedThroughLevel(200),
-      orderedEquals(kTileIds),
+      orderedEquals(kAdinkraTileIds),
     );
   });
 }

@@ -9,7 +9,7 @@ void main() {
   test(
       'all campaign boards fit supported gameplay areas above the tile minimum',
       () {
-    expect(kLevels, hasLength(360));
+    expect(kLevels, hasLength(380));
 
     for (final level in kLevels) {
       final geometry = BoardLayoutGeometry.fromPositions(level.layout);

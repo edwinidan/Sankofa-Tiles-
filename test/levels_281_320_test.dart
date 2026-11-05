@@ -15,12 +15,12 @@ void main() {
   test(
       '40 production boards retain two complete chapters as the campaign expands',
       () {
-    expect(kImplementedCampaignLevelCount, 360);
-    expect(kImplementedFinalLevelId, 360);
+    expect(kImplementedCampaignLevelCount, 380);
+    expect(kImplementedFinalLevelId, 380);
     expect(kPlannedCampaignLevelCount, 400);
-    expect(getLevelById(361), isNull);
+    expect(getLevelById(381), isNull);
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(360, (index) => index + 1)));
+        orderedEquals(List.generate(380, (index) => index + 1)));
     expect(kLevels281To320Designs, hasLength(40));
     expect(kLevels281To320Designs.where((board) => board.isBreather),
         hasLength(8));

@@ -1,0 +1,7 @@
+{
+  "creationMode": "built-in imagegen",
+  "output": "yaa-asantewaa-tile-v3.png",
+  "editTarget": "yaa-asantewaa-tile-v2.png",
+  "change": "Head-to-waist framing",
+  "prompt": "Edit the provided Sankofa Tiles Yaa Asantewaa wooden tile. Change ONLY the portrait framing: replace the full-length standing composition with a much larger HEAD-TO-WAIST portrait of exactly the same woman, ending at her waist, no legs or feet. Preserve her face, expression, distinctive headwear, earrings, necklaces, layered traditional costume, arms and hands holding the rifle diagonally across her torso. Enlarge the upper body to fill the tile face like a half-length portrait, with full headwear safely inside the top wooden margin and the waist ending above the bottom wooden margin. The rifle may be naturally cropped at the bottom of the portrait composition, but must remain visibly held by both hands and fit inside the tile face. Keep the rounded rectangular amber wooden tile silhouette, bevel, dark thick bottom/right edges, vertical wood grain, lighting, carved relief material, transparent exterior background, same portrait canvas and overall tile proportions unchanged. Clean continuous transparent background around the entire tile, no stray colored pixels or flecks above the tile. No lettering, labels, numerals, added objects or scenery."
+}

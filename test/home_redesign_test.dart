@@ -295,9 +295,9 @@ void main() {
 
   testWidgets('Completed campaign does not advertise an unimplemented level',
       (tester) async {
-    final router = await _mount(tester, await _storage(completed: 360));
+    final router = await _mount(tester, await _storage(completed: 380));
     expect(find.text('JOURNEY COMPLETE'), findsOneWidget);
-    expect(find.text('LEVEL 361'), findsNothing);
+    expect(find.text('LEVEL 381'), findsNothing);
     await _tapText(tester, 'JOURNEY COMPLETE');
     expect(router.routeInformationProvider.value.uri.path, '/');
     expect(find.text('All Current Levels Completed'), findsOneWidget);
@@ -328,7 +328,7 @@ void main() {
     await tester.tap(find.byTooltip('Journey progress'));
     await tester.pumpAndSettle();
     expect(find.text('Current Chapter: Kokrobite to Ada Foah'), findsOneWidget);
-    expect(find.textContaining('Levels 8/360'), findsOneWidget);
+    expect(find.textContaining('Levels 8/380'), findsOneWidget);
     expect(find.textContaining('Hints '), findsOneWidget);
     expect(find.text('View Collection'), findsOneWidget);
     await tester.tap(find.byTooltip('Close progress'));

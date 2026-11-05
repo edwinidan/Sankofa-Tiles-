@@ -153,6 +153,15 @@ void main() {
     expect(launch?.difficulty, DifficultyMode.relaxed);
   });
 
+  testWidgets(
+      'a previous campaign finisher opens new Level 361 from a reminder',
+      (tester) async {
+    final gateway = FakeReminderGateway()..coldStartTap = true;
+    final router = await _mount(
+        tester, await _storage(enabled: true, completed: 360), gateway);
+    expect(router.routeInformationProvider.value.uri.path, '/game/361');
+  });
+
   testWidgets('warm reminder tap resumes the saved board', (tester) async {
     final storage = await _storage(enabled: true);
     await storage.saveActiveGame(GameState.initial().copyWith(
@@ -180,7 +189,7 @@ void main() {
       (tester) async {
     final gateway = FakeReminderGateway()..coldStartTap = true;
     final router = await _mount(
-        tester, await _storage(enabled: true, completed: 360), gateway);
+        tester, await _storage(enabled: true, completed: 380), gateway);
     expect(router.routeInformationProvider.value.uri.path, '/journey');
     expect(find.text('Journey'), findsOneWidget);
   });

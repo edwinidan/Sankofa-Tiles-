@@ -84,8 +84,8 @@ void main() {
       kLevels201To240Candidates.map((candidate) => candidate.family).toSet(),
       hasLength(40),
     );
-    expect(kImplementedFinalLevelId, 360);
-    expect(kLevels, hasLength(360));
+    expect(kImplementedFinalLevelId, 380);
+    expect(kLevels, hasLength(380));
     for (final candidate in kLevels201To240Candidates) {
       final production = getLevelById(candidate.level)!;
       expect(production.name, candidate.proposedName);

@@ -59,7 +59,8 @@ class NextCollectionUnlock extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Next symbol: ${tile.name}',
+                Text(
+                    '${tile.isHeritage ? 'Next heritage tile' : 'Next symbol'}: ${tile.name}',
                     style: AppTextStyles.bodyMedium
                         .copyWith(color: SankofaGameTheme.antiqueGold)),
                 const SizedBox(height: 4),
@@ -76,14 +77,20 @@ class NextCollectionUnlock extends ConsumerWidget {
                     onPressed: openCollection,
                     child: Text(onPreview == null
                         ? 'View Collection'
-                        : 'Preview symbol'),
+                        : tile.isHeritage
+                            ? 'Preview portrait'
+                            : 'Preview symbol'),
                   ),
               ],
             ),
           ),
           if (compact)
             IconButton(
-              tooltip: onPreview == null ? 'View Collection' : 'Preview symbol',
+              tooltip: onPreview == null
+                  ? 'View Collection'
+                  : tile.isHeritage
+                      ? 'Preview portrait'
+                      : 'Preview symbol',
               onPressed: openCollection,
               icon: const Icon(Icons.chevron_right),
               color: SankofaGameTheme.antiqueGold,

@@ -8,6 +8,7 @@ class ChapterDefinition {
     required this.levelEnd,
     required this.featuredSymbol,
     required this.meaning,
+    this.rewardTransactionId,
   });
 
   final int index;
@@ -16,6 +17,10 @@ class ChapterDefinition {
   final int levelEnd;
   final String featuredSymbol;
   final String meaning;
+
+  /// New chapter endpoints use their own receipt so legacy ten-level chapter
+  /// rewards cannot consume them. Null preserves existing transaction keys.
+  final String? rewardTransactionId;
 
   bool containsLevel(int levelId) =>
       levelId >= levelStart && levelId <= levelEnd;
@@ -342,6 +347,15 @@ const kChapters = [
     levelEnd: 360,
     featuredSymbol: 'Nsoromma',
     meaning: 'Gather by the coast and carry the light of a shared celebration.',
+  ),
+  ChapterDefinition(
+    index: 19,
+    title: 'Still Waters',
+    rewardTransactionId: 'chapter:19:level:380:complete',
+    levelStart: 361,
+    levelEnd: 380,
+    featuredSymbol: 'Tabono',
+    meaning: 'Follow calm waters through island courts and lakeside terraces.',
   ),
 ];
 

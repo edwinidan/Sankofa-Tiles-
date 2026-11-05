@@ -965,6 +965,10 @@ class _RewardReveal extends StatelessWidget {
       );
     }
 
+    final collectionNoun = summary!.unlockedSymbols.any(
+            (id) => kHeritageIntroductions.containsKey(id))
+        ? 'tile'
+        : 'symbol';
     final lines = [
       for (final entry in summary!.boosters.entries)
         '+${entry.value} ${entry.key.label}',
@@ -972,8 +976,8 @@ class _RewardReveal extends StatelessWidget {
       if (summary!.chapterCompleted) 'Chapter reward unlocked',
       if (summary!.unlockedSymbols.isNotEmpty)
         summary!.unlockedSymbols.length == 1
-            ? 'New symbol added to Collection'
-            : '${summary!.unlockedSymbols.length} new symbols added to Collection',
+            ? 'New $collectionNoun added to Collection'
+            : '${summary!.unlockedSymbols.length} new ${collectionNoun}s added to Collection',
       for (final achievement in summary!.achievements)
         'Achievement: $achievement',
     ];
@@ -1190,7 +1194,7 @@ class _UnlockRevealDialogState extends ConsumerState<_UnlockRevealDialog>
               child: Semantics(
                 liveRegion: true,
                 label:
-                    'New Adinkra symbol unlocked: ${tile.name}. ${tile.meaning}',
+                    '${tile.isHeritage ? 'New Ghana Heritage portrait' : 'New Adinkra symbol'} unlocked: ${tile.name}. ${tile.meaning}',
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 420),
                   padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
@@ -1209,7 +1213,7 @@ class _UnlockRevealDialogState extends ConsumerState<_UnlockRevealDialog>
                         child: Column(
                           children: [
                             Text(
-                              'New Symbol Unlocked',
+                              tile.isHeritage ? 'Heritage Tile Unlocked' : 'New Symbol Unlocked',
                               style: AppTextStyles.archiveTitleLarge.copyWith(
                                 color: SankofaGameTheme.mutedGold,
                               ),

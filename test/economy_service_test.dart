@@ -47,6 +47,37 @@ void main() {
     expect(storage.getCowries(), 65);
   });
 
+  test(
+      'Level 380 earns its chapter reward once despite a legacy chapter-19 receipt',
+      () async {
+    final storage = await _storage({
+      'campaign_progress_schema_version': 4,
+      'highest_completed_level': 379,
+      'completed_379': true,
+      'economy_cowries': 1234,
+      'economy_tx_chapter:19:complete': true,
+      ..._allAchievementsClaimed(),
+    });
+    final economy = EconomyService(storage);
+    final won =
+        _wonLevelOne.copyWith(levelId: 380, difficulty: DifficultyMode.relaxed);
+    final first = await economy.grantLevelRewards(
+        gameState: won, previousStars: 0, wasCompleted: false);
+    const expected = EconomyConfig.firstClearCowries +
+        3 * EconomyConfig.starImprovementCowries +
+        EconomyConfig.chapterCompletionCowries;
+    expect(first.chapterCompleted, isTrue);
+    expect(first.cowries, expected);
+    expect(storage.getCowries(), 1234 + expected);
+    expect(storage.hasEconomyTransaction('chapter:19:complete'), isTrue);
+    expect(
+        storage.hasEconomyTransaction('chapter:19:level:380:complete'), isTrue);
+    final retry = await economy.grantLevelRewards(
+        gameState: won, previousStars: 0, wasCompleted: false);
+    expect(retry.cowries, 0);
+    expect(storage.getCowries(), 1234 + expected);
+  });
+
   test('transaction IDs make wallet grants idempotent', () async {
     final storage = await _storage({});
     final economy = EconomyService(storage);

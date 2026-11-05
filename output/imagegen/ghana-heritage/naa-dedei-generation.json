@@ -1,0 +1,21 @@
+{
+  "file": "naa-dedei-50-pesewa-tile-v1.png",
+  "creationMode": "Built-in imagegen",
+  "purpose": "Concept tile based on the woman depicted on Ghana's 50-pesewa coin, matching the approved carved amber-wood portrait set.",
+  "identityNote": "Commonly identified in the cited reporting as Rebecca Naa Dedei Aryeetey / Auntie Dedei. The Bank of Ghana's 2007 report describes the coin subject as a market woman. This sample interprets the coin portrait; it is not a verified photographic reconstruction.",
+  "prompt": "Use case: precise-object-edit / stylized-concept. Create ONE collectible Ghanaian heritage portrait Mahjong tile, matching the approved carved amber-wood set. Image 1 is the approved Kwame Nkrumah tile, the exact tile-body and rendering-style template. Image 2 is a photograph of Ghana's 50-pesewa coin: use ONLY the engraved woman depicted on the coin as the portrait identity and clothing reference. This woman is commonly identified as Rebecca Naa Dedei Aryeetey / Auntie Dedei; this output is an artistic interpretation of the coin portrait, not a photographic reconstruction.\nReplace the male portrait on image 1 with a large, dignified carved-wood head-and-shoulders bust of the woman on the coin. Faithfully follow the visible coin portrait: her headwrap wrapped closely across the forehead and around the crown with broad soft folds, rounded face, slightly hooded expressive eyes and arched eyebrows, broad nose, warm gentle open smile, and patterned V-neck Ghanaian cloth with a simple repeating angular/triangular motif. Preserve her visible pose and facial proportions; do not invent jewellery, a crown, a hairstyle, glamour makeup, a suit, or male facial features. The headwrap must fit completely within the tile with clear wood margin.\nPreserve the tile body from image 1: identical rounded rectangle proportions, golden amber polished wood grain, beveled glossy edges, upper-left light source, darker thick bottom/right wooden edges and near-front-on angle. Maintain the large readable bust scale of the approved portraits and the same rich walnut-brown recessed carving with broad warm amber relief planes. The woman's face should be recognizable as a careful interpretation of the coin reference, gracefully sculpted with simplified details legible on a mobile Mahjong tile. Clothing and headwrap are also amber carved wood rather than coloured fabric. Rich dark recesses provide separation between face, headwrap and cloth; no photo pasted on the tile.\nOne tile only, centered upright, full tile silhouette visible with a narrow margin of transparent padding. Genuine transparent background. No text, no name plaque, no denomination or numerals, no coin outline, no money, no metal surface, no currency lettering, no flags, no stars, no watermark, no unrelated background. The coin itself and the hand or green surface in reference 2 must not appear. Use the reference tile ONLY for its material, composition, framing and lighting, not its male likeness. Preserve existing transparency.",
+  "styleReference": "../big-six/kwame-nkrumah-approved.png",
+  "reference": {
+    "author": "Xibitgh",
+    "title": "Rebecca Naa Dedei Aryeetey.jpg (photo of the 50-pesewa coin)",
+    "source": "https://commons.wikimedia.org/wiki/File:Rebecca_Naa_Dedei_Aryeetey.jpg",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Rebecca_Naa_Dedei_Aryeetey.jpg",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "changes": "The coin portrait has been artistically reinterpreted as a carved-wood tile; the coin, denomination, lettering, and photographic background were omitted."
+  },
+  "identificationSources": [
+    "https://www.myjoyonline.com/throwback-thursday-remembering-the-lady-on-ghanas-50-pesewas-coin/",
+    "https://www.bog.gov.gh/wp-content/uploads/2019/07/AnnRep-2007.pdf"
+  ]
+}

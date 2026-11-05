@@ -110,7 +110,7 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
         backgroundColor: SankofaGameTheme.backgroundTop,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          'Adinkra Collection',
+          'Tile Collection',
           style: AppTextStyles.displaySmall.copyWith(
             color: SankofaGameTheme.antiqueGold,
           ),
@@ -174,7 +174,8 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                                         forceHideName: true,
                                       ),
                                     )
-                                  : const _LockedCollectionTile(
+                                  : _LockedCollectionTile(
+                                      isHeritage: previewDef.isHeritage,
                                       width: 128,
                                       height: 170,
                                       lockSize: 38,
@@ -194,16 +195,22 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                       Text(
                         unlocked || isNextPreview
                             ? def.name
-                            : 'Undiscovered Symbol',
+                            : def.isHeritage
+                                ? 'Undiscovered Portrait'
+                                : 'Undiscovered Symbol',
                         style: AppTextStyles.titleLarge.copyWith(
                           color: SankofaGameTheme.antiqueGold,
                         ),
                       ),
                       const SizedBox(height: 4),
+                      if (def.isHeritage && (unlocked || isNextPreview))
+                        Text('Ghana Heritage',
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: SankofaGameTheme.antiqueGold)),
                       Text(
                         unlocked
                             ? def.meaning
-                            : '${service.collectionUnlockSource(def.id)}${isNextPreview ? " · Unlock to read its meaning" : ""}',
+                            : '${service.collectionUnlockSource(def.id)}${isNextPreview ? (def.isHeritage ? " · Unlock to read their story" : " · Unlock to read its meaning") : ""}',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: SankofaGameTheme.parchmentLight,
                         ),
@@ -280,6 +287,7 @@ class _TilePreviewScreenState extends ConsumerState<TilePreviewScreen> {
                                         width: isSelected ? 50 : 44,
                                         height: isSelected ? 66 : 58,
                                         child: _LockedCollectionTile(
+                                          isHeritage: t.isHeritage,
                                           width: isSelected ? 50 : 44,
                                           height: isSelected ? 66 : 58,
                                           lockSize: isSelected ? 18 : 16,
@@ -308,16 +316,20 @@ class _LockedCollectionTile extends StatelessWidget {
     required this.width,
     required this.height,
     required this.lockSize,
+    this.isHeritage = false,
   });
 
   final double width;
   final double height;
   final double lockSize;
+  final bool isHeritage;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Locked Adinkra symbol',
+      label: isHeritage
+          ? 'Locked Ghana Heritage portrait'
+          : 'Locked Adinkra symbol',
       child: Stack(
         alignment: Alignment.center,
         children: [

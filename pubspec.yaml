@@ -67,6 +67,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/tiles/
+    - assets/tiles/heritage/
     - assets/Tile V2 png/
     - assets/Tile V2 png.2/
     - assets/Tile v.3 png/

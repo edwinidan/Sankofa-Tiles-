@@ -174,7 +174,8 @@ class EconomyService {
       final added = await addCowries(
         EconomyConfig.chapterCompletionCowries,
         reason: 'chapter_complete',
-        transactionId: 'chapter:${chapterForLevel(levelId).index}:complete',
+        transactionId: chapterForLevel(levelId).rewardTransactionId ??
+            'chapter:${chapterForLevel(levelId).index}:complete',
       );
       if (added) cowries += EconomyConfig.chapterCompletionCowries;
     }

@@ -28,6 +28,7 @@ class CampaignBoardDesign {
         16 => 'Voices of the Drum',
         17 => 'Northern Weaves',
         18 => 'Festival of Light',
+        19 => 'Still Waters',
         _ => throw StateError('Missing chapter title for L$level'),
       };
   String get difficulty => isBreather

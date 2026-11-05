@@ -7,6 +7,7 @@ import 'levels_201_240_candidate_data.dart';
 import 'levels_241_280_candidate_data.dart';
 import 'levels_281_320_data.dart';
 import 'levels_321_360_data.dart';
+import 'levels_361_380_data.dart';
 
 class SymbolCopyPlan {
   final int symbolPoolSize;
@@ -86,17 +87,45 @@ class LevelDefinition {
   int get boardCols => stats.boardWidth;
   int get symbolPoolSize => symbolPlan.symbolPoolSize.clamp(1, pairCount);
 
-  List<int> get symbolCopyCounts =>
-      symbolPlan.copyCountsForTileCount(tileCount);
+  int get _heritageSymbolIndex {
+    final counts = symbolPlan.copyCountsForTileCount(tileCount);
+    final pairIndex = counts.lastIndexOf(2);
+    return pairIndex >= 0 ? pairIndex : counts.length - 1;
+  }
 
-  String get symbolDistributionLabel =>
-      symbolPlan.describeForTileCount(tileCount);
+  List<int> get symbolCopyCounts {
+    final counts = [...symbolPlan.copyCountsForTileCount(tileCount)];
+    if (heritageTileIdForLevel(id) != null && counts.length > 1) {
+      final index = _heritageSymbolIndex;
+      final excess = counts[index] - 2;
+      counts[index] = 2;
+      counts[index == 0 ? 1 : 0] += excess;
+    }
+    return List.unmodifiable(counts);
+  }
+
+  String get symbolDistributionLabel {
+    final grouped = <int, int>{};
+    for (final count in symbolCopyCounts) {
+      grouped[count] = (grouped[count] ?? 0) + 1;
+    }
+    final parts = grouped.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+    return parts.map((entry) => '${entry.value}x${entry.key}').join(' + ');
+  }
 
   List<String> get tileIds {
-    return _progressiveTileIds(
-      symbolPoolSize,
-      startIndex: symbolStartIndex,
-    );
+    final ids = [
+      ..._progressiveTileIds(
+        symbolPoolSize,
+        startIndex: symbolStartIndex,
+      )
+    ];
+    final heritageId = heritageTileIdForLevel(id);
+    if (heritageId != null && ids.length > 1) {
+      ids[_heritageSymbolIndex] = heritageId;
+    }
+    return List.unmodifiable(ids);
   }
 }
 
@@ -106,11 +135,11 @@ List<String> _progressiveTileIds(
 }) {
   final ids = <String>[];
   final anchorCount = count >= 20 ? 10 : count ~/ 2;
-  ids.addAll(kTileIds.take(anchorCount));
+  ids.addAll(kAdinkraTileIds.take(anchorCount));
 
-  var cursor = startIndex.clamp(0, kTileIds.length - 1);
+  var cursor = startIndex.clamp(0, kAdinkraTileIds.length - 1);
   while (ids.length < count) {
-    final id = kTileIds[cursor % kTileIds.length];
+    final id = kAdinkraTileIds[cursor % kAdinkraTileIds.length];
     if (!ids.contains(id)) ids.add(id);
     cursor++;
   }
@@ -244,7 +273,7 @@ List<LevelDefinition> _extendedCampaignLevels() {
           chapters[chapterIndex].difficulty,
           symbolStart:
               chapterIndex == chapters.length - 1 && slot == motifs.length - 1
-                  ? kTileIds.length - 1
+                  ? kAdinkraTileIds.length - 1
                   : 88 + chapterIndex * 7 + slot * 3,
         ),
   ]);
@@ -428,6 +457,17 @@ final List<LevelDefinition> kLevels = [
       symbolPlan: design.symbolPlan,
       difficultyCategory: design.difficulty,
       symbolStartIndex: 45 + (design.level - 321) % 42,
+    ),
+  for (final design in kLevels361To380Designs)
+    LevelDefinition(
+      id: design.level,
+      name: design.name,
+      chapter: design.chapterTitle,
+      namedLayout: design.layout,
+      unlockRequirement: design.level - 1,
+      symbolPlan: design.symbolPlan,
+      difficultyCategory: design.difficulty,
+      symbolStartIndex: 55 + (design.level - 361) % 32,
     ),
 ];
 

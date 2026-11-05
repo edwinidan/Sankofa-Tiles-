@@ -30,9 +30,9 @@ void main() {
       isEmpty,
       reason: issues.map((issue) => issue.toString()).join('\n'),
     );
-    expect(kLevels, hasLength(360));
+    expect(kLevels, hasLength(380));
     expect(kLevels.map((level) => level.id),
-        orderedEquals(List.generate(360, (i) => i + 1)));
+        orderedEquals(List.generate(380, (i) => i + 1)));
     expect(kLevels.where((level) => level.layerCount <= 1),
         hasLength(lessThanOrEqualTo(2)));
   });
@@ -77,6 +77,9 @@ void main() {
       340,
       341,
       360,
+      361,
+      370,
+      380,
     ]) {
       final stopwatch = Stopwatch()..start();
       notifier.startLevel(levelId, DifficultyMode.relaxed);
@@ -105,7 +108,7 @@ void main() {
     ]);
     addTearDown(container.dispose);
     final notifier = container.read(gameProvider.notifier);
-    for (var id = 281; id <= 360; id++) {
+    for (var id = 281; id <= 380; id++) {
       final level = getLevelById(id)!;
       for (final mode in DifficultyMode.values) {
         notifier.startLevel(id, mode, isDeveloperTest: true);

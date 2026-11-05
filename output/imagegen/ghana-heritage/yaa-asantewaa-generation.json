@@ -1,0 +1,15 @@
+{
+  "subject": "Yaa Asantewaa",
+  "creationMode": "built-in imagegen",
+  "output": "yaa-asantewaa-tile-v1.png",
+  "prompt": "Create ONE premium Mahjong portrait tile of Yaa Asantewaa for the Ghanaian game Sankofa Tiles. Image 1 is the approved Kwame Nkrumah tile and defines the exact matching series style: same portrait canvas, rounded rectangular honey-amber polished WOOD block, generous rounded bevel with upper-left highlights, visible thick dark wood right and bottom edges, subtle vertical wood grain, nearly front-on view, isolated on transparent background. Replace the male portrait entirely with an artistic interpretation of Yaa Asantewaa. Image 2 shows the commemorative sculpture at the Yaa Asantewaa Museum in Ejisu; use ONLY its elderly female facial character, short close hair, resolute dignity and traditional draped cloth as historical visual guidance. It is a sculpture reference, not a verified photograph of her. Show a mature elderly Ghanaian Asante queen mother with strong cheekbones, fine age lines, close-cropped hair, steady determined eyes and a calm authoritative expression, head turned slightly toward the viewer's left. Traditional cloth draped over her left shoulder with simple carved folds, head and upper chest composition. No crown, no headwrap, no weapon. Render her portrait in the SAME walnut-brown recessed/carved wood relief and warm amber facial planes as image 1, clearly sculpted into the tile face, not a photo pasted onto a tile. Bold readable facial silhouette and clean relief shapes suitable for small mobile game tiles. Keep full head and shoulders inside the face with a consistent clear wooden margin. Match the reference tile proportions, lighting, materials and visual weight. Only one tile. No lettering, labels, numbers, watermark, pedestal, scenery, border ornament, symbols or additional objects. Transparent exterior background.",
+  "styleReference": "../big-six/kwame-nkrumah-approved.png",
+  "historicalReference": {
+    "url": "https://commons.wikimedia.org/wiki/File:Yaa_Asantewaa_Museum_(4).jpg",
+    "photographer": "Noahalorwu",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "description": "Commemorative sculpture at the Yaa Asantewaa Museum in Ejisu"
+  },
+  "note": "Artistic interpretation guided by a museum sculpture; not an authenticated photographic likeness."
+}
