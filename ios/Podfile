@@ -1,5 +1,5 @@
-# Uncomment this line to define a global platform for your project
- platform :ios, '15.0'
+# Match Runner's minimum supported iOS version.
+platform :ios, '15.6'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -39,5 +39,14 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # Xcode rejects the older defaults used by some plugins and privacy bundles.
+    # Raise those targets while preserving dependencies with a higher minimum.
+    target.build_configurations.each do |config|
+      minimum = Gem::Version.new('15.6')
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+      if current.nil? || Gem::Version.new(current) < minimum
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum.to_s
+      end
+    end
   end
 end
