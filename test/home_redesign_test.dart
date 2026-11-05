@@ -268,7 +268,8 @@ void main() {
     ));
     await _mount(tester, storage);
     expect(find.text('LEVEL 7'), findsOneWidget);
-    expect(find.text('2 tiles remaining'), findsOneWidget);
+    expect(find.textContaining('tiles remaining'), findsNothing);
+    expect(find.text('Start another level'), findsNothing);
     await _savePreview(tester, 'resume');
     await _tapText(tester, 'RESUME');
     expect(find.text('Destination /game/7'), findsOneWidget);
@@ -278,19 +279,6 @@ void main() {
     expect(config.resumeSavedGame, isTrue);
     expect(config.levelId, 7);
     expect(storage.getActiveGame()!.score, 450);
-  });
-
-  testWidgets('Start another level keeps the saved board', (tester) async {
-    final storage = await _storage();
-    await storage.saveActiveGame(GameState.initial().copyWith(
-      levelId: 7,
-      status: GameStatus.playing,
-      tiles: [TileModel(def: kAllTiles.first, row: 0, col: 0)],
-    ));
-    await _mount(tester, storage);
-    await _tapText(tester, 'Start another level');
-    expect(find.text('Destination /game/9'), findsOneWidget);
-    expect(storage.getActiveGameSummary()!.levelId, 7);
   });
 
   testWidgets('Completed campaign does not advertise an unimplemented level',

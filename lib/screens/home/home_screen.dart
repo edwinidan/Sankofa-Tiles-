@@ -159,19 +159,6 @@ class HomeScreen extends ConsumerWidget {
                     },
                   ),
                 ),
-                if (savedGame != null) ...[
-                  const SizedBox(height: 8),
-                  _HomeCaption('${savedGame.remainingTiles} tiles remaining'),
-                  if (nextLevel != null)
-                    _HomeTextAction(
-                      label: 'Start another level',
-                      onPressed: () => context.push('/game/$nextLevel',
-                          extra: GameLaunchConfig(
-                            levelId: nextLevel,
-                            launchMode: GameLaunchMode.normalProgression,
-                          )),
-                    ),
-                ],
                 SizedBox(height: navigationGap),
                 GameNavigationGroup(buttons: [
                   GameNavigationButton(
@@ -253,28 +240,6 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _HomeCaption extends StatelessWidget {
-  const _HomeCaption(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: GameMenuTheme.forest.withValues(alpha: .9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text(text,
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(color: GameMenuTheme.cream, fontSize: 12)),
-          ),
-        ),
-      );
 }
 
 class _HomeTextAction extends StatelessWidget {
